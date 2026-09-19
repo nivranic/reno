@@ -7,3 +7,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 frames_cache/
+cache_hf/
+work_*.html
+work_*.json
+docs/serve.log
