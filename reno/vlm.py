@@ -58,7 +58,7 @@ def run(con, video_id: str) -> dict:
     frames = budget_frames(con, video_id)
     t0 = time.time()
     obs = []
-    for fr in frames:
+    for i, fr in enumerate(frames):
         obj = _observe_frame(fr["path"])
         obs.append({
             "id": f"vis_{fr['frame_id'][1:]}",  # f0001200 -> vis_0001200
@@ -69,6 +69,8 @@ def run(con, video_id: str) -> dict:
             "subtitle_text": _s(obj.get("subtitle_text")),
             "measurement": _s(obj.get("measurement")),
         })
+        if i % 5 == 4:
+            time.sleep(1.0)  # gentle pacing under single-key rate limits
     db.replace_visual(con, video_id, obs)
     dt = time.time() - t0
     stats = {"n_frames": len(frames), "n_ok": sum(1 for o in obs if o["scene_description"]),

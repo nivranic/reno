@@ -32,22 +32,29 @@ DEFAULTS = {
 _cache = None
 
 
-def get(key: str = ""):
+def get(key: str = "", default=None):
     global _cache
     if _cache is None:
-        cfg = dict(DEFAULTS)
-        local = ROOT / "config.local.json"
-        if local.exists():
-            cfg.update(json.loads(local.read_text(encoding="utf-8")))
-        # env vars win (RENO_<UPPER_KEY>)
-        for k in list(cfg):
-            env = os.environ.get(f"RENO_{k.upper()}")
-            if env is not None:
-                cfg[k] = env
-        _cache = cfg
-        for d in (DATA, MEDIA, FRAMES, AUDIO, ORIG, FRAME_CACHE):
-            d.mkdir(parents=True, exist_ok=True)
-    return _cache if not key else _cache.get(key, DEFAULTS.get(key))
+        _load()
+    if not key:
+        return _cache
+    return _cache.get(key, DEFAULTS.get(key, default))
+
+
+def _load():
+    global _cache
+    cfg = dict(DEFAULTS)
+    local = ROOT / "config.local.json"
+    if local.exists():
+        cfg.update(json.loads(local.read_text(encoding="utf-8")))
+    # env vars win (RENO_<UPPER_KEY>)
+    for k in list(cfg):
+        env = os.environ.get(f"RENO_{k.upper()}")
+        if env is not None:
+            cfg[k] = env
+    _cache = cfg
+    for d in (DATA, MEDIA, FRAMES, AUDIO, ORIG, FRAME_CACHE):
+        d.mkdir(parents=True, exist_ok=True)
 
 
 def db_path() -> Path:

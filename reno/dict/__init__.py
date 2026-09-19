@@ -82,8 +82,10 @@ def normalize_param(p: dict) -> dict:
             v = float(val)
             if unit == "cm" and "cm_to_mm" in pd:
                 out["normalized_value"] = v * pd["cm_to_mm"]
+                out["unit"] = "mm"          # keep unit in sync with normalized target
             elif unit == "m" and "m_to_mm" in pd:
                 out["normalized_value"] = v * pd["m_to_mm"]
+                out["unit"] = "mm"
             elif unit == "mm":
                 out["normalized_value"] = v
             elif unit in ("遍", "h", "MPa") or out["name"] in pd.get("percent_params", []):

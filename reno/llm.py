@@ -21,20 +21,26 @@ def _post(path: str, body: dict, timeout: int = 120) -> dict:
         headers={"Authorization": f"Bearer {config.get('zhipu_api_key')}",
                  "Content-Type": "application/json"})
     last = None
-    for attempt in range(3):
+    backoffs = {429: (6, 18, 54), 500: (2, 4, 8), 502: (2, 4, 8), 503: (2, 4, 8)}
+    for attempt in range(4):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             payload = e.read().decode("utf-8", "replace")[:400]
             last = RuntimeError(f"HTTP {e.code}: {payload}")
-            if e.code in (429, 500, 502, 503):
-                time.sleep(2 * (attempt + 1))
+            if e.code in backoffs and attempt < 3:
+                time.sleep(backoffs[e.code][attempt])
+                # rebuild request: the consumed body can't be reused
+                req = urllib.request.Request(
+                    url, data=json.dumps(body).encode("utf-8"),
+                    headers={"Authorization": f"Bearer {config.get('zhipu_api_key')}",
+                             "Content-Type": "application/json"})
                 continue
             raise last
         except (urllib.error.URLError, TimeoutError) as e:
             last = e
-            time.sleep(2 * (attempt + 1))
+            time.sleep(3 * (attempt + 1))
     raise last
 
 
@@ -54,6 +60,8 @@ def chat(messages, model=None, temperature=0.3, max_tokens=4096, json_mode=True,
                     "temperature": temperature, "max_tokens": max_tokens}
             if json_mode:
                 body["response_format"] = {"type": "json_object"}
+            if not config.get("llm_thinking_enabled"):
+                body["thinking"] = {"type": "disabled"}
             d = _post("/chat/completions", body, timeout=timeout)
             msg = d["choices"][0]["message"]
             content = msg.get("content") or ""

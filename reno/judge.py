@@ -42,14 +42,21 @@ def _merge_candidates(sim_pairs, param_pairs):
     return out
 
 
-def _judge_llm(cands):
+def _judge_llm(cands, batch_size: int = 15):
+    """Batch judging: one JSON response per <=15 pairs. A single call over
+    dozens of pairs exceeds max_tokens and gets truncated mid-JSON."""
     system = PROMPT_FILE.read_text(encoding="utf-8")
-    user = json.dumps(cands, ensure_ascii=False)
-    obj, model = llm.chat_json(
-        [{"role": "system", "content": system},
-         {"role": "user", "content": f"候选对列表(JSON):\n{user}"}],
-        max_tokens=4096)
-    return obj.get("judgments", []), model
+    all_j, model_used = [], None
+    for i in range(0, len(cands), batch_size):
+        chunk = cands[i:i + batch_size]
+        user = json.dumps(chunk, ensure_ascii=False)
+        obj, model = llm.chat_json(
+            [{"role": "system", "content": system},
+             {"role": "user", "content": f"候选对列表(JSON,共{len(chunk)}对,pair_id 已重编号):\n{user}"}],
+            max_tokens=4096)
+        model_used = model_used or model
+        all_j.extend(obj.get("judgments", []))
+    return all_j, model_used
 
 
 class UF:

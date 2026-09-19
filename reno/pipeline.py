@@ -7,6 +7,13 @@ from . import asr, atomize, config, db, judge, media, ocr, vlm
 STEPS = ["media", "asr", "ocr", "vlm", "atomize"]
 
 
+def _active_steps():
+    steps = list(STEPS)
+    if not config.get("vlm_enabled", True):
+        steps.remove("vlm")
+    return steps
+
+
 def _step_done(con, video_id, step) -> bool:
     row = con.execute(
         "SELECT ok FROM processing_run WHERE video_id=? AND step=? AND ok=1 "
@@ -34,7 +41,7 @@ def run_video(video_id: str, force: bool = False) -> dict:
         asset = db.get_asset(con, video_id)
         if asset is None:
             raise KeyError(f"unknown video {video_id}")
-        for step in STEPS:
+        for step in _active_steps():
             if not force and (_meta_done(con, video_id, step) or _step_done(con, video_id, step)):
                 results[step] = "skipped(done)"
                 continue
