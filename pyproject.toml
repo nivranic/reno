@@ -1,0 +1,12 @@
+[project]
+name = "reno"
+version = "0.1.0"
+description = "Renovation short-video structured knowledge base (local-hybrid profile)"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: needs models/media"]
+
+[tool.setuptools.packages.find]
+include = ["reno*"]

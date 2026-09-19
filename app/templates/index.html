@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>收件箱 / 视频库</h1>
+<section class="stats">
+  <span>原子 <b>{{atoms_total}}</b></span><span>聚类 <b>{{clusters}}</b></span>
+  <span>冲突 <b>{{conflicts}}</b></span><span>队列 <b>{{jobs}}</b></span>
+</section>
+<section class="import">
+  <input id="imp-url" placeholder="粘贴B站视频链接,回车导入并自动处理">
+  <button onclick="doImport()">导入</button>
+  <span id="imp-status"></span>
+</section>
+<table>
+<tr><th>视频</th><th>状态</th><th>原子</th><th>时长</th><th>UP主</th></tr>
+{% for v in videos %}
+<tr>
+  <td><a href="/videos/{{v.video_id}}">{{ (v.title or v.video_id)[:46] }}</a></td>
+  <td><span class="badge s-{{v.status}}">{{v.status}}</span></td>
+  <td>{{v.atoms}}</td>
+  <td>{{ (v.duration_ms or 0)//1000 }}s</td>
+  <td>{{ (v.author or '')[:14] }}</td>
+</tr>
+{% endfor %}
+</table>
+<script>
+async function doImport(){
+  const url=document.getElementById('imp-url').value.trim();
+  if(!url)return;
+  document.getElementById('imp-status').textContent='导入中...';
+  try{
+    const r=await fetch('/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    const j=await r.json();
+    document.getElementById('imp-status').textContent=j.status==='duplicate'?'重复视频,未入库':'已导入,后台处理中,稍后刷新';
+    setTimeout(()=>location.reload(),4000);
+  }catch(e){document.getElementById('imp-status').textContent='失败:'+e}
+}
+</script>
+{% endblock %}

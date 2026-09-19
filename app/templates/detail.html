@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 id="vtitle">{{ v.title }}</h1>
+<p class="muted">UP:{{v.author}} · {{ (v.duration_ms or 0)//1000 }}s · {{v.status}}</p>
+<div id="detail" data-vid="{{v.video_id}}">
+  <div class="player-pane">
+    <video id="player" controls preload="metadata" width="100%">
+      <source src="/api/video/{{v.video_id}}/file" type="video/mp4">
+    </video>
+    <div id="frame-box"><img id="frame-img" alt="点击知识原子查看证据帧"><div id="frame-ts"></div></div>
+  </div>
+  <div class="timeline-pane">
+    <div class="tl-label">时间轴(点击定位)</div>
+    <div id="timeline"></div>
+  </div>
+  <div class="events-pane">
+    <div class="pane-title">证据流 <span class="legend"><i class="asr">ASR</i><i class="ocr">OCR</i><i class="vis">VIS</i></span></div>
+    <div id="events"></div>
+  </div>
+  <div class="atoms-pane">
+    <div class="pane-title">知识原子({{v.video_id}})</div>
+    <div id="atoms"></div>
+  </div>
+</div>
+<script src="/static/app.js"></script>
+{% endblock %}

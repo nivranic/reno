@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>搜索</h1>
+<form method="get" action="/search">
+  <input name="q" value="{{q}}" placeholder='如:防水 高度 / 插座 / 留缝'>
+  <button>搜索</button>
+</form>
+{% if q %}
+<p>{{ results|length }} 条结果</p>
+{% for a in results %}
+<div class="atom-row" onclick="jumpTo('{{ a.evidence_refs[0].video_id if a.evidence_refs else '' }}', {{ a.evidence_refs[0].start_ms if a.evidence_refs else 0 }})">
+  <span class="badge p-{{a.polarity}}">{{a.polarity}}</span>
+  <span class="cat">{{a.category}}·{{a.space}}</span>
+  <b>{{a.claim}}</b>
+  <span class="muted">conf={{a.confidence}} · 来源 {{ a.evidence_refs[0].video_id if a.evidence_refs else '?' }}@{{ (a.evidence_refs[0].start_ms//1000 if a.evidence_refs else 0) }}s</span>
+</div>
+{% endfor %}
+{% endif %}
+<script>
+function jumpTo(vid, ms){ if(vid) location.href='/videos/'+vid+'?t='+ms; }
+</script>
+{% endblock %}

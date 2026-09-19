@@ -1,0 +1,62 @@
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2330;--muted:#7a8494;--line:#e3e7ee;--acc:#2563eb}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.6 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+nav{display:flex;gap:18px;align-items:center;padding:10px 22px;background:#101623;color:#dfe6f3}
+nav a{color:#dfe6f3;text-decoration:none}
+nav .brand{font-weight:700;font-size:17px;color:#fff;margin-right:8px}
+main{padding:20px 22px;max-width:1180px;margin:0 auto}
+h1{font-size:20px}
+.muted{color:var(--muted);font-size:12.5px}
+.stats{display:flex;gap:18px;margin:8px 0 14px;color:var(--muted)}
+.stats b{color:var(--ink)}
+.import{display:flex;gap:8px;margin-bottom:16px}
+.import input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:6px}
+button{padding:7px 14px;border:0;border-radius:6px;background:var(--acc);color:#fff;cursor:pointer}
+button:hover{filter:brightness(1.08)}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
+th{background:#eef1f6;font-size:12.5px}
+a{color:var(--acc);text-decoration:none}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;background:#e8edf5}
+.s-processed{background:#dcfce7;color:#166534}.s-imported{background:#fef9c3;color:#854d0e}
+.s-error{background:#fee2e2;color:#991b1b}.s-done_media,.s-done_asr,.s-done_ocr,.s-done_vlm,.s-done_atomize{background:#dbeafe;color:#1e40af}
+/* detail four-linkage */
+#detail{display:grid;grid-template-columns:1.25fr 1fr;gap:14px}
+.player-pane{grid-column:1}.timeline-pane{grid-column:2}
+.events-pane{grid-column:1}.atoms-pane{grid-column:2}
+.pane-title{font-weight:600;margin-bottom:6px}
+.legend i{font-style:normal;font-size:11px;margin-left:8px;padding:0 6px;border-radius:8px}
+.legend .asr{background:#e0e7ff}.legend .ocr{background:#dcfce7}.legend .vis{background:#fef3c7}
+#timeline{position:relative;height:34px;background:#e8edf5;border-radius:6px;margin-bottom:10px}
+#timeline .tick{position:absolute;top:0;bottom:0;width:3px;border-radius:2px;cursor:pointer}
+#timeline .asr{background:#818cf8}#timeline .ocr{background:#4ade80}#timeline .vis{background:#fbbf24}
+#frame-box{margin-top:10px;display:none}
+#frame-box img{max-width:100%;border:1px solid var(--line);border-radius:6px}
+#events{max-height:380px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px}
+.ev{padding:5px 10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px}
+.ev:hover{background:#f0f4fb}
+.ev .t{color:var(--muted);font-family:Consolas,monospace;font-size:11.5px;margin-right:8px}
+#atoms{max-height:380px;overflow:auto}
+.atom-card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px;cursor:pointer}
+.atom-card:hover{border-color:var(--acc)}
+.atom-card .claim{font-weight:600}
+.atom-card .meta{color:var(--muted);font-size:12px;margin-top:4px}
+.atom-card .ev-link{color:var(--acc);font-size:12px;cursor:pointer;margin-right:10px}
+.p-recommend{background:#dcfce7;color:#166534}.p-avoid{background:#fee2e2;color:#991b1b}
+.p-require{background:#dbeafe;color:#1e40af}.p-neutral{background:#e8edf5}.p-optional{background:#f1f5f9}
+/* conflicts */
+.conflict-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.conflict-card.decided{opacity:.45}
+.cf-head{font-weight:600;margin-bottom:10px}
+.cf-sides{display:flex;gap:10px;align-items:stretch}
+.cf-side{flex:1;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:10px}
+.cf-vs{align-self:center;font-weight:700;color:var(--muted)}
+.cf-analysis{margin:10px 0;color:var(--muted);font-size:12.5px}
+.cf-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cf-actions .note{flex:1;min-width:160px;padding:6px 10px;border:1px solid var(--line);border-radius:6px}
+/* search */
+.atom-row{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin-bottom:8px;cursor:pointer}
+.atom-row:hover{border-color:var(--acc)}
+.atom-row .cat{color:var(--muted);font-size:12px;margin:0 8px}
+pre.md{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;max-height:640px;overflow:auto;font-size:12.5px}
+details{margin-bottom:12px}summary{cursor:pointer;font-weight:600}

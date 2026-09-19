@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>报告</h1>
+{% for name, md in reports.items() %}
+<details {% if loop.first %}open{% endif %}>
+  <summary>{{ name }}</summary>
+  <pre class="md">{{ md }}</pre>
+</details>
+{% endfor %}
+{% endblock %}

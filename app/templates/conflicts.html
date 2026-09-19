@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>争议复核</h1>
+<p class="muted">规则与LLM只产生候选;最终决策永远由你做出,且不会被AI覆盖。</p>
+{% for c in conflicts %}
+<div class="conflict-card" id="cf-{{c.conflict_id}}">
+  <div class="cf-head">{{c.conflict_id}} · {{c.ctype}} · <span class="badge">{{c.status}}</span></div>
+  <div class="cf-sides">
+    <div class="cf-side">
+      <div class="cf-claim">{{ c.side_a.claim }}</div>
+      <div class="muted">来源:{{c.side_a.video}} · 条件:{{ c.side_a.conditions }}</div>
+    </div>
+    <div class="cf-vs">VS</div>
+    <div class="cf-side">
+      <div class="cf-claim">{{ c.side_b.claim }}</div>
+      <div class="muted">来源:{{c.side_b.video}} · 条件:{{ c.side_b.conditions }}</div>
+    </div>
+  </div>
+  <div class="cf-analysis">
+    条件重叠:{{ c.analysis.conditional_conclusion.condition_overlap if c.analysis.conditional_conclusion else '?' }}
+    · 权威差异:{{ c.analysis.conditional_conclusion.authority_gap if c.analysis.conditional_conclusion else '?' }}
+    · 理由:{{ c.analysis.judge_note }}
+  </div>
+  <div class="cf-actions">
+    <button onclick="decide('{{c.conflict_id}}','accept_a')">采纳A</button>
+    <button onclick="decide('{{c.conflict_id}}','accept_b')">采纳B</button>
+    <button onclick="decide('{{c.conflict_id}}','both')">两者各适用</button>
+    <button onclick="decide('{{c.conflict_id}}','reject')">都不采</button>
+    <input class="note" id="note-{{c.conflict_id}}" placeholder="备注(可选)">
+  </div>
+</div>
+{% else %}
+<p>暂无冲突。先 `reno judge` 生成聚类与冲突。</p>
+{% endfor %}
+<script>
+async function decide(cid, action){
+  const note=document.getElementById('note-'+cid).value;
+  await fetch('/api/decision',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({conflict_id:cid,action,note})});
+  document.getElementById('cf-'+cid).classList.add('decided');
+}
+</script>
+{% endblock %}
