@@ -43,10 +43,18 @@
 
 ## 4. 未验证项与残余风险(如实)
 
-1. **像素级视觉验收**:本会话图像注入通道故障(主会话与 flash-visual-worker 均
-   IMAGE_CHANNEL_BROKEN,2026-09-20 实测),无法人工审阅截图。已用 DOM 快照 +
-   computed-style 断言替代(色值/布局/命中测试均过),但最终观感需你在浏览器确认;
-   截图样本在 `F:\ZCode_data\.zcode\workspace\default\01-inbox-desktop-light.png`。
+1. ~~**像素级视觉验收**~~:**已于 2026-09-20 补验完成**。本环境 ZCode→GLM 网关在服务端
+   丢弃 Read 图像块(rollout 实证:请求体含完整 `type:image` dataUrl,模型未收到像素;
+   根因与修复记录见 `glm-hybrid-router/docs/VISION-CHANNEL-2026-09-20.md`)。按用户要求,
+   像素验收经 `glm-hybrid-router:flash-visual-worker` 完成:该 worker 对 7 张真实截图
+   (收件箱浅色/工作台浅色+深色/搜索/争议复核/采集助手/工作台 390px 移动端)逐图走
+   `scripts/vision-describe.mjs`(glm-4v-flash 直连)评审。结果:**7/7 通过**
+   (3 PASS + 4 PASS-with-notes),零阻断/明显缺陷;布局/导航/模态配色(ASR靛/OCR绿/VIS琥珀)/
+   左右分栏/争议对照/移动端单列+Tab 均与设计基线吻合。worker 标记的 4 个不确定点
+   (统计卡标签/深色色值/390px 溢出/按钮文案)已由 DOM 实测逐一证实无误
+   (聚类=3;#0e1116/#151a21/#262d38 精确匹配;scrollWidth=390 无溢出;"➦ 收藏页 → reno")。
+   截图:workspace 根 `reno-fe-01..07-*.png`。残余限制:glm-4v-flash 对小号文字/计数
+   的感知精度有限,精细排版最终观感仍建议用户亲自过目。
 2. **真机 iOS/iPadOS、Firefox、WebKit**:未测试(仅 Chromium 153 headless + MCP 桌面 Chromium)。
    Playwright 配置已就绪,可在相应设备/浏览器补跑。
 3. **10,000 条证据的真实渲染性能/内存**:仅验证了 fixture 生成确定性与 182 条真实数据;
