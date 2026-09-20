@@ -43,18 +43,22 @@
 
 ## 4. 未验证项与残余风险(如实)
 
-1. ~~**像素级视觉验收**~~:**已于 2026-09-20 补验完成**。本环境 ZCode→GLM 网关在服务端
-   丢弃 Read 图像块(rollout 实证:请求体含完整 `type:image` dataUrl,模型未收到像素;
-   根因与修复记录见 `glm-hybrid-router/docs/VISION-CHANNEL-2026-09-20.md`)。按用户要求,
-   像素验收经 `glm-hybrid-router:flash-visual-worker` 完成:该 worker 对 7 张真实截图
-   (收件箱浅色/工作台浅色+深色/搜索/争议复核/采集助手/工作台 390px 移动端)逐图走
-   `scripts/vision-describe.mjs`(glm-4v-flash 直连)评审。结果:**7/7 通过**
-   (3 PASS + 4 PASS-with-notes),零阻断/明显缺陷;布局/导航/模态配色(ASR靛/OCR绿/VIS琥珀)/
-   左右分栏/争议对照/移动端单列+Tab 均与设计基线吻合。worker 标记的 4 个不确定点
-   (统计卡标签/深色色值/390px 溢出/按钮文案)已由 DOM 实测逐一证实无误
-   (聚类=3;#0e1116/#151a21/#262d38 精确匹配;scrollWidth=390 无溢出;"➦ 收藏页 → reno")。
-   截图:workspace 根 `reno-fe-01..07-*.png`。残余限制:glm-4v-flash 对小号文字/计数
-   的感知精度有限,精细排版最终观感仍建议用户亲自过目。
+1. ~~**像素级视觉验收**~~:**已于 2026-09-20 补验完成(GLM-5.3-Flash 之眼,终版)**。
+   根因(rollout + 对照实验定案):ZCode harness 以私有格式 `{"type":"image","dataUrl":…}`
+   发送图像块,`open.bigmodel.cn/api/anthropic` 网关不认该格式而静默丢弃;**标准 Anthropic
+   base64 图像块在同端点同 key 下完全正常**——GLM-5.3-Flash(与 flash-visual-worker 同款
+   模型、同 coding-plan 配额、max_tokens 128000)经 `glm-hybrid-router/scripts/vision-describe.mjs`
+   直连,逐字读出合成验证图。像素验收由 flash-visual-worker 走该通道对 7 张真实截图
+   (收件箱浅色/工作台浅+深/搜索/争议复核/采集助手/390px 移动端)逐图评审:
+   **7/7 PASS-with-notes,零阻断/明显缺陷**;浅色基线、深色独立设计(非反相,肤色/字幕正常)、
+   ASR靛/OCR绿/VIS琥珀三端一致、无重叠/溢出/错位均获视觉确认。
+   worker 提出 9 个疑点,主模型逐一定性:**7 个为识图误差或按设计**(D1 多条"播放中"=重叠
+   证据同时激活,任务书要求;D2 移动端 OCR 徽章色=组件零响应式分支,全断点同色;
+   D3 "两者各适用"=源码原文;D5 浅色侧栏=主题化表面色,基线措辞偏差;D6/D7 时间轴小字
+   9-11px=密集仪表取舍;D8 "证据可追溯"=源码原文;D9 证据流在首屏之下=内容驱动高度设计);
+   **1 个真实轻微发现(D4)**:搜索高亮只画主张行,依据行命中词未高亮(FTS 实际匹配
+   主张+依据),可选优化,未改。详见 worker 报告与
+   `glm-hybrid-router/docs/VISION-CHANNEL-2026-09-20.md`;截图 `reno-fe-01..07-*.png`。
 2. **真机 iOS/iPadOS、Firefox、WebKit**:未测试(仅 Chromium 153 headless + MCP 桌面 Chromium)。
    Playwright 配置已就绪,可在相应设备/浏览器补跑。
 3. **10,000 条证据的真实渲染性能/内存**:仅验证了 fixture 生成确定性与 182 条真实数据;
