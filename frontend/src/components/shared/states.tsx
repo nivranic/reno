@@ -62,9 +62,11 @@ export function ErrorState({
   const msg =
     error instanceof Error
       ? error.message
-      : error
-        ? String(error)
-        : "未知错误";
+      : error && typeof error === "object" && "message" in error
+        ? String((error as { message?: unknown }).message ?? "")
+        : error
+          ? String(error)
+          : "未知错误";
   const status =
     error && typeof error === "object" && "status" in error
       ? ` (HTTP ${String((error as { status: unknown }).status)})`

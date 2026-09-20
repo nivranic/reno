@@ -140,7 +140,11 @@ export default function SearchPage() {
       ) : results.isFetching ? (
         <InlineSpinner label="搜索中…" />
       ) : results.data!.results.length === 0 ? (
-        <EmptyState title={`没有 "${q}" 的匹配结果`} desc="尝试更短的词,或清空工种/空间筛选。" />
+        <EmptyState
+          icon={<SearchIcon size={30} />}
+          title={`没有 "${q}" 的匹配结果`}
+          desc="尝试更短的词,或清空工种/空间筛选。"
+        />
       ) : (
         <>
           <p className="mb-2.5 text-[12.5px] text-muted">
@@ -173,7 +177,7 @@ function ResultCard({ row, tokens }: { row: SearchRow; tokens: string[] }) {
         </div>
         {row.evidence_text ? (
           <p className="mt-1 line-clamp-1 pl-1 text-[12px] text-muted">
-            依据:{row.evidence_text}
+            依据:<Highlight text={row.evidence_text} tokens={tokens} />
           </p>
         ) : null}
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 pl-1 text-[11.5px] text-muted">

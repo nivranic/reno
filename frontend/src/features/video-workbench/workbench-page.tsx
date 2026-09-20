@@ -182,13 +182,13 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
 
   if (meta.isError) {
     return (
-      <div className="mx-auto max-w-2xl p-6">
+      <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col justify-center p-6">
         {meta.error instanceof Error && "status" in meta.error && (meta.error as { status: number }).status === 404 ? (
-          <ErrorState error={{ status: 404, message: `视频 ${videoId} 不存在`, name: "NotFound" }} context="视频" />
+          <ErrorState error={{ status: 404, message: `视频 ${videoId} 不存在(或已被移除)`, name: "NotFound" }} context="视频" />
         ) : (
           <ErrorState error={meta.error} onRetry={() => void meta.refetch()} context="视频信息" />
         )}
-        <Link to="/" className="mt-4 inline-block text-sm text-acc hover:underline">
+        <Link to="/" className="mt-4 self-start text-sm text-acc hover:underline">
           ← 回到收件箱
         </Link>
       </div>

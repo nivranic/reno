@@ -48,7 +48,12 @@ export default function ReportsPage() {
     <div className="mx-auto w-full max-w-[1080px] px-4 py-5 md:px-6">
       <PageHeader
         title="报告"
-        desc="由 `reno report` 生成;内容随处理进度更新"
+        desc={
+          <>
+            由 <code className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[11.5px]">reno report</code>{" "}
+            生成;内容随处理进度更新
+          </>
+        }
         actions={
           current ? (
             <>

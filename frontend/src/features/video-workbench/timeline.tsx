@@ -246,15 +246,18 @@ export function Timeline({
       >
         {/* ruler */}
         <div className="absolute inset-x-1 top-0" style={{ height: RULER_H }}>
-          {ruler.map((ms, i) => (
-            <span
-              key={i}
-              className="absolute top-0 font-mono text-[9.5px] tabular-nums text-muted"
-              style={{ left: ((ms - view.start) / span) * width }}
-            >
-              {fmtMs(ms).slice(0, 5)}
-            </span>
-          ))}
+          {ruler.map((ms, i) => {
+            const last = i === ruler.length - 1;
+            return (
+              <span
+                key={i}
+                className="absolute top-0 font-mono text-[9.5px] tabular-nums text-muted"
+                style={last ? { right: 0 } : { left: ((ms - view.start) / span) * width }}
+              >
+                {fmtMs(ms).slice(0, 5)}
+              </span>
+            );
+          })}
         </div>
         {/* lanes */}
         {lanes.map(({ mod, groups }, li) => (
