@@ -154,6 +154,113 @@ async def decision(request: Request):
         con.close()
 
 
+# ---------- read APIs for the React client (previously Jinja2-injected) ----------
+
+@router.get("/videos")
+def videos():
+    """Inbox listing + global stats (was index.html template context)."""
+    con = db.connect()
+    try:
+        rows = [dict(r) for r in con.execute(
+            """SELECT va.video_id, va.title, va.author, va.status, va.duration_ms,
+                      va.imported_at, va.source_platform,
+                      (SELECT COUNT(*) FROM knowledge_atom ka WHERE ka.video_id=va.video_id) atoms,
+                      (SELECT pr.detail FROM processing_run pr WHERE pr.video_id=va.video_id AND pr.ok=0
+                       ORDER BY pr.run_id DESC LIMIT 1) error_detail
+               FROM video_asset va ORDER BY va.imported_at DESC LIMIT 500""")]
+        jobs = {r["status"]: r["c"] for r in con.execute(
+            "SELECT status, COUNT(*) c FROM job GROUP BY status")}
+        stats = {
+            "videos": len(rows),
+            "atoms": con.execute("SELECT COUNT(*) c FROM knowledge_atom").fetchone()["c"],
+            "clusters": con.execute("SELECT COUNT(*) c FROM knowledge_cluster").fetchone()["c"],
+            "conflicts": con.execute("SELECT COUNT(*) c FROM conflict_case").fetchone()["c"],
+            "conflicts_open": con.execute(
+                "SELECT COUNT(*) c FROM conflict_case WHERE status NOT LIKE 'decided%'").fetchone()["c"],
+            "jobs": jobs,
+        }
+        return {"videos": rows, "stats": stats}
+    finally:
+        con.close()
+
+
+@router.get("/videos/{video_id}/meta")
+def video_meta(video_id: str):
+    """Detail-page header data (was detail.html template context)."""
+    con = db.connect()
+    try:
+        asset = db.get_asset(con, video_id)
+        if asset is None:
+            raise HTTPException(404, "unknown video")
+        files = json.loads(asset["files_json"] or "{}")
+        has_video = "video" in files and (config.ROOT / files["video"]).exists()
+        return {
+            "video_id": asset["video_id"], "title": asset["title"],
+            "author": asset["author"], "status": asset["status"],
+            "duration_ms": asset["duration_ms"], "imported_at": asset["imported_at"],
+            "source_platform": asset["source_platform"], "source_url": asset["source_url"],
+            "has_media": has_video,
+            "atoms": con.execute("SELECT COUNT(*) c FROM knowledge_atom WHERE video_id=?",
+                                 (video_id,)).fetchone()["c"],
+        }
+    finally:
+        con.close()
+
+
+@router.get("/conflicts")
+def conflicts():
+    """Parsed conflict cases (was conflicts.html template context)."""
+    con = db.connect()
+    try:
+        rows = [dict(r) for r in con.execute(
+            "SELECT * FROM conflict_case ORDER BY conflict_id")]
+        for r in rows:
+            r["side_a"] = json.loads(r.pop("side_a_json") or "{}")
+            r["side_b"] = json.loads(r.pop("side_b_json") or "{}")
+            r["analysis"] = json.loads(r.pop("analysis_json") or "{}")
+        return {"conflicts": rows}
+    finally:
+        con.close()
+
+
+@router.get("/facets")
+def facets():
+    """Distinct atom categories / spaces for search filters."""
+    con = db.connect()
+    try:
+        return {
+            "categories": [r["category"] for r in con.execute(
+                "SELECT DISTINCT category FROM knowledge_atom WHERE category IS NOT NULL ORDER BY category")],
+            "spaces": [r["space"] for r in con.execute(
+                "SELECT DISTINCT space FROM knowledge_atom WHERE space IS NOT NULL ORDER BY space")],
+        }
+    finally:
+        con.close()
+
+
+@router.get("/reports")
+def reports():
+    """Generated markdown reports (was reports.html template context)."""
+    gen = Path(__file__).parent.parent / "docs" / "generated"
+    out = {}
+    for name in ("incremental_diff.md", "checklist.md", "conflicts.md"):
+        p = gen / name
+        out[name[:-3]] = p.read_text(encoding="utf-8") if p.exists() else ""
+    return {"reports": out}
+
+
+@router.get("/health")
+def health():
+    """Connectivity + non-sensitive config status for the client & collect page."""
+    cookies = config.get("ytdlp_cookies", "")
+    return {
+        "ok": True,
+        "cookies_configured": bool(cookies),
+        "vlm_enabled": bool(config.get("vlm_enabled", True)),
+        "atomize_model": config.get("atomize_model", "glm-4.6"),
+    }
+
+
 @router.get("/search")
 def search(q: str = "", category: str = "", space: str = ""):
     con = db.connect()
@@ -172,9 +279,16 @@ def search(q: str = "", category: str = "", space: str = ""):
                 if a["id"] in ids and (not category or a["category"] == category) \
                    and (not space or a["space"] == space):
                     rows.append(a)
-        return {"results": [{"id": a["id"], "claim": a["claim"], "category": a["category"],
-                             "space": a["space"], "video": a["evidence_refs"][0]["video_id"] if a["evidence_refs"] else None,
-                             "ms": a["evidence_refs"][0]["start_ms"] if a["evidence_refs"] else 0}
-                            for a in rows[:80]]}
+        titles = {r["video_id"]: r["title"] for r in con.execute(
+            "SELECT video_id, title FROM video_asset")}
+        return {"results": [
+            {"id": a["id"], "claim": a["claim"], "category": a["category"],
+             "space": a["space"], "polarity": a["polarity"], "status": a["status"],
+             "video": a["evidence_refs"][0]["video_id"] if a["evidence_refs"] else None,
+             "video_title": titles.get(a["evidence_refs"][0]["video_id"], "") if a["evidence_refs"] else "",
+             "ms": a["evidence_refs"][0]["start_ms"] if a["evidence_refs"] else 0,
+             "mod": a["evidence_refs"][0]["modality"] if a["evidence_refs"] else None,
+             "evidence_text": (a["evidence_refs"][0]["evidence_text"] or "")[:120] if a["evidence_refs"] else ""}
+            for a in rows[:80]]}
     finally:
         con.close()

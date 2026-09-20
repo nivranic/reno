@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+/* Dark mode is class-driven (set pre-paint in index.html, toggled by ThemeProvider) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------- reno design tokens ----------
+   Light: warm neutral workspace, dark ink, indigo interactive accent.
+   Dark: separately designed surfaces (not a naive inversion).
+   Modality semantics (ASR/OCR/VIS) are kept apart from business states
+   (ok/failed/processing) so e.g. OCR green never reads as "success". */
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #f1f2ef;
+  --ink: #1b2130;
+  --ink-2: #3f4757;
+  --muted: #6f7889;
+  --line: #e5e7e3;
+  --line-2: #d4d8d2;
+  --acc: #4f46e5;
+  --acc-strong: #4338ca;
+  --acc-contrast: #ffffff;
+  --acc-soft: #eef2ff;
+  --acc-line: #c7d2fe;
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --ok: #059669;
+
+  /* modality: text / soft background / border — light */
+  --asr: #4338ca; --asr-bg: #eef2ff; --asr-line: #c7d2fe;
+  --ocr: #15803d; --ocr-bg: #f0fdf4; --ocr-line: #bbf7d0;
+  --vis: #b45309; --vis-bg: #fffbeb; --vis-line: #fde68a;
+
+  /* status: text / soft background / border — light */
+  --st-ok: #047857; --st-ok-bg: #ecfdf5; --st-ok-line: #a7f3d0;
+  --st-run: #1d4ed8; --st-run-bg: #eff6ff; --st-run-line: #bfdbfe;
+  --st-wait: #a16207; --st-wait-bg: #fefce8; --st-wait-line: #fde68a;
+  --st-bad: #b91c1c; --st-bad-bg: #fef2f2; --st-bad-line: #fecaca;
+  --st-review: #6d28d9; --st-review-bg: #f5f3ff; --st-review-line: #ddd6fe;
+}
+
+.dark {
+  --bg: #0e1116;
+  --surface: #151a21;
+  --surface-2: #1b222c;
+  --ink: #e7eaf0;
+  --ink-2: #c0c7d2;
+  --muted: #8b93a3;
+  --line: #262d38;
+  --line-2: #333c4a;
+  --acc: #818cf8;
+  --acc-strong: #a5b4fc;
+  --acc-contrast: #14102e;
+  --acc-soft: #1e1b4b66;
+  --acc-line: #3730a3;
+  --danger: #f87171;
+  --danger-soft: #450a0a80;
+  --ok: #34d399;
+
+  --asr: #a5b4fc; --asr-bg: #312e8155; --asr-line: #4338ca;
+  --ocr: #86efac; --ocr-bg: #14532d55; --ocr-line: #15803d;
+  --vis: #fcd34d; --vis-bg: #78350f55; --vis-line: #b45309;
+
+  --st-ok: #6ee7b7; --st-ok-bg: #022c22aa; --st-ok-line: #065f46;
+  --st-run: #93c5fd; --st-run-bg: #172554aa; --st-run-line: #1e40af;
+  --st-wait: #fde68a; --st-wait-bg: #422006aa; --st-wait-line: #a16207;
+  --st-bad: #fca5a5; --st-bad-bg: #450a0aaa; --st-bad-line: #b91c1c;
+  --st-review: #c4b5fd; --st-review-bg: #2e1065aa; --st-review-line: #5b21b6;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-acc: var(--acc);
+  --color-acc-strong: var(--acc-strong);
+  --color-acc-contrast: var(--acc-contrast);
+  --color-acc-soft: var(--acc-soft);
+  --color-acc-line: var(--acc-line);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ok: var(--ok);
+  --color-asr: var(--asr); --color-asr-bg: var(--asr-bg); --color-asr-line: var(--asr-line);
+  --color-ocr: var(--ocr); --color-ocr-bg: var(--ocr-bg); --color-ocr-line: var(--ocr-line);
+  --color-vis: var(--vis); --color-vis-bg: var(--vis-bg); --color-vis-line: var(--vis-line);
+  --color-st-ok: var(--st-ok); --color-st-ok-bg: var(--st-ok-bg); --color-st-ok-line: var(--st-ok-line);
+  --color-st-run: var(--st-run); --color-st-run-bg: var(--st-run-bg); --color-st-run-line: var(--st-run-line);
+  --color-st-wait: var(--st-wait); --color-st-wait-bg: var(--st-wait-bg); --color-st-wait-line: var(--st-wait-line);
+  --color-st-bad: var(--st-bad); --color-st-bad-bg: var(--st-bad-bg); --color-st-bad-line: var(--st-bad-line);
+  --color-st-review: var(--st-review); --color-st-review-bg: var(--st-review-bg); --color-st-review-line: var(--st-review-line);
+
+  --radius-panel: 12px;
+  --radius-ctl: 8px;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+}
+
+@layer base {
+  html {
+    font-size: 15px;
+  }
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+  }
+  *:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--acc-soft);
+  }
+  /* thin scrollbars that match both themes */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-2) transparent;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ---------- report reading styles (.reno-md) ---------- */
+.reno-md {
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1.75;
+}
+.reno-md h1, .reno-md h2, .reno-md h3, .reno-md h4 {
+  color: var(--ink);
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 1.4em 0 0.5em;
+  scroll-margin-top: 8px;
+}
+.reno-md h1 { font-size: 20px; }
+.reno-md h2 { font-size: 17px; border-bottom: 1px solid var(--line); padding-bottom: 0.3em; }
+.reno-md h3 { font-size: 15px; }
+.reno-md h4 { font-size: 14px; }
+.reno-md p { margin: 0.6em 0; }
+.reno-md ul, .reno-md ol { padding-left: 1.6em; margin: 0.6em 0; }
+.reno-md ul { list-style: disc; }
+.reno-md ol { list-style: decimal; }
+.reno-md li { margin: 0.25em 0; }
+.reno-md li > ul, .reno-md li > ol { margin: 0.15em 0; }
+.reno-md blockquote {
+  border-left: 3px solid var(--acc-line);
+  background: var(--acc-soft);
+  color: var(--ink-2);
+  border-radius: 0 var(--radius-ctl) var(--radius-ctl) 0;
+  padding: 0.5em 1em;
+  margin: 0.8em 0;
+}
+.reno-md code {
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+.reno-md pre {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-ctl);
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.reno-md pre code {
+  background: none;
+  padding: 0;
+}
+.reno-md table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 0.8em 0;
+}
+.reno-md th, .reno-md td {
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  text-align: left;
+}
+.reno-md th { background: var(--surface-2); font-weight: 600; color: var(--ink); }
+.reno-md tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-2) 40%, transparent); }
+.reno-md hr { border: 0; border-top: 1px solid var(--line); margin: 1.5em 0; }
+.reno-md a.reno-md-link { color: var(--acc); text-decoration: underline; text-underline-offset: 2px; }
+.reno-md .reno-md-img-off { color: var(--muted); font-size: 12px; border: 1px dashed var(--line-2); border-radius: var(--radius-ctl); padding: 2px 8px; }
+/* GFM task lists */
+.reno-md input[type="checkbox"] {
+  accent-color: var(--acc);
+  margin-right: 0.4em;
+}
+/* reading width for report body */
+.reno-md-wrap { max-width: 74ch; }
+
+/* dialog animations (kept tiny: 150-160ms) */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop-in { from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+
+/* print: reports only */
+@media print {
+  body { background: #fff; }
+  aside, header, nav { display: none !important; }
+  .reno-md { color: #000; }
+  main { overflow: visible !important; }
+}

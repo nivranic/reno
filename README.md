@@ -22,9 +22,18 @@ python -m venv .venv
 .venv/Scripts/python -m reno judge          # 跨视频去重聚类 + 冲突检测
 .venv/Scripts/python -m reno report         # 增量diff / Checklist / 争议报告
 
-# 4) 复核界面(产品核心)
+# 复核界面(产品核心)
 .venv/Scripts/python -m reno serve          # http://127.0.0.1:8765
+
+# 5) 前端(React SPA,可选开发模式;生产无需 Node)
+cd frontend && npm install && npm run build   # 构建后 reno serve 同源托管
+cd frontend && npm run dev                    # 开发(5173,/api 代理到 8765)
+cd frontend && npm run dev:mock               # Mock 演示模式(MSW fixture)
 ```
+
+前端为 React 19 + Vite + Tailwind 的证据工作台(六页面:收件箱/工作台/搜索/争议复核/报告/采集助手)。
+技术方案、回滚(`"web_ui": "classic"` 切回旧界面)、设计系统与测试报告见
+`docs/frontend-migration.md` / `docs/frontend-design-system.md` / `docs/frontend-testing.md`。
 
 ## 架构(一图)
 
@@ -56,14 +65,22 @@ worker: ingest → media(场景/帧预算) → asr(faster-whisper)
 
 ```bash
 .venv/Scripts/python -m pytest tests/ -q          # 单测(归一化/dhash/融合/预算均匀性/db/JSON容错)
+cd frontend && npm run test                       # 前端单测(Vitest, 33)
+cd frontend && npx playwright test                # 前端 e2e(真实后端, 7)
 .venv/Scripts/python -m reno status               # 全库状态
 ```
+
+## 离线边界
+
+前端构建产物(字体/图标/脚本/样式)全部本地资源,零 CDN、零远程字体;`reno serve`
+关闭公网仍可完整使用界面(外部视频下载与云端 LLM 调用除外,如实说明)。
 
 ## 目录
 
 - `reno/` 流水线包(ingest/media/asr/ocr/vlm/atomize/dedup/judge/report/pipeline/worker/cli)
 - `reno/dict/` 参数字典/同义词/taxonomy(版本化)
 - `reno/prompts/` 原子化与判定 Prompt(版本化)
-- `app/` FastAPI+HTMX 复核界面
+- `app/` FastAPI(JSON API + SPA 承载;`app/templates/` 为旧 Jinja2 界面=回滚路径)
+- `frontend/` React SPA(src/features 六页面 + ui/shared 组件 + mocks + tests/e2e)
 - `docs/generated/` 自动生成报告
 - `data/reno.db` SQLite(含 FTS5)
