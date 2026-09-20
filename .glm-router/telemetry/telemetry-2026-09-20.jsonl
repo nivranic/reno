@@ -1,2 +1,4 @@
 {"ts":"2026-09-20T01:02:47.958Z","sessionId":"94ecdb602ef6","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
 {"ts":"2026-09-20T01:04:48.934Z","sessionId":"94ecdb602ef6","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"TaskStop","policyVersion":"0.1.0","status":"tool-failed"}
+{"ts":"2026-09-20T04:10:27.186Z","sessionId":"94ecdb602ef6","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
+{"ts":"2026-09-20T04:31:37.702Z","sessionId":"94ecdb602ef6","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Read","policyVersion":"0.1.0","status":"tool-failed"}
