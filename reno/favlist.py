@@ -32,26 +32,33 @@ def enumerate_favlist(url: str, cookies: str = None):
 
 
 def import_urls(urls, platform_url_of=None) -> dict:
-    """Ingest a list of URLs (or (id,title) tuples -> constructed bilibili
-    URLs). SHA-256 dedup makes re-runs cheap. Returns per-status counts.
-    Paces requests by default: friendly to platform rate-limits and risk
-    control (batch downloads hammering a site are the #1 flag)."""
+    """Ingest a list of items: URLs, local file paths (mixed freely), or
+    (id,title) tuples -> constructed bilibili URLs. SHA-256 dedup makes
+    re-runs cheap. Paces network downloads; local files are instant.
+    Returns per-status counts."""
     import time as _time
     pace_s = float(config.get("batch_pace_seconds", 2.0))
     stats = {"imported": [], "duplicate": [], "failed": []}
-    for i, item in enumerate(urls):
-        if i and pace_s > 0:
-            _time.sleep(pace_s)
+    net_since_pace = 0
+    for item in urls:
         if isinstance(item, (tuple, list)):
             vid, title = item
             url = (platform_url_of or
                    (lambda v: f"https://www.bilibili.com/video/{v}/"))(vid)
         else:
             url = str(item)
+        is_local = not url.startswith("http")
         try:
-            res = ingest.ingest_url(url)
+            if is_local:
+                res = ingest.ingest_file(url)
+            else:
+                if net_since_pace and pace_s > 0:
+                    import time as _t
+                    _t.sleep(pace_s)
+                res = ingest.ingest_url(url)
+                net_since_pace += 1
             stats[res["status"]].append(res.get("video_id") or url)
-        except Exception as e:  # noqa: BLE001 - one bad link must not stop the batch
+        except Exception as e:  # noqa: BLE001 - one bad item must not stop the batch
             stats["failed"].append(f"{url}: {str(e)[:120]}")
     return stats
 
