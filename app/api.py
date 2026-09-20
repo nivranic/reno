@@ -109,7 +109,7 @@ async def import_url(request: Request):
     try:
         res = ingest.ingest_url(target)
         if res["status"] != "duplicate":
-            from reno import pipeline
+            from ..reno import pipeline
             con = db.connect()
             vid = res["video_id"]
             con.close()
@@ -119,6 +119,20 @@ async def import_url(request: Request):
         return JSONResponse(res)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(500, str(e)[:300])
+
+
+@router.post("/import-batch")
+async def import_batch(request: Request):
+    """Bulk ingest: {urls: [...]} - one link per line from the textarea, or
+    submitted by the douyin/bilibili bookmarklet from the user's own browser."""
+    body = await request.json()
+    urls = [u.strip() for u in (body or {}).get("urls", []) if u.strip()]
+    if not urls:
+        raise HTTPException(400, "urls required")
+    from reno.favlist import import_urls
+    stats = import_urls(urls[:200])
+    return JSONResponse({k: len(v) for k, v in stats.items()} |
+                        {"failed_sample": stats["failed"][:3]})
 
 
 @router.post("/decision")

@@ -99,3 +99,8 @@ def reports_page(request: Request):
         p = gen / name
         out[name.replace(".md", "")] = p.read_text(encoding="utf-8") if p.exists() else "(尚未生成,运行 `reno report`)"
     return TPL.TemplateResponse(request, "reports.html", ctx(request, reports=out))
+
+
+@router.get("/collect", response_class=HTMLResponse)
+def collect_page(request: Request):
+    return TPL.TemplateResponse(request, "collect.html", ctx(request))

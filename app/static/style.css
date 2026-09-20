@@ -60,3 +60,9 @@ a{color:var(--acc);text-decoration:none}
 .atom-row .cat{color:var(--muted);font-size:12px;margin:0 8px}
 pre.md{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;max-height:640px;overflow:auto;font-size:12.5px}
 details{margin-bottom:12px}summary{cursor:pointer;font-weight:600}
+
+/* collect page */
+.btnlike{display:inline-block;padding:8px 16px;background:#e11d48;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;cursor:grab}
+.btnlike:hover{filter:brightness(1.1)}
+textarea{padding:8px 10px;border:1px solid var(--line);border-radius:6px;font:inherit}
+code{background:#eef1f6;padding:1px 6px;border-radius:4px;font-size:12.5px}

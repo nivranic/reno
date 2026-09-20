@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>收藏页采集助手</h1>
+<p class="muted">原理:你在<b>自己的浏览器</b>里打开收藏页并滚动加载,书签脚本只读取当前页面上已经显示出来的视频链接并提交给本机 reno。不登录、不破解、不模拟任何客户端——完全在你本人的浏览会话内完成。</p>
+
+<h2>1. 抖音收藏 → reno</h2>
+<ol>
+  <li>浏览器登录抖音,打开<b>我的收藏</b>页(<code>www.douyin.com/user/self?showTab=favorite_collection</code>)</li>
+  <li>把下面的按钮拖到浏览器书签栏(或手动新建书签,粘贴代码):</li>
+</ol>
+<p><a class="btnlike" href="javascript:(async()=>{const%20links=[...new%20Set([...document.querySelectorAll('a[href*=%22/video/%22]')].map(a=>a.href.split('?')[0]))];if(!links.length){alert('reno:%E6%9C%AC%E9%A1%B5%E6%B2%A1%E6%9C%89%E8%A7%86%E9%A2%91%E9%93%BE%E6%8E%A5%EF%BC%8C%E8%AF%B7%E5%85%88%E6%BB%9A%E5%8A%A8%E5%8A%A0%E8%BD%BD');return;}const%20r=await%20fetch('http://127.0.0.1:8765/api/import-batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({urls:links})});const%20j=await%20r.json();alert('reno:%E5%B7%B2%E6%8F%90%E4%BA%A4%20'+links.length+'%20%E4%B8%AA%E9%93%BE%E6%8E%A5%5Cn%E6%96%B0%E5%A2%9E'+j.imported+'%20%E9%87%8D%E5%A4%8D'+j.duplicate+'%20%E5%A4%B1%E8%B4%A5'+j.failed);})()">➦ 收藏页 → reno</a></p>
+<ol start="3">
+  <li><b>向下滚动</b>收藏页加载出你想导入的全部视频(每次点书签提交"当前已加载"的部分,可多次点)</li>
+  <li>点书签 → 弹出统计 → 回到 reno 首页看队列</li>
+</ol>
+
+<h2>2. B 站收藏夹 → reno</h2>
+<p>两种方式任选:</p>
+<ul>
+  <li><b>整夹自动(推荐)</b>:打开你的收藏夹,复制地址栏完整链接(<code>space.bilibili.com/&lt;你的ID&gt;/favlist?fid=&lt;夹ID&gt;</code>),然后执行:<br>
+    <code>.venv\Scripts\python -m reno import-favlist "收藏夹完整链接"</code><br>
+    公开收藏夹直接可用;<b>私密收藏夹</b>需在 <code>config.local.json</code> 配 <code>"ytdlp_cookies": "cookies.txt"</code>(Netscape 格式,浏览器插件"Get cookies.txt"导出你自己的 B 站 cookie)。</li>
+  <li><b>书签半自动</b>:同上面的书签,在 B 站收藏夹页面点击即可提交当前已加载的链接。</li>
+</ul>
+
+<h2>3. 抖音视频下载的前提(一次性配置)</h2>
+<p>抖音对无 cookie 的下载请求返回 403(yt-dlp 明确提示需要 fresh cookies,<b>不要求登录</b>)。配置:<br>
+<code>config.local.json</code> 加 <code>"ytdlp_cookies": "cookies.txt"</code>,同样用浏览器插件从 douyin.com 导出(退出登录状态导出也可以)。</p>
+
+<h2>4. 处理节奏提示</h2>
+<p class="muted">单日大批量(几十个视频)会触碰 coding plan 配额;建议分日处理,或在配置中切换 glm-4.5-flash(独立配额池)。每个视频约消耗 1-2 万 token 量级(见 docs/cost-notes.md)。</p>
+{% endblock %}

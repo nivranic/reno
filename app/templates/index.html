@@ -10,6 +10,11 @@
   <button onclick="doImport()">导入</button>
   <span id="imp-status"></span>
 </section>
+<section class="import">
+  <textarea id="batch-urls" rows="3" style="flex:1" placeholder="批量导入:一行一个链接(B站/抖音均可,可混合)。或从抖音收藏页用书签一键提交(见文档)。"></textarea>
+  <button onclick="doBatch()">批量</button>
+  <span id="batch-status"></span>
+</section>
 <table>
 <tr><th>视频</th><th>状态</th><th>原子</th><th>时长</th><th>UP主</th></tr>
 {% for v in videos %}
@@ -33,6 +38,18 @@ async function doImport(){
     document.getElementById('imp-status').textContent=j.status==='duplicate'?'重复视频,未入库':'已导入,后台处理中,稍后刷新';
     setTimeout(()=>location.reload(),4000);
   }catch(e){document.getElementById('imp-status').textContent='失败:'+e}
+}
+async function doBatch(){
+  const t=document.getElementById('batch-urls').value;
+  const urls=t.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!urls.length)return;
+  document.getElementById('batch-status').textContent='提交中...';
+  try{
+    const r=await fetch('/api/import-batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({urls})});
+    const j=await r.json();
+    document.getElementById('batch-status').textContent=`新增${j.imported} 重复${j.duplicate} 失败${j.failed},排队处理中`;
+    setTimeout(()=>location.reload(),6000);
+  }catch(e){document.getElementById('batch-status').textContent='失败:'+e}
 }
 </script>
 {% endblock %}

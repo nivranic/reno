@@ -26,7 +26,16 @@ def _ytdlp(*args):
     exe = venv_bin / "yt-dlp.exe"
     if not exe.exists():
         exe = venv_bin / "yt-dlp"
-    r = subprocess.run([str(exe), *args], capture_output=True, text=True,
+    full = [str(exe), *args]
+    # optional passthroughs: cookies file (douyin needs fresh ones; bilibili
+    # private favlists need owner cookies) and arbitrary extra args
+    cookies = config.get("ytdlp_cookies")
+    if cookies and Path(cookies).exists() and "--cookies" not in full:
+        full += ["--cookies", str(cookies)]
+    extra = config.get("ytdlp_extra_args") or []
+    if extra:
+        full += list(extra)
+    r = subprocess.run(full, capture_output=True, text=True,
                        encoding="utf-8", errors="replace", timeout=600)
     return r
 
@@ -51,7 +60,9 @@ def ingest_url(url: str) -> dict:
     if not a.exists():
         r = _ytdlp(*cookie_args, "-f", "ba/bestaudio", "-o", str(a), url)
         if r.returncode != 0:
-            raise RuntimeError(f"audio download failed: {r.stderr[-300:]}")
+            # single-stream platforms (e.g. douyin) have no separate audio;
+            # media step falls back to extracting from the video container
+            a = None
     return _register(vid, d, v, a, source_type="share_url", url=url)
 
 
