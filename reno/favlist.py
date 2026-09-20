@@ -33,9 +33,15 @@ def enumerate_favlist(url: str, cookies: str = None):
 
 def import_urls(urls, platform_url_of=None) -> dict:
     """Ingest a list of URLs (or (id,title) tuples -> constructed bilibili
-    URLs). SHA-256 dedup makes re-runs cheap. Returns per-status counts."""
+    URLs). SHA-256 dedup makes re-runs cheap. Returns per-status counts.
+    Paces requests by default: friendly to platform rate-limits and risk
+    control (batch downloads hammering a site are the #1 flag)."""
+    import time as _time
+    pace_s = float(config.get("batch_pace_seconds", 2.0))
     stats = {"imported": [], "duplicate": [], "failed": []}
-    for item in urls:
+    for i, item in enumerate(urls):
+        if i and pace_s > 0:
+            _time.sleep(pace_s)
         if isinstance(item, (tuple, list)):
             vid, title = item
             url = (platform_url_of or
