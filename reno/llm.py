@@ -44,6 +44,67 @@ def _post(path: str, body: dict, timeout: int = 120) -> dict:
     raise last
 
 
+# GLM-5.3 family: NOT covered by the paas v4 resource packs of the coding
+# plan (1113) but fully available on the anthropic-compatible endpoint under
+# the SAME plan quota (verified 2026-09-20, incl. thinking disable + 128k).
+ANTHROPIC_PREFIX = "glm-5.3"
+ANTHROPIC_URL = "https://open.bigmodel.cn/api/anthropic/v1/messages"
+
+
+def _is_anthropic(model: str) -> bool:
+    return (model or "").lower().startswith(ANTHROPIC_PREFIX)
+
+
+def _post_anthropic(messages, model, temperature, max_tokens, timeout) -> str:
+    """chat() path for GLM-5.3* models via /api/anthropic (coding-plan quota).
+    Same backoff policy as _post; JSON tolerance handled by extract_json."""
+    system = "\n\n".join(m.get("content", "") for m in messages
+                         if m.get("role") == "system")
+    rest = [{"role": m["role"], "content": m.get("content", "")}
+            for m in messages if m.get("role") != "system"]
+    body = {"model": model,
+            "max_tokens": max(128000, max_tokens),  # cap, not target
+            "temperature": temperature,
+            "messages": rest}
+    if system:
+        body["system"] = system
+    if not config.get("llm_thinking_enabled"):
+        body["thinking"] = {"type": "disabled"}
+
+    def build():
+        return urllib.request.Request(
+            ANTHROPIC_URL, data=json.dumps(body).encode("utf-8"),
+            headers={"x-api-key": config.get("zhipu_api_key"),
+                     "Authorization": f"Bearer {config.get('zhipu_api_key')}",
+                     "anthropic-version": "2023-06-01",
+                     "Content-Type": "application/json"})
+
+    req = build()
+    last = None
+    backoffs = {429: (6, 18, 54), 500: (2, 4, 8), 502: (2, 4, 8), 503: (2, 4, 8)}
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                d = json.loads(r.read().decode("utf-8"))
+            text = "".join(p.get("text", "") for p in d.get("content", [])
+                           if p.get("type") == "text").strip()
+            if not text:
+                raise RuntimeError("empty content (reasoning-only response)")
+            return text
+        except urllib.error.HTTPError as e:
+            payload = e.read().decode("utf-8", "replace")[:400]
+            last = RuntimeError(f"HTTP {e.code}: {payload}")
+            if e.code in backoffs and attempt < 3:
+                time.sleep(backoffs[e.code][attempt])
+                req = build()  # body stream was consumed
+                continue
+            raise last
+        except (urllib.error.URLError, TimeoutError) as e:
+            last = e
+            time.sleep(3 * (attempt + 1))
+    raise last
+
+
 def chat(messages, model=None, temperature=0.3, max_tokens=4096, json_mode=True,
          timeout: int = None):
     """Chat with fallback chain. Returns content string."""
@@ -56,6 +117,10 @@ def chat(messages, model=None, temperature=0.3, max_tokens=4096, json_mode=True,
     errors = []
     for m in models:
         try:
+            if _is_anthropic(m):
+                # anthropic endpoint has no response_format; extract_json handles
+                return _post_anthropic(messages, m, temperature, max_tokens,
+                                       timeout), m
             body = {"model": m, "messages": messages,
                     "temperature": temperature, "max_tokens": max_tokens}
             if json_mode:

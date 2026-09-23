@@ -142,6 +142,7 @@ export interface HealthResponse {
   cookies_configured: boolean;
   vlm_enabled: boolean;
   atomize_model: string;
+  model_presets: string[];
 }
 
 export interface ImportResult {

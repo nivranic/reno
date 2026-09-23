@@ -15,8 +15,8 @@ FRAME_CACHE = ROOT / "frames_cache"
 DEFAULTS = {
     "zhipu_api_key": "",
     "zhipu_base_url": "https://open.bigmodel.cn/api/paas/v4",
-    "atomize_model": "glm-4.6",
-    "judge_models": ["glm-4.7-flash", "glm-4.5-flash", "glm-4.6"],
+    "atomize_model": "GLM-5.3-Flash",
+    "judge_models": ["GLM-5.3-Flash"],
     "vlm_model": "glm-4.6v",
     "asr_model": "small",
     "asr_compute": "int8",
@@ -59,3 +59,21 @@ def _load():
 
 def db_path() -> Path:
     return DATA / "reno.db"
+
+
+def set_local(updates: dict):
+    """Merge `updates` into config.local.json (created if missing), then
+    drop the in-memory cache so subsequent get() calls see the new values
+    without a process restart. Never touches unrelated keys."""
+    local = ROOT / "config.local.json"
+    data = {}
+    if local.exists():
+        try:
+            data = json.loads(local.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, ValueError):
+            data = {}
+    data.update(updates)
+    local.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+                     encoding="utf-8")
+    global _cache
+    _cache = None

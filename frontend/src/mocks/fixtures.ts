@@ -247,7 +247,8 @@ export const makeHealth = (): HealthResponse => ({
   ok: true,
   cookies_configured: true,
   vlm_enabled: false,
-  atomize_model: "glm-4.5-flash(mock)",
+  atomize_model: "GLM-5.3-Flash",
+  model_presets: ["GLM-5.3", "GLM-5.3-Flash", "GLM-5.3-FlashX"],
 });
 
 // 1x1 gray JPEG for /api/frame mocks

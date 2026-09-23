@@ -136,6 +136,9 @@ export const getReports = (signal?: AbortSignal) =>
 export const getHealth = (signal?: AbortSignal) =>
   apiGet<HealthResponse>("/api/health", signal);
 
+export const postConfigModel = (model: string) =>
+  apiPost<{ ok: boolean; atomize_model: string }>("/api/config/model", { model });
+
 export const postImportUrl = (url: string) =>
   apiPost<ImportResult>("/api/import", { url });
 

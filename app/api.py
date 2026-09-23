@@ -258,7 +258,25 @@ def health():
         "cookies_configured": bool(cookies),
         "vlm_enabled": bool(config.get("vlm_enabled", True)),
         "atomize_model": config.get("atomize_model", "glm-4.6"),
+        "model_presets": MODEL_PRESETS,
     }
+
+
+# switchable processing models (validated; all verified on /api/anthropic)
+MODEL_PRESETS = ["GLM-5.3", "GLM-5.3-Flash", "GLM-5.3-FlashX"]
+
+
+@router.post("/config/model")
+async def set_model(request: Request):
+    """Switch the processing model (atomize + judge) at runtime. Writes to
+    config.local.json (preserving all other keys incl. secrets) and takes
+    effect on the next pipeline run without a server restart."""
+    body = await request.json()
+    model = (body or {}).get("model")
+    if model not in MODEL_PRESETS:
+        raise HTTPException(400, f"model must be one of {MODEL_PRESETS}")
+    config.set_local({"atomize_model": model, "judge_models": [model]})
+    return {"ok": True, "atomize_model": model}
 
 
 @router.get("/search")

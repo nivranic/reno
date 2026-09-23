@@ -3,11 +3,14 @@
  * never a hardcoded developer localhost). Config status comes from
  * /api/health — booleans only, secrets are never exposed to the client. */
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookmarkPlus, Check, Copy, ExternalLink, Info } from "lucide-react";
-import { healthQuery } from "@/lib/queries";
+import { healthQuery, qk } from "@/lib/queries";
+import { postConfigModel } from "@/lib/api";
+import { errMessage } from "@/app/query-utils";
 import { PageHeader, ErrorState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/field";
 import { useToast } from "@/components/shared/toaster";
 import { cn } from "@/lib/cn";
 
@@ -24,6 +27,16 @@ function bookmarkletCode(origin: string) {
 export default function CollectPage() {
   const health = useQuery(healthQuery);
   const toast = useToast();
+  const qc = useQueryClient();
+  const modelMut = useMutation({
+    mutationFn: (m: string) => postConfigModel(m),
+    onSuccess: (_d, m) => {
+      void qc.invalidateQueries({ queryKey: qk.health });
+      toast.success(`处理模型已切换:${m}(对之后的处理生效)`);
+    },
+    onError: (e) =>
+      toast.error(`模型切换失败:${errMessage(e)}`, { key: "config-model" }),
+  });
   const [platform, setPlatform] = useState<"douyin" | "bilibili">("douyin");
   const origin = window.location.origin;
   const bmCode = bookmarkletCode(origin);
@@ -61,7 +74,22 @@ export default function CollectPage() {
           <StatusChip ok label="reno 在线" />
           <StatusChip ok={health.data.cookies_configured} label={health.data.cookies_configured ? "下载 cookie 已配置" : "下载 cookie 未配置(抖音下载需要)"} />
           <StatusChip ok={health.data.vlm_enabled} label={health.data.vlm_enabled ? "视觉理解开启" : "视觉理解关闭(降级模式)"} />
-          <span className="ml-auto font-mono text-[11.5px] text-muted">{health.data.atomize_model}</span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="text-[11.5px] text-muted">处理模型</span>
+            <Select
+              aria-label="处理模型(原子化与判定共用,切换后对之后的处理生效)"
+              value={health.data.atomize_model}
+              disabled={modelMut.isPending}
+              onChange={(e) => modelMut.mutate(e.target.value)}
+              className="h-7 w-[150px] font-mono text-[11.5px]"
+            >
+              {(health.data.model_presets ?? []).map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </Select>
+          </div>
         </div>
       ) : null}
 
