@@ -145,18 +145,18 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
       </div>
 
       {(cc || conflict.analysis?.judge_note) && (
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-ctl bg-surface-2/60 px-3 py-2 text-[12px] text-muted">
+        <div className="mt-3 rounded-ctl bg-surface-2/60 px-3 py-2 text-[12px] leading-relaxed text-muted">
           {cc ? (
-            <>
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5">
               <span>条件重叠:{cc.condition_overlap ? "是" : "否"}</span>
-              {cc.scope_split ? <span>范围切分:{cc.scope_split}</span> : null}
-              {cc.authority_gap ? <span>权威差异:{cc.authority_gap}</span> : null}
-            </>
+              {cc.scope_split ? <span className="min-w-0 break-words">范围切分:{cc.scope_split}</span> : null}
+              {cc.authority_gap ? <span className="min-w-0 break-words">权威差异:{cc.authority_gap}</span> : null}
+            </div>
           ) : null}
           {conflict.analysis?.judge_note ? (
-            <span className="min-w-0 flex-1 truncate" title={conflict.analysis.judge_note}>
+            <p className="mt-0.5 min-w-0 break-words">
               判读:{conflict.analysis.judge_note}
-            </span>
+            </p>
           ) : null}
         </div>
       )}

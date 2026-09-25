@@ -119,7 +119,7 @@ export function ImportDialog({
 
         {tab === "single" ? (
           <form
-            className="space-y-3"
+            className="space-y-3 max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col"
             onSubmit={(e) => {
               e.preventDefault();
               if (url.trim() && !single.isPending) single.mutate();
@@ -146,11 +146,19 @@ export function ImportDialog({
                 </Button>
               ) : null}
             </div>
-            <div className="flex items-center justify-end gap-2">
+            {/* fullscreen-panel phone: pinned to the panel bottom whether the
+                form is short (mt-auto in flex) or taller than the screen
+                (sticky within the scrolling content) */}
+            <div className="flex items-center justify-end gap-2 max-md:sticky max-md:bottom-0 max-md:-mx-4 max-md:mt-auto max-md:justify-between max-md:border-t max-md:border-line max-md:bg-surface max-md:px-4 max-md:py-3">
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
                 取消
               </Button>
-              <Button type="submit" size="sm" disabled={!url.trim() || single.isPending}>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={!url.trim() || single.isPending}
+                className="disabled:border disabled:border-line-2 disabled:bg-surface-2 disabled:text-muted"
+              >
                 {single.isPending ? <Loader2 size={14} className="animate-spin" /> : null}
                 {single.isPending ? "提交中…" : "导入并处理"}
               </Button>
@@ -158,7 +166,7 @@ export function ImportDialog({
           </form>
         ) : (
           <form
-            className="space-y-3"
+            className="space-y-3 max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col"
             onSubmit={(e) => {
               e.preventDefault();
               if (validCount > 0 && !batchMut.isPending) batchMut.mutate();
@@ -205,11 +213,16 @@ export function ImportDialog({
                 </ul>
               </div>
             ) : null}
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2 max-md:sticky max-md:bottom-0 max-md:-mx-4 max-md:mt-auto max-md:justify-between max-md:border-t max-md:border-line max-md:bg-surface max-md:px-4 max-md:py-3">
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
                 关闭
               </Button>
-              <Button type="submit" size="sm" disabled={validCount === 0 || validCount > 200 || batchMut.isPending}>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={validCount === 0 || validCount > 200 || batchMut.isPending}
+                className="disabled:border disabled:border-line-2 disabled:bg-surface-2 disabled:text-muted"
+              >
                 {batchMut.isPending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                 {batchMut.isPending ? "提交中…" : `提交 ${validCount} 条`}
               </Button>

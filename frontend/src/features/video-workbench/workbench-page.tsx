@@ -127,7 +127,30 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
     return s;
   }, [filtered, nowMs]);
 
-  const locate = (ms: number) => store.getState().locate(ms);
+  const locate = (ms: number, evId?: string) => store.getState().locate(ms, { evId });
+  // inspecting a specific evidence item is explicit user intent: suspend
+  // follow so the selected row stays put instead of being yanked by playback,
+  // and pull the row into the page viewport (toolbar growth can push it just
+  // below the fold after the stream's own internal scroll)
+  const locateFromStream = (ms: number, evId?: string) => {
+    if (evId) store.getState().setFollow(false);
+    store.getState().locate(ms, { evId });
+    if (evId) {
+      // after the follow-toggle re-render settles, nudge the page scroller so
+      // the selected row is fully inside it (frame strip mounting pushes the
+      // stream down; scrollIntoView's "nearest" proved unreliable across the
+      // nested stream/main scrollers here, so adjust main explicitly)
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`ev-${evId}`);
+        const scroller = el?.closest("main");
+        if (!el || !scroller) return;
+        const r = el.getBoundingClientRect();
+        const m = scroller.getBoundingClientRect();
+        if (r.bottom > m.bottom) scroller.scrollTop += r.bottom - m.bottom + 8;
+        else if (r.top < m.top) scroller.scrollTop -= m.top - r.top + 8;
+      });
+    }
+  };
   const backToLive = () => {
     store.getState().setFollow(true);
     store.getState().locate(Math.round(nowMs));
@@ -209,7 +232,10 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
         >
           <ArrowLeft size={15} /> 收件箱
         </Link>
-        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold text-ink" title={title}>
+        <h1
+          className="min-w-0 flex-[1_1_208px] truncate text-[15px] font-semibold text-ink"
+          title={title}
+        >
           {title}
         </h1>
         {m ? (
@@ -263,7 +289,9 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
           </div>
 
           {requestedMs != null ? (
-            <div className="max-h-64 xl:hidden">
+            // fixed height: the frame must not reflow the layout when its
+            // bitmap finishes loading (§16.3 CLS) — object-contain fits it
+            <div className="h-64 xl:hidden">
               <FramePane videoId={videoId} requestedMs={requestedMs} />
             </div>
           ) : null}
@@ -287,7 +315,7 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
                   aria-pressed={on}
                   onClick={() => store.getState().toggleMod(mod)}
                   className={cn(
-                    "cursor-pointer rounded-ctl border px-2 py-0.5 font-mono text-[11px] font-semibold transition-all duration-150",
+                    "cursor-pointer rounded-ctl border px-3 py-1.5 font-mono text-[11px] font-semibold transition-all duration-150 md:px-2 md:py-0.5",
                     on
                       ? mod === "ASR"
                         ? "border-asr-line bg-asr-bg text-asr"
@@ -346,7 +374,7 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
                 selectedEvId={selectedEvId}
                 follow={follow}
                 onUserScroll={() => store.getState().setFollow(false)}
-                onLocate={locate}
+                onLocate={locateFromStream}
                 height="100%"
               />
             )}

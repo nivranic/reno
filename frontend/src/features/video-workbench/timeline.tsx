@@ -219,17 +219,17 @@ export function Timeline({
       <div className="mb-1 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
           <span className="mr-1 text-[11.5px] font-medium text-muted">时间轴</span>
-          <button onClick={fitAll} className="cursor-pointer rounded border border-line bg-surface px-1.5 py-0.5 text-[10.5px] text-ink-2 hover:border-acc">
+          <button onClick={fitAll} className="cursor-pointer rounded border border-line bg-surface px-2.5 py-1.5 text-[11.5px] text-ink-2 hover:border-acc md:px-1.5 md:py-0.5 md:text-[10.5px]">
             全程
           </button>
-          <button onClick={() => zoomWindow(60)} className="cursor-pointer rounded border border-line bg-surface px-1.5 py-0.5 text-[10.5px] text-ink-2 hover:border-acc">
+          <button onClick={() => zoomWindow(60)} className="cursor-pointer rounded border border-line bg-surface px-2.5 py-1.5 text-[11.5px] text-ink-2 hover:border-acc md:px-1.5 md:py-0.5 md:text-[10.5px]">
             60s
           </button>
-          <button onClick={() => zoomWindow(10)} className="cursor-pointer rounded border border-line bg-surface px-1.5 py-0.5 text-[10.5px] text-ink-2 hover:border-acc">
+          <button onClick={() => zoomWindow(10)} className="cursor-pointer rounded border border-line bg-surface px-2.5 py-1.5 text-[11.5px] text-ink-2 hover:border-acc md:px-1.5 md:py-0.5 md:text-[10.5px]">
             10s
           </button>
         </div>
-        <span className="text-[10.5px] text-muted">滚轮缩放 · 拖动平移 · 点击定位</span>
+        <span className="hidden text-[10.5px] text-muted sm:inline">滚轮缩放 · 拖动平移 · 点击定位</span>
       </div>
       <div
         ref={boxRef}
@@ -241,11 +241,12 @@ export function Timeline({
         aria-valuenow={nowAria}
         aria-valuetext={fmtMs(nowAria)}
         onKeyDown={onKeyDown}
-        className="relative cursor-crosshair rounded-ctl border border-line bg-surface-2/60 px-1"
+        // 32px left gutter keeps the ASR/OCR/VIS lane labels fully visible
+        className="relative cursor-crosshair rounded-ctl border border-line bg-surface-2/60 pl-8 pr-1"
         style={{ height: RULER_H + 3 * (LANE_H + LANE_GAP) + 6, paddingTop: RULER_H }}
       >
         {/* ruler */}
-        <div className="absolute inset-x-1 top-0" style={{ height: RULER_H }}>
+        <div className="absolute left-8 right-1 top-0" style={{ height: RULER_H }}>
           {ruler.map((ms, i) => {
             const last = i === ruler.length - 1;
             return (
@@ -261,8 +262,8 @@ export function Timeline({
         </div>
         {/* lanes */}
         {lanes.map(({ mod, groups }, li) => (
-          <div key={mod} className="absolute inset-x-1 flex items-center" style={{ top: RULER_H + li * (LANE_H + LANE_GAP) + 2, height: LANE_H }}>
-            <span className="absolute -left-0.5 top-1/2 -translate-y-1/2 font-mono text-[8.5px] font-semibold opacity-70" aria-hidden>
+          <div key={mod} className="absolute left-8 right-1 flex items-center" style={{ top: RULER_H + li * (LANE_H + LANE_GAP) + 2, height: LANE_H }}>
+            <span className="absolute -left-7 top-1/2 -translate-y-1/2 font-mono text-[8.5px] font-semibold opacity-70" aria-hidden>
               {mod}
             </span>
             {groups.map((gr, gi) => {

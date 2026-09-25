@@ -12,7 +12,7 @@ interface RowProps {
   event: TimelineEvent;
   active: boolean;
   selected: boolean;
-  onLocate: (ms: number) => void;
+  onLocate: (ms: number, evId?: string) => void;
 }
 
 const CLAMP_CHARS = 90;
@@ -29,21 +29,24 @@ const EvidenceRow = memo(function EvidenceRow({ event, active, selected, onLocat
         selected && "ring-1 ring-acc-line",
       )}
     >
-      <div className="flex items-baseline gap-2">
-        <button
-          onClick={() => onLocate(event.ms)}
-          title="定位到该证据"
-          className="cursor-pointer font-mono text-[11.5px] tabular-nums text-muted underline-offset-2 hover:text-acc hover:underline"
-        >
+      {/* whole header line is the locate target (§5: ≥44px touch area on
+          phones) and selects this evidence, not just the tiny timestamp */}
+      <button
+        onClick={() => onLocate(event.ms, event.id)}
+        title="定位到该证据"
+        aria-label={`定位到 ${fmtMs(event.ms)}`}
+        className="-my-2 flex w-full cursor-pointer items-center gap-2 py-2 text-left"
+      >
+        <span className="font-mono text-[11.5px] tabular-nums text-muted underline-offset-2 group-hover:text-acc group-hover:underline">
           {fmtMs(event.ms)}
-        </button>
+        </span>
         <ModalityTag mod={event.mod} size="sm" />
         {active ? (
           <span className="ml-auto inline-flex items-center gap-1 text-[10.5px] font-medium text-acc">
             <LocateFixed size={11} /> 播放中
           </span>
         ) : null}
-      </div>
+      </button>
       <p
         className={cn(
           "mt-1 text-[13.5px] leading-relaxed text-ink-2",
@@ -81,7 +84,7 @@ export function EvidenceStream({
   selectedEvId: string | null;
   follow: boolean;
   onUserScroll: () => void;
-  onLocate: (ms: number) => void;
+  onLocate: (ms: number, evId?: string) => void;
   height: number | string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -105,13 +108,15 @@ export function EvidenceStream({
     if (activeIds.size === 0) lastFollowIdx.current = -1;
   }, [activeIds, events, follow, virtualizer]);
 
-  // scroll to the selected evidence when an atom evidence chip is clicked
+  // scroll to the selected evidence when an atom evidence chip is clicked.
+  // instant (not smooth): the workbench compensates the page scroll right
+  // after; a smooth internal animation would race that adjustment
   const lastSelected = useRef<string | null>(null);
   useEffect(() => {
     if (!selectedEvId || selectedEvId === lastSelected.current) return;
     lastSelected.current = selectedEvId;
     const idx = events.findIndex((e) => e.id === selectedEvId);
-    if (idx >= 0) virtualizer.scrollToIndex(idx, { align: "center", behavior: "smooth" });
+    if (idx >= 0) virtualizer.scrollToIndex(idx, { align: "center" });
   }, [selectedEvId, events, virtualizer]);
 
   // expanded long text changes row heights -> remeasure
