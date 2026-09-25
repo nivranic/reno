@@ -6,12 +6,20 @@ import threading
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / "data"
-MEDIA = ROOT / "media"
+# RENO_DATA_DIR relocates every mutable path (db / media / frame cache).
+# Deployment flexibility + lets isolated instances (tests, multi-process
+# checks) run side by side without touching the repo's real data.
+_data_dir = os.environ.get("RENO_DATA_DIR")
+if _data_dir:
+    DATA = Path(_data_dir)
+    MEDIA = DATA.parent / "media"
+else:
+    DATA = ROOT / "data"
+    MEDIA = ROOT / "media"
 FRAMES = MEDIA / "frames"
 AUDIO = MEDIA / "audio"
 ORIG = MEDIA / "originals"
-FRAME_CACHE = ROOT / "frames_cache"
+FRAME_CACHE = MEDIA.parent / "frames_cache"
 
 # racing writers (parallel /api/config/model calls) must not interleave and
 # corrupt config.local.json (robustness suite finding)

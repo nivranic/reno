@@ -6,17 +6,54 @@ SHA-256 content addressing makes re-ingest idempotent.
 """
 import hashlib
 import json
+import os
 import sqlite3
 import subprocess
-import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 from . import config, db
 
-# single-process guard: concurrent imports of the same URL/content must not
-# both pass the sha dedup check (check-then-insert is a TOCTOU otherwise)
-_register_lock = threading.Lock()
+# cross-process guard: concurrent imports of the same URL/content must not
+# race on the download target or the sha dedup check-then-insert. The vid
+# file lock serializes the download; DB-level claim arbitration (INSERT DO
+# NOTHING + content_sha256 UNIQUE) makes the register correct across
+# processes, so an in-process lock alone is not sufficient.
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
+
+
+def _store_path(p: Path) -> str:
+    """files_json stores repo-relative paths, but a relocated data dir
+    (RENO_DATA_DIR) lives outside ROOT - fall back to an absolute path
+    (consumers do config.ROOT / stored, which absolutes pass through)."""
+    try:
+        return str(p.relative_to(config.ROOT))
+    except ValueError:
+        return str(p)
+
+
+@contextmanager
+def _vid_lock(vid: str):
+    lock_dir = config.ORIG
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    lf = lock_dir / f".lock-{vid}"
+    with open(lf, "w") as f:
+        if os.name == "nt":
+            msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            if os.name == "nt":
+                f.seek(0)
+                msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
 def _sha256(p: Path) -> str:
@@ -61,17 +98,18 @@ def ingest_url(url: str) -> dict:
     vdir = config.ORIG / vid
     vdir.mkdir(parents=True, exist_ok=True)
     v, a = vdir / "video.mp4", vdir / "audio.m4a"
-    if not v.exists():
-        r = _ytdlp(*cookie_args, "-S", "res:480", "-f", "bv*",
-                   "-o", str(v), url)
-        if r.returncode != 0:
-            raise RuntimeError(f"video download failed: {r.stderr[-300:]}")
-    if not a.exists():
-        r = _ytdlp(*cookie_args, "-f", "ba/bestaudio", "-o", str(a), url)
-        if r.returncode != 0:
-            # single-stream platforms (e.g. douyin) have no separate audio;
-            # media step falls back to extracting from the video container
-            a = None
+    with _vid_lock(vid):  # cross-process: one download per target
+        if not v.exists():
+            r = _ytdlp(*cookie_args, "-S", "res:480", "-f", "bv*",
+                       "-o", str(v), url)
+            if r.returncode != 0:
+                raise RuntimeError(f"video download failed: {r.stderr[-300:]}")
+        if not a.exists():
+            r = _ytdlp(*cookie_args, "-f", "ba/bestaudio", "-o", str(a), url)
+            if r.returncode != 0:
+                # single-stream platforms (e.g. douyin) have no separate audio;
+                # media step falls back to extracting from the video container
+                a = None
     return _register(vid, d, v, a, source_type="share_url", url=url)
 
 
@@ -83,9 +121,10 @@ def ingest_file(path: str) -> dict:
     vdir = config.ORIG / vid
     vdir.mkdir(parents=True, exist_ok=True)
     v = vdir / "video.mp4"
-    if not v.exists():
-        import shutil
-        shutil.copy2(p, v)
+    with _vid_lock(vid):  # same target as URL downloads - serialize writers
+        if not v.exists():
+            import shutil
+            shutil.copy2(p, v)
     fake = {"id": vid, "title": p.stem, "uploader": None,
             "duration": _duration_of(v), "width": None, "height": None,
             "fps": None, "webpage_url": None}
@@ -105,18 +144,13 @@ def _duration_of(v: Path) -> float:
 
 
 def _register(vid, info, v: Path, a: Path, source_type, url) -> dict:
-    with _register_lock:  # serialize dedup-check + insert (see lock comment)
-        return _register_locked(vid, info, v, a, source_type, url)
-
-
-def _register_locked(vid, info, v: Path, a: Path, source_type, url) -> dict:
     con = db.connect()
     try:
         sha = _sha256(v)
         dup = db.asset_by_sha(con, sha)
         if dup:
-            db.upsert_asset(con, dict(dup))
-            con.commit()
+            # read-only: the existing row is already complete (an upsert here
+            # would null its files_json - robustness suite finding)
             return {"video_id": dup["video_id"], "status": "duplicate",
                     "duplicate_of": dup["video_id"]}
         asset = {
@@ -128,23 +162,45 @@ def _register_locked(vid, info, v: Path, a: Path, source_type, url) -> dict:
             "fps": info.get("fps"), "content_sha256": sha,
             "audio_sha256": _sha256(a) if a and a.exists() else None,
             "imported_at": time.strftime("%Y-%m-%dT%H:%M:%S+08:00"),
-            "files": {"video": str(v.relative_to(config.ROOT)),
-                      "audio": str(a.relative_to(config.ROOT)) if a and a.exists() else None},
+            "files": {"video": _store_path(v),
+                      "audio": _store_path(a) if a and a.exists() else None},
             "status": "imported"}
-        try:
+        # claim by video_id at the DB level (works across processes): the
+        # loser of the claim re-reads by sha and reports a duplicate
+        cur = con.execute(
+            """INSERT INTO video_asset (video_id, source_platform, source_type,
+                   source_url, title, author, duration_ms, width, height, fps,
+                   content_sha256, audio_sha256, imported_at, files_json, status)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+               ON CONFLICT(video_id) DO NOTHING""",
+            (asset["video_id"], asset.get("source_platform"), asset.get("source_type"),
+             asset.get("source_url"), asset.get("title"), asset.get("author"),
+             asset.get("duration_ms"), asset.get("width"), asset.get("height"),
+             asset.get("fps"), asset["content_sha256"], asset.get("audio_sha256"),
+             asset["imported_at"], json.dumps(asset["files"]), asset["status"]))
+        if cur.rowcount == 0:
+            con.rollback()
+            row = con.execute("SELECT video_id FROM video_asset WHERE content_sha256=?",
+                              (sha,)).fetchone()
+            if row:
+                return {"video_id": row["video_id"], "status": "duplicate",
+                        "duplicate_of": row["video_id"]}
+            # same vid, different content (re-download after deletion): update
             db.upsert_asset(con, asset)
             db.enqueue_job(con, vid, "process")
             con.commit()
+            return {"video_id": vid, "status": "imported"}
+        try:
+            db.enqueue_job(con, vid, "process")
+            con.commit()
         except sqlite3.IntegrityError:
-            # concurrent import of the same content won the sha race
-            # (content_sha256 is UNIQUE) - report it as a duplicate
+            # different vid, same content lost the sha UNIQUE race
             con.rollback()
-            dup = db.asset_by_sha(con, sha)
-            if dup:
-                db.upsert_asset(con, dict(dup))
-                con.commit()
-                return {"video_id": dup["video_id"], "status": "duplicate",
-                        "duplicate_of": dup["video_id"]}
+            row = con.execute("SELECT video_id FROM video_asset WHERE content_sha256=?",
+                              (sha,)).fetchone()
+            if row:
+                return {"video_id": row["video_id"], "status": "duplicate",
+                        "duplicate_of": row["video_id"]}
             raise
         return {"video_id": vid, "status": "imported"}
     finally:
