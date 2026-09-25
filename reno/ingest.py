@@ -47,8 +47,11 @@ def ingest_url(url: str) -> dict:
         raise RuntimeError(f"yt-dlp info failed: {info.stderr[-300:]}")
     d = json.loads(info.stdout.strip().splitlines()[-1])
     vid = d["id"]
+    # bili cookies are only for bilibili; other platforms (douyin) must fall
+    # through to ytdlp_cookies from config instead of getting foreign cookies
     cookies = config.ROOT.parent / "reno-feas" / "cache" / "bili_cookies.txt"
-    cookie_args = ["--cookies", str(cookies)] if cookies.exists() else []
+    cookie_args = (["--cookies", str(cookies)]
+                   if cookies.exists() and "bilibili" in url else [])
     vdir = config.ORIG / vid
     vdir.mkdir(parents=True, exist_ok=True)
     v, a = vdir / "video.mp4", vdir / "audio.m4a"
