@@ -2,3 +2,7 @@
 {"ts":"2026-09-25T05:51:09.447Z","sessionId":"b993bb40b42c","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
 {"ts":"2026-09-25T12:05:56.453Z","sessionId":"b993bb40b42c","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
 {"ts":"2026-09-25T12:43:53.462Z","sessionId":"b993bb40b42c","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
+{"ts":"2026-09-25T14:33:08.110Z","sessionId":"b993bb40b42c","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Read","policyVersion":"0.1.0","status":"tool-failed"}
+{"ts":"2026-09-25T14:38:40.017Z","sessionId":"b993bb40b42c","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
+{"ts":"2026-09-25T14:38:40.980Z","sessionId":"b993bb40b42c","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
+{"ts":"2026-09-25T14:42:00.266Z","sessionId":"b993bb40b42c","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
