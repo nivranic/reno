@@ -98,6 +98,8 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
   const toast = useToast();
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
+  // §11.2: select → note → explicit submit; a bare tap never writes
+  const [decision, setDecision] = useState<DecisionAction | null>(null);
   const decided = conflict.status.startsWith("decided:");
 
   const decide = useMutation({
@@ -105,6 +107,7 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
       postDecision({ conflict_id: conflict.conflict_id, action, note: note.trim() || undefined }),
     onSuccess: (_d, action) => {
       setEditing(false);
+      setDecision(null);
       void qc.invalidateQueries({ queryKey: qk.conflicts });
       toast.success(`已记录决策:${ACTIONS.find((a) => a.action === action)?.label ?? action}`);
     },
@@ -171,27 +174,33 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
       ) : (
         <>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {ACTIONS.map(({ action, label, tone }) => (
-              <button
-                key={action}
-                disabled={decide.isPending}
-                onClick={() => decide.mutate(action)}
-                className={cn(
-                  "inline-flex cursor-pointer items-center gap-1.5 rounded-ctl px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-150 disabled:opacity-50",
-                  tone === "default"
-                    ? "bg-acc text-white hover:bg-acc-strong dark:text-acc-contrast"
-                    : "border border-line-2 bg-surface text-ink-2 hover:border-acc hover:text-acc",
-                )}
-              >
-                {decide.isPending && decide.variables === action ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : null}
-                {label}
-              </button>
-            ))}
+            {ACTIONS.map(({ action, label, tone }) => {
+              const selected = decision === action;
+              return (
+                <button
+                  key={action}
+                  disabled={decide.isPending}
+                  aria-pressed={selected}
+                  onClick={() => setDecision(action)}
+                  className={cn(
+                    "inline-flex cursor-pointer items-center gap-1.5 rounded-ctl px-3.5 py-2 text-[13px] font-medium transition-colors duration-150 disabled:opacity-50",
+                    selected
+                      ? "bg-acc text-white dark:text-acc-contrast"
+                      : tone === "default"
+                        ? "bg-acc-soft text-acc hover:bg-acc hover:text-white dark:hover:text-acc-contrast"
+                        : "border border-line-2 bg-surface text-ink-2 hover:border-acc hover:text-acc",
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
             {decided && editing ? (
               <button
-                onClick={() => setEditing(false)}
+                onClick={() => {
+                  setEditing(false);
+                  setDecision(null);
+                }}
                 className="cursor-pointer rounded-ctl px-2.5 py-1.5 text-[12.5px] text-muted hover:text-ink"
               >
                 取消
@@ -203,12 +212,27 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={500}
-              className="min-w-[180px] flex-1 rounded-ctl border border-line-2 bg-surface px-3 py-1.5 text-[13px] text-ink placeholder:text-muted/80 focus:border-acc focus:outline-none"
+              className="min-w-[180px] flex-1 rounded-ctl border border-line-2 bg-surface px-3 py-2 text-[13px] text-ink placeholder:text-muted/80 focus:border-acc focus:outline-none"
             />
+          </div>
+          <div className="mt-2.5 flex items-center gap-3">
+            <button
+              disabled={decision == null || decide.isPending}
+              onClick={() => decision && decide.mutate(decision)}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-ctl bg-acc px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-acc-strong disabled:cursor-not-allowed disabled:opacity-45 dark:text-acc-contrast"
+            >
+              {decide.isPending ? <Loader2 size={13} className="animate-spin" /> : null}
+              {decide.isPending
+                ? "提交中…"
+                : decision
+                  ? `提交决策:${ACTIONS.find((a) => a.action === decision)?.label}`
+                  : "先选择一个决定"}
+            </button>
+            <span className="text-[11.5px] text-muted">提交前可修改选择与备注。</span>
           </div>
           {decide.isError ? (
             <p role="alert" className="mt-1.5 text-[12px] text-st-bad">
-              提交失败({errMessage(decide.error)}),输入已保留,可直接重试。
+              提交失败({errMessage(decide.error)}),选择与备注已保留,可直接重试。
             </p>
           ) : null}
         </>

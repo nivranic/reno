@@ -1,7 +1,10 @@
 /** Reports: catalog + reading view. Markdown rendered safely (no raw HTML,
  * remote images blocked), heading TOC (labeled as heading-only search),
- * raw/copy/download/print affordances. */
+ * raw/copy/download/print affordances. The open report lives in ?r= so the
+ * reading state is shareable and participates in browser history (§15.3),
+ * which also lets the shell drop the bottom nav while reading (§4.2). */
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Copy, Download, FileText, Printer } from "lucide-react";
 import { reportsQuery } from "@/lib/queries";
@@ -14,12 +17,30 @@ import { cn } from "@/lib/cn";
 
 export default function ReportsPage() {
   const { data, error, isError, isPending, refetch } = useQuery(reportsQuery);
-  const [active, setActive] = useState<string | null>(null);
+  const [params, setParams] = useSearchParams();
+  const active = params.get("r");
   const [tocFilter, setTocFilter] = useState("");
   const [raw, setRaw] = useState(false);
   const toast = useToast();
 
+  // ?r= holds the open report; push (not replace) so browser back returns
+  // from reading to the catalog (§15.3)
+  const setActive = (name: string | null) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (name) next.set("r", name);
+        else next.delete("r");
+        return next;
+      },
+      { replace: false },
+    );
+
   const names = Object.keys(data?.reports ?? {});
+  // desktop defaults to the first report; phone enters via the catalog (?r)
+  const isDesktop =
+    typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+  const reading = active != null || isDesktop;
   const current = active && names.includes(active) ? active : (names[0] ?? null);
   const md = current ? (data?.reports[current] ?? "") : "";
   const toc = useMemo(() => extractToc(md), [md]);
@@ -55,7 +76,7 @@ export default function ReportsPage() {
           </>
         }
         actions={
-          current ? (
+          current && reading ? (
             <>
               <Button variant="ghost" size="sm" onClick={() => setRaw(!raw)}>
                 {raw ? "阅读视图" : "原文"}
@@ -82,8 +103,11 @@ export default function ReportsPage() {
         <EmptyState icon={<FileText size={30} />} title="暂无报告" desc="运行 `reno report` 生成后此处可阅读。" />
       ) : (
         <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-          {/* catalog */}
-          <nav aria-label="报告目录" className="space-y-1">
+          {/* catalog: on phones it IS the page until a report is open (§13) */}
+          <nav
+            aria-label="报告目录"
+            className={cn("space-y-1", reading ? "hidden lg:block" : "block")}
+          >
             {names.map((n) => (
               <button
                 key={n}
@@ -103,7 +127,15 @@ export default function ReportsPage() {
             ))}
           </nav>
 
-          <div className="min-w-0">
+          <div className={cn("min-w-0", !reading && "hidden lg:block")}>
+            {active ? (
+              <button
+                onClick={() => setActive(null)}
+                className="mb-2 inline-flex cursor-pointer items-center gap-1 rounded-ctl px-1.5 py-1 text-[13px] text-muted hover:bg-surface-2 hover:text-ink lg:hidden"
+              >
+                ← 返回报告目录
+              </button>
+            ) : null}
             {md === "" ? (
               <EmptyState title="该报告尚未生成" desc="运行 `reno report` 后刷新。" />
             ) : (

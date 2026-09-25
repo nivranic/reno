@@ -1,9 +1,11 @@
 /** Import dialog: single URL + batch (one per line). Shows per-line parse
  * results before submit, and honest outcomes after (已接受 ≠ 处理完成).
- * Final validation/dedup is always backend-side; frontend parsing is a hint. */
+ * Final validation/dedup is always backend-side; frontend parsing is a hint.
+ * Phone: fullscreen panel (ui/dialog), no auto keyboard, clipboard read only
+ * behind an explicit user tap (§7.3). */
 import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { CheckCircle2, CircleAlert, Loader2 } from "lucide-react";
+import { CheckCircle2, CircleAlert, ClipboardPaste, Loader2 } from "lucide-react";
 import { postImportBatch, postImportUrl } from "@/lib/api";
 import { errMessage } from "@/app/query-utils";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -13,6 +15,10 @@ import { Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/components/shared/toaster";
 
 const URL_RE = /^https?:\/\/\S+$/i;
+
+// clipboard read needs a user gesture AND secure context; the button only
+// renders when the API exists, rejection falls back to system long-press
+const canPaste = typeof navigator !== "undefined" && !!navigator.clipboard?.readText;
 
 interface ParsedLine {
   raw: string;
@@ -47,6 +53,16 @@ export function ImportDialog({
   const [tab, setTab] = useState<"single" | "batch">("single");
   const [url, setUrl] = useState("");
   const [batch, setBatch] = useState("");
+
+  // §7.3: paste is an explicit user action — never read the clipboard on mount
+  const pasteInto = async (apply: (text: string) => void) => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.trim()) apply(text.trim());
+    } catch {
+      toast.error("浏览器未授权剪贴板,请长按输入框使用系统粘贴", { key: "paste" });
+    }
+  };
 
   const parsed = useMemo(() => parseBatch(batch), [batch]);
   const validCount = parsed.filter((p) => p.kind === "url").length;
@@ -109,13 +125,27 @@ export function ImportDialog({
               if (url.trim() && !single.isPending) single.mutate();
             }}
           >
-            <Input
-              aria-label="视频链接"
-              autoFocus
-              placeholder="粘贴 B站 / 抖音 视频链接或本地文件路径"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                aria-label="视频链接"
+                autoFocus={typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches}
+                inputMode="url"
+                placeholder="粘贴 B站 / 抖音 视频链接或本地文件路径"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+              />
+              {canPaste ? (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  title="从剪贴板粘贴"
+                  aria-label="从剪贴板粘贴链接"
+                  onClick={() => void pasteInto(setUrl)}
+                >
+                  <ClipboardPaste size={16} />
+                </Button>
+              ) : null}
+            </div>
             <div className="flex items-center justify-end gap-2">
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
                 取消

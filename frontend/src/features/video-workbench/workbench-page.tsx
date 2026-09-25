@@ -174,7 +174,11 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
     };
   }, []);
 
-  const [mobileTab, setMobileTab] = useState<"stream" | "atoms">("stream");
+  // §9.1: plain entry opens the knowledge-reading state; a ?t=ms deep link
+  // opens evidence verification instead (the context the link points at)
+  const [mobileTab, setMobileTab] = useState<"stream" | "atoms">(() =>
+    rawT != null && parseDeepLinkMs(rawT) != null ? "stream" : "atoms",
+  );
 
   // metadata header
   const title = meta.data?.title ?? videoId;
@@ -311,15 +315,15 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
             </div>
           </div>
 
-          {/* mobile tabs switch stream/atoms below lg */}
+          {/* mobile: knowledge reading vs evidence verification (§9.1) */}
           <div className="lg:hidden">
             <Tabs
               ariaLabel="工作台面板"
               value={mobileTab}
               onChange={setMobileTab}
               items={[
-                { value: "stream", label: `证据流 (${filtered.length})` },
-                { value: "atoms", label: `原子 (${events.data?.atoms.length ?? 0})` },
+                { value: "atoms", label: `知识 (${events.data?.atoms.length ?? 0})` },
+                { value: "stream", label: `证据 (${filtered.length})` },
               ]}
             />
           </div>

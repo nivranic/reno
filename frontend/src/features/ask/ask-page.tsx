@@ -100,7 +100,7 @@ export default function AskPage() {
   };
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-[900px] flex-col px-4 py-5 md:px-6">
+    <div className="mx-auto flex h-[calc(100vh-3rem)] w-full max-w-[900px] flex-col px-4 py-5 supports-[height:100svh]:h-[calc(100svh-3rem)] md:px-6">
       <PageHeader
         title="知识库问答"
         desc={

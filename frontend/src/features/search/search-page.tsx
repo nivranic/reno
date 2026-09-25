@@ -45,6 +45,11 @@ export default function SearchPage() {
 
   const facets = useQuery(facetsQuery);
   const results = useQuery(searchQuery(q, category, space));
+  // §4.2: a list page must not pop the soft keyboard on arrival — autofocus
+  // is a desktop-only affordance; phones enter via explicit tap
+  const [autoFocus] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches,
+  );
   const scroll = useScrollRestore(`search:${q}:${category}:${space}`);
   useEffect(() => {
     scroll.restore();
@@ -87,7 +92,7 @@ export default function SearchPage() {
           <SearchIcon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <Input
             aria-label="搜索知识原子"
-            autoFocus
+            autoFocus={autoFocus}
             placeholder="如:防水 高度 / 插座 / 留缝"
             value={input}
             onCompositionStart={() => setComposing(true)}

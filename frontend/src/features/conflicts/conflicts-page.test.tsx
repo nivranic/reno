@@ -24,8 +24,11 @@ describe("ConflictsPage", () => {
     expect(screen.getByText(/美缝应在材料半凝固状态时刮平/)).toBeInTheDocument();
     expect(screen.getByText(/干透后再施工/)).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText("决策备注(可选)"), "测试备注");
+    // §11.2 two-step: select → note → explicit submit (no write on bare tap)
     await user.click(screen.getByRole("button", { name: "采纳 A" }));
+    expect(decisions).toHaveLength(0);
+    await user.type(screen.getByLabelText("决策备注(可选)"), "测试备注");
+    await user.click(screen.getByRole("button", { name: /提交决策:采纳 A/ }));
 
     await waitFor(() => {
       expect(decisions).toEqual([
@@ -38,7 +41,7 @@ describe("ConflictsPage", () => {
     });
   });
 
-  it("keeps the note and shows a retry affordance when submission fails", async () => {
+  it("keeps the selection and note and shows a retry affordance when submission fails", async () => {
     const user = userEvent.setup();
     server.use(
       http.post("/api/decision", () => new Response(null, { status: 500 })),
@@ -49,6 +52,7 @@ describe("ConflictsPage", () => {
     const note = screen.getByLabelText("决策备注(可选)");
     await user.type(note, "保留我");
     await user.click(screen.getByRole("button", { name: "都不采" }));
+    await user.click(screen.getByRole("button", { name: /提交决策:都不采/ }));
 
     await waitFor(() => {
       expect(screen.getByText(/提交失败/)).toBeInTheDocument();

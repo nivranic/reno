@@ -28,6 +28,8 @@ export function DialogContent({
           "fixed left-1/2 top-1/2 z-50 w-[min(92vw,560px)] max-h-[86vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto",
           "rounded-panel border border-line bg-surface p-5 shadow-xl",
           "data-[state=open]:animate-[pop-in_160ms_ease-out]",
+          // phone: fullscreen task panel instead of a floating box (§14)
+          "max-md:inset-0 max-md:h-dvh max-md:max-h-dvh max-md:w-full max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none max-md:border-0 max-md:p-4",
           className,
         )}
       >
