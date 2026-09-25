@@ -83,8 +83,8 @@ def events(video_id: str):
                        "mod": "VIS", "text": t})
         ev.sort(key=lambda x: x["ms"])
         atoms = []
-        for a in db.all_atoms(con):
-            if a["evidence_refs"] and a["evidence_refs"][0]["video_id"] == video_id:
+        for a in db.all_atoms(con, video_id=video_id):
+            if a["evidence_refs"]:
                 atoms.append({"id": a["id"], "category": a["category"],
                               "space": a["space"], "claim": a["claim"],
                               "polarity": a["polarity"], "confidence": a["confidence"],

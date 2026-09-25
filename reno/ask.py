@@ -12,7 +12,7 @@ import json
 from . import config, db, llm
 
 
-def retrieve(con, question: str, k: int = 24) -> list[dict]:
+def retrieve(con, question: str, k: int = 24, atoms_by_id: dict | None = None) -> list[dict]:
     """Top-k atoms for a question, best first (bm25)."""
     from .db import fts_prep
 
@@ -25,7 +25,9 @@ def retrieve(con, question: str, k: int = 24) -> list[dict]:
         except Exception:  # noqa: BLE001 - malformed query -> no hits
             return []
 
-    atoms = {a["id"]: a for a in db.all_atoms(con)}
+    if atoms_by_id is None:
+        atoms_by_id = {a["id"]: a for a in db.all_atoms(con)}
+    atoms = atoms_by_id
     phrase = fts_prep(question).replace('"', " ").strip()
     hits: list[str] = []
     if phrase:
@@ -42,17 +44,17 @@ def retrieve(con, question: str, k: int = 24) -> list[dict]:
     return [atoms[aid] for aid in hits if aid in atoms][:k]
 
 
-def _augment_conflicts(con, atoms: list[dict], cap: int = 12) -> tuple[list[dict], list[dict]]:
+def _augment_conflicts(con, atoms: list[dict], atoms_by_id: dict,
+                       cap: int = 12) -> tuple[list[dict], list[dict]]:
     """Pull sibling atoms of conflicting clusters so both sides are in context.
     Returns (extra_atoms, cluster_summaries)."""
     if not atoms:
         return [], []
-    ids = {a["id"] for a in atoms}
     seen_cids = {a.get("cluster_id") for a in atoms}
     if not any(seen_cids):
         return [], []
     extra, summaries = [], []
-    all_atoms = {a["id"]: a for a in db.all_atoms(con)}
+    ids = {a["id"] for a in atoms}
     for c in con.execute("SELECT * FROM knowledge_cluster WHERE relation='conflicting'"):
         if c["cluster_id"] not in seen_cids:
             continue
@@ -63,7 +65,7 @@ def _augment_conflicts(con, atoms: list[dict], cap: int = 12) -> tuple[list[dict
         for aid in members:
             if aid in ids or len(extra) >= cap:
                 continue
-            a = all_atoms.get(aid)
+            a = atoms_by_id.get(aid)
             if a:
                 extra.append(a)
     return extra, summaries
@@ -77,8 +79,9 @@ def ask(question: str, history: list[dict] | None = None, k: int = 24) -> dict:
 
     con = db.connect()
     try:
-        retrieved = retrieve(con, question, k=k)
-        extra, conflict_summaries = _augment_conflicts(con, retrieved)
+        atoms_by_id = {a["id"]: a for a in db.all_atoms(con)}
+        retrieved = retrieve(con, question, k=k, atoms_by_id=atoms_by_id)
+        extra, conflict_summaries = _augment_conflicts(con, retrieved, atoms_by_id)
         seen_ids = {a["id"] for a in retrieved}
         atoms = retrieved + [a for a in extra if a["id"] not in seen_ids]
         titles = {r["video_id"]: dict(r) for r in con.execute(

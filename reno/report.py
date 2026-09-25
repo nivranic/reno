@@ -43,17 +43,17 @@ def diff_report(video_ids=None) -> dict:
                         seen_clusters.add(members[a["id"]])
                 continue
             atoms = by_video.get(vid, [])
-            new_cl, sup_cl, dup_cl = 0, 0, 0
+            new_cl, sup_cl = 0, 0
             for a in atoms:
                 cid = members.get(a["id"])
                 if not cid or cid not in seen_clusters:
                     new_cl += 1
-                elif True:
+                else:
                     sup_cl += 1
                 if cid:
                     seen_clusters.add(cid)
             lines.append(f"## {vid}")
-            lines.append(f"- 原子 {len(atoms)}:全新观点 {new_cl} / 补充已有观点 {sup_cl} / 重复 {dup_cl}")
+            lines.append(f"- 原子 {len(atoms)}:全新观点 {new_cl} / 补充已有观点 {sup_cl}")
             lines.append("")
         new_atoms = len(all_atoms)
         info_gain = new_atoms and round(

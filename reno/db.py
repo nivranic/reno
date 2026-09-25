@@ -179,15 +179,32 @@ def fts_reseed(con):
     return len(ids)
 
 
-def all_atoms(con):
+def all_atoms(con, video_id: str | None = None):
+    """All atoms with grouped evidence_refs in two queries (was one evidence
+    query per atom). video_id restricts to atoms evidenced in that video."""
+    sql = "SELECT * FROM knowledge_atom"
+    args: tuple = ()
+    if video_id:
+        sql += " WHERE id IN (SELECT atom_id FROM evidence_ref WHERE video_id=?)"
+        args = (video_id,)
     out = []
-    for row in con.execute("SELECT * FROM knowledge_atom ORDER BY id"):
+    for row in con.execute(sql + " ORDER BY id", args):
         a = dict(row)
         a["conditions"] = uj(a.pop("conditions_json"))
         a["parameters"] = uj(a.pop("parameters_json")) or []
-        ev = con.execute("SELECT * FROM evidence_ref WHERE atom_id=? ORDER BY start_ms", (a["id"],)).fetchall()
-        a["evidence_refs"] = [dict(e) for e in ev]
+        a["evidence_refs"] = []
         out.append(a)
+    by_id = {a["id"]: a for a in out}
+    ev_sql = "SELECT * FROM evidence_ref"
+    if video_id:
+        ev_sql += " WHERE video_id=?"
+        ev_args: tuple = (video_id,)
+    else:
+        ev_args = ()
+    for e in con.execute(ev_sql + " ORDER BY atom_id, start_ms", ev_args):
+        a = by_id.get(e["atom_id"])
+        if a is not None:
+            a["evidence_refs"].append(dict(e))
     return out
 
 

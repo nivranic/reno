@@ -90,7 +90,6 @@ def pick_budget_frames(all_frames, budget: int):
 
 def run(con, video_id: str) -> dict:
     asset = dict(db.get_asset(con, video_id))
-    v = config.ROOT / asset["files_json"] if False else None
     import json as _json
     files = _json.loads(asset["files_json"]) if isinstance(asset["files_json"], str) else asset["files_json"]
     v = config.ROOT / files["video"]
