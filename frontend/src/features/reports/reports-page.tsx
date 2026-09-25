@@ -160,6 +160,7 @@ export default function ReportsPage() {
 }
 
 const REPORT_LABEL: Record<string, string> = {
+  summary: "全库总结",
   incremental_diff: "增量对比",
   checklist: "验收清单",
   conflicts: "争议汇总",

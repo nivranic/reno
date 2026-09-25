@@ -95,7 +95,7 @@ def search_page(request: Request, q: str = ""):
 def reports_page(request: Request):
     gen = Path(__file__).parent.parent / "docs" / "generated"
     out = {}
-    for name in ("incremental_diff.md", "checklist.md", "conflicts.md"):
+    for name in ("summary.md", "incremental_diff.md", "checklist.md", "conflicts.md"):
         p = gen / name
         out[name.replace(".md", "")] = p.read_text(encoding="utf-8") if p.exists() else "(尚未生成,运行 `reno report`)"
     return TPL.TemplateResponse(request, "reports.html", ctx(request, reports=out))

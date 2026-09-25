@@ -236,6 +236,7 @@ export const makeSearch = (q: string): SearchResponse => {
 
 export const makeReports = (): ReportsResponse => ({
   reports: {
+    summary: "# 全库总结\n\n## 一、视频一览\n- [1] mock 视频一句话摘要。\n\n## 二、主题综述\n(mock)\n",
     checklist:
       "# 验收清单\n\n## 水电\n- [x] 强弱电分槽间距 ≥300mm\n- [ ] 水管打压试验记录\n\n## 防水\n| 项目 | 要求 | 结果 |\n|---|---|---|\n| 墙面高度 | ≥2000mm | 待验 |\n\n> 依据 `/videos/BVmock000?t=42000` 可跳转证据。\n",
     conflicts: "## 争议汇总\n\n- conflict_mock_001:美缝时机分歧(待复核)\n",

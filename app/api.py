@@ -243,7 +243,7 @@ def reports():
     """Generated markdown reports (was reports.html template context)."""
     gen = Path(__file__).parent.parent / "docs" / "generated"
     out = {}
-    for name in ("incremental_diff.md", "checklist.md", "conflicts.md"):
+    for name in ("summary.md", "incremental_diff.md", "checklist.md", "conflicts.md"):
         p = gen / name
         out[name[:-3]] = p.read_text(encoding="utf-8") if p.exists() else ""
     return {"reports": out}
