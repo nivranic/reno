@@ -2,6 +2,7 @@
  * (lib/api-types.ts). Seeded RNG => reproducible scenarios at any scale
  * (100 / 1,000 / 10,000 evidence events) for perf and edge testing. */
 import type {
+  AskResponse,
   ConflictsResponse,
   EventsResponse,
   FacetsResponse,
@@ -233,6 +234,40 @@ export const makeSearch = (q: string): SearchResponse => {
     ],
   };
 };
+
+export const makeAsk = (question: string): AskResponse => ({
+  answer:
+    `关于「${question}」,材料中的主流做法如下 [1]。存在分歧时应同时参考双方条件 [1][2]。
+
+具体施工请以原片为准。`,
+  refs: [
+    {
+      n: 1,
+      atom_id: "atom_mock_001",
+      claim: "卫生间淋浴区墙面防水应涂刷约1.8米高",
+      video: "BVmock000",
+      video_title: "卫生间防水施工全流程(mock)",
+      ms: 210_000,
+      modality: "asr",
+      polarity: "recommend",
+      stage: "防水施工",
+    },
+    {
+      n: 2,
+      atom_id: "atom_mock_002",
+      claim: "部分标准要求卫生间墙面防水高度达到2米",
+      video: "BVmock001",
+      video_title: "防水高度另一种说法(mock)",
+      ms: 95_000,
+      modality: "asr",
+      polarity: "require",
+      stage: "防水施工",
+    },
+  ],
+  conflicts: [
+    { cluster_id: "cluster_mock_001", topic: "防水·涂刷高度", conflict_id: "conflict_mock_001" },
+  ],
+});
 
 export const makeReports = (): ReportsResponse => ({
   reports: {

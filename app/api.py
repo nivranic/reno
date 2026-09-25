@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 
+from reno import ask as ask_module
 from reno import config, db, ingest
 from reno.media import extract_frame
 
@@ -152,6 +153,26 @@ async def decision(request: Request):
         return {"ok": True}
     finally:
         con.close()
+
+
+@router.post("/ask")
+async def ask_question(request: Request):
+    """Grounded Q&A: {question, history?: [{role, content}], k?: int}.
+
+    Stateless multi-turn: retrieval is per-turn; history only provides
+    follow-up context. Returns {answer, refs, conflicts} with refs carrying
+    video_id + start_ms for evidence jump links."""
+    body = await request.json()
+    question = (body or {}).get("question", "").strip()
+    if not question:
+        raise HTTPException(400, "question required")
+    try:
+        res = ask_module.ask(question,
+                             history=body.get("history") or [],
+                             k=int(body.get("k") or 24))
+        return JSONResponse(res)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(500, str(e)[:300])
 
 
 # ---------- read APIs for the React client (previously Jinja2-injected) ----------

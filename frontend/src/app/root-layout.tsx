@@ -7,6 +7,7 @@ import {
   FileText,
   Inbox,
   Menu,
+  MessagesSquare,
   Monitor,
   Moon,
   Search,
@@ -19,6 +20,7 @@ import { useTheme } from "./theme";
 
 const NAV = [
   { to: "/", label: "收件箱", icon: Inbox, end: true },
+  { to: "/ask", label: "知识问答", icon: MessagesSquare, end: false },
   { to: "/search", label: "搜索", icon: Search, end: false },
   { to: "/conflicts", label: "争议复核", icon: ShieldAlert, end: false },
   { to: "/collect", label: "采集助手", icon: BookmarkPlus, end: false },

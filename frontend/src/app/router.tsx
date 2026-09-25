@@ -7,6 +7,7 @@ import { RouteErrorBoundary } from "./error-boundary";
 const InboxPage = lazy(() => import("@/features/inbox/inbox-page"));
 const WorkbenchPage = lazy(() => import("@/features/video-workbench/workbench-page"));
 const SearchPage = lazy(() => import("@/features/search/search-page"));
+const AskPage = lazy(() => import("@/features/ask/ask-page"));
 const ConflictsPage = lazy(() => import("@/features/conflicts/conflicts-page"));
 const ReportsPage = lazy(() => import("@/features/reports/reports-page"));
 const CollectPage = lazy(() => import("@/features/collect/collect-page"));
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
       { index: true, element: <InboxPage /> },
       { path: "videos/:videoId", element: <WorkbenchPage /> },
       { path: "search", element: <SearchPage /> },
+      { path: "ask", element: <AskPage /> },
       { path: "conflicts", element: <ConflictsPage /> },
       { path: "reports", element: <ReportsPage /> },
       { path: "collect", element: <CollectPage /> },

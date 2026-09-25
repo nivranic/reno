@@ -9,6 +9,8 @@
  */
 
 import type {
+  AskHistoryTurn,
+  AskResponse,
   ConflictsResponse,
   EventsResponse,
   FacetsResponse,
@@ -135,6 +137,9 @@ export const getReports = (signal?: AbortSignal) =>
 
 export const getHealth = (signal?: AbortSignal) =>
   apiGet<HealthResponse>("/api/health", signal);
+
+export const postAsk = (question: string, history: AskHistoryTurn[]) =>
+  apiPost<AskResponse>("/api/ask", { question, history });
 
 export const postConfigModel = (model: string) =>
   apiPost<{ ok: boolean; atomize_model: string }>("/api/config/model", { model });

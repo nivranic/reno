@@ -128,6 +128,35 @@ export interface SearchResponse {
   results: SearchRow[];
 }
 
+export interface AskHistoryTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AskRef {
+  n: number;
+  atom_id: string;
+  claim: string;
+  video: string | null;
+  video_title: string;
+  ms: number;
+  modality: string | null;
+  polarity: string | null;
+  stage: string | null;
+}
+
+export interface AskConflictInfo {
+  cluster_id: string;
+  topic: string;
+  conflict_id: string | null;
+}
+
+export interface AskResponse {
+  answer: string;
+  refs: AskRef[];
+  conflicts: AskConflictInfo[];
+}
+
 export interface FacetsResponse {
   categories: string[];
   spaces: string[];

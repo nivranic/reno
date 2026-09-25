@@ -6,6 +6,7 @@
  * Scale testing: /api/video/:id/events?scale=10000 generates that many events. */
 import { http, HttpResponse } from "msw";
 import {
+  makeAsk,
   makeConflicts,
   makeEvents,
   makeFacets,
@@ -86,8 +87,14 @@ export const handlers = [
     });
   }),
 
-  http.post("/api/decision", async ({ request }) => {
-    const body = (await request.json()) as { action?: string };
+  http.post("/api/ask", async ({ request }) => {
+    const body = (await request.json()) as { question?: string };
+    if (!body.question?.trim()) return new HttpResponse(null, { status: 400 });
+    if (scenario() === "server-error") return new HttpResponse(null, { status: 500 });
+    return HttpResponse.json(makeAsk(body.question));
+  }),
+
+  http.post("/api/decision", async ({ request }) => {    const body = (await request.json()) as { action?: string };
     if (!body.action) return new HttpResponse(null, { status: 400 });
     return HttpResponse.json({ ok: true });
   }),
