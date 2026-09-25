@@ -2,6 +2,7 @@
 """Central config: defaults overridable by config.local.json (gitignored)."""
 import json
 import os
+import threading
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,6 +12,10 @@ FRAMES = MEDIA / "frames"
 AUDIO = MEDIA / "audio"
 ORIG = MEDIA / "originals"
 FRAME_CACHE = ROOT / "frames_cache"
+
+# racing writers (parallel /api/config/model calls) must not interleave and
+# corrupt config.local.json (robustness suite finding)
+_set_lock = threading.Lock()
 
 DEFAULTS = {
     "zhipu_api_key": "",
@@ -64,16 +69,20 @@ def db_path() -> Path:
 def set_local(updates: dict):
     """Merge `updates` into config.local.json (created if missing), then
     drop the in-memory cache so subsequent get() calls see the new values
-    without a process restart. Never touches unrelated keys."""
-    local = ROOT / "config.local.json"
-    data = {}
-    if local.exists():
-        try:
-            data = json.loads(local.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, ValueError):
-            data = {}
-    data.update(updates)
-    local.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n",
-                     encoding="utf-8")
+    without a process restart. Never touches unrelated keys. The write is
+    lock-serialized and atomic (tmp file + rename)."""
+    with _set_lock:
+        local = ROOT / "config.local.json"
+        data = {}
+        if local.exists():
+            try:
+                data = json.loads(local.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, ValueError):
+                data = {}
+        data.update(updates)
+        tmp = local.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+                       encoding="utf-8")
+        tmp.replace(local)
     global _cache
     _cache = None

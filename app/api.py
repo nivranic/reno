@@ -2,6 +2,8 @@
 """API endpoints: real-time frame extraction (the ±1s fix), video streaming
 with Range support, import, decisions, search."""
 import json
+import re
+import threading
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
@@ -12,6 +14,22 @@ from reno import config, db, ingest
 from reno.media import extract_frame
 
 router = APIRouter(prefix="/api")
+
+# serialize same-target frame extraction: concurrent ffmpeg writes to one
+# file produce torn images (robustness suite finding #8)
+_frame_lock = threading.Lock()
+
+
+async def json_body(request: Request) -> dict:
+    """Parse the body as a JSON object. Malformed JSON, bad encoding and
+    non-object bodies are client errors (400), never a 500."""
+    try:
+        body = await request.json()
+    except Exception as e:  # noqa: BLE001 - json/Unicode decode errors
+        raise HTTPException(400, f"invalid JSON body ({e.__class__.__name__})")
+    if not isinstance(body, dict):
+        raise HTTPException(400, "body must be a JSON object")
+    return body
 
 
 @router.get("/frame/{video_id}/{ms}")
@@ -25,12 +43,22 @@ def frame_at(video_id: str, ms: int):
             raise HTTPException(404, "unknown video")
         files = json.loads(asset["files_json"])
         v = config.ROOT / files["video"]
-        ms = max(0, min(ms, asset["duration_ms"] or ms))
+        # clamp 200ms inside the file: seeking the very last instant of a
+        # container yields no frame and must not fall out as a 500
+        dur = asset["duration_ms"] or ms
+        ms = max(0, min(ms, max(0, dur - 200)))
         out = config.FRAME_CACHE / video_id / f"f{ms:07d}.jpg"
         out.parent.mkdir(parents=True, exist_ok=True)
         if not out.exists():
-            if not extract_frame(v, ms, out):
-                raise HTTPException(500, "extract failed")
+            with _frame_lock:
+                if not out.exists():  # re-check: another thread may have won
+                    tmp = out.parent / f"{out.stem}.tmp.jpg"
+                    try:
+                        if not extract_frame(v, ms, tmp):
+                            raise HTTPException(500, "extract failed")
+                        tmp.replace(out)  # atomic: no torn concurrent reads
+                    finally:
+                        tmp.unlink(missing_ok=True)
         return FileResponse(out, media_type="image/jpeg")
     finally:
         con.close()
@@ -50,8 +78,22 @@ def video_file(video_id: str, request: Request):
         if not range_h:
             return FileResponse(v, media_type="video/mp4",
                                 headers={"Accept-Ranges": "bytes"})
-        start = int(range_h.replace("bytes=", "").split("-")[0] or 0)
-        end = min(start + 4 * 1024 * 1024, size - 1)
+        # malformed/unsatisfiable ranges are client errors (416), not 500s
+        m = re.match(r"^bytes=(\d*)-(\d*)$", range_h.strip())
+        if not m or not (m.group(1) or m.group(2)):
+            raise HTTPException(416, "invalid Range header")
+        if m.group(1) == "":  # suffix range: last N bytes (group 2 is a count)
+            start = max(0, size - int(m.group(2)))
+            if size == 0:
+                raise HTTPException(416, "empty file")
+            end = size - 1
+        else:
+            start = int(m.group(1))
+            if start >= size:
+                raise HTTPException(416, "range start beyond file size")
+            end = min(start + 4 * 1024 * 1024, size - 1)
+            if m.group(2):  # honor an explicit end within the 4MB window
+                end = min(end, int(m.group(2)))
         with open(v, "rb") as f:
             f.seek(start)
             data = f.read(end - start + 1)
@@ -103,14 +145,17 @@ def events(video_id: str):
 
 @router.post("/import")
 async def import_url(request: Request):
-    body = await request.json()
-    target = (body or {}).get("url", "").strip()
+    body = await json_body(request)
+    target = (body.get("url") or "").strip()
     if not target:
         raise HTTPException(400, "url required")
+    from urllib.parse import urlparse
+    if urlparse(target).scheme.lower() not in ("http", "https"):
+        raise HTTPException(400, "url must be an http(s) link")
     try:
         res = ingest.ingest_url(target)
         if res["status"] != "duplicate":
-            from ..reno import pipeline
+            from reno import pipeline
             con = db.connect()
             vid = res["video_id"]
             con.close()
@@ -118,6 +163,8 @@ async def import_url(request: Request):
             threading.Thread(target=pipeline.run_video, args=(vid,),
                              daemon=True).start()
         return JSONResponse(res)
+    except HTTPException:
+        raise
     except Exception as e:  # noqa: BLE001
         raise HTTPException(500, str(e)[:300])
 
@@ -126,8 +173,11 @@ async def import_url(request: Request):
 async def import_batch(request: Request):
     """Bulk ingest: {urls: [...]} - one link per line from the textarea, or
     submitted by the douyin/bilibili bookmarklet from the user's own browser."""
-    body = await request.json()
-    urls = [u.strip() for u in (body or {}).get("urls", []) if u.strip()]
+    body = await json_body(request)
+    urls_raw = body.get("urls")
+    if not isinstance(urls_raw, list) or not all(isinstance(u, str) for u in urls_raw):
+        raise HTTPException(400, "urls must be a list of strings")
+    urls = [u.strip() for u in urls_raw if u.strip()]
     if not urls:
         raise HTTPException(400, "urls required")
     from reno.favlist import import_urls
@@ -136,19 +186,45 @@ async def import_batch(request: Request):
                         {"failed_sample": stats["failed"][:3]})
 
 
+DECISION_ACTIONS = ("accept_a", "accept_b", "both", "reject")
+
+
 @router.post("/decision")
 async def decision(request: Request):
-    body = await request.json()
+    body = await json_body(request)
+    conflict_id = body.get("conflict_id")
+    action = body.get("action")
+    note = body.get("note")
+    atom_id = body.get("atom_id")
+    if not isinstance(conflict_id, str) or not conflict_id.strip():
+        raise HTTPException(400, "conflict_id required")
+    if action not in DECISION_ACTIONS and action not in ("confirm", "reject"):
+        # atom-level review uses confirm/reject; conflict review uses the four
+        raise HTTPException(400, f"action must be one of {sorted(DECISION_ACTIONS)}")
+    if note is not None and (not isinstance(note, str) or len(note) > 2000):
+        raise HTTPException(400, "note must be a string of at most 2000 chars")
+    if atom_id is not None and not isinstance(atom_id, str):
+        raise HTTPException(400, "atom_id must be a string")
+    revised_claim = body.get("revised_claim")
+    if revised_claim is not None and (not isinstance(revised_claim, str)
+                                      or len(revised_claim) > 2000):
+        raise HTTPException(400, "revised_claim must be a string of at most 2000 chars")
     con = db.connect()
     try:
-        db.add_decision(con, atom_id=body.get("atom_id"),
-                        conflict_id=body.get("conflict_id"),
-                        action=body.get("action"),
-                        revised_claim=body.get("revised_claim"),
-                        note=body.get("note"))
-        if body.get("conflict_id"):
+        target = conflict_id if conflict_id else atom_id
+        table, col = (("conflict_case", "conflict_id") if conflict_id
+                      else ("knowledge_atom", "id"))
+        if not con.execute(f"SELECT 1 FROM {table} WHERE {col}=?",
+                           (target,)).fetchone():
+            raise HTTPException(404, f"unknown {col} {target}")
+        db.add_decision(con, atom_id=atom_id,
+                        conflict_id=conflict_id or None,
+                        action=action,
+                        revised_claim=revised_claim,
+                        note=note or None)
+        if conflict_id:
             con.execute("UPDATE conflict_case SET status=? WHERE conflict_id=?",
-                        (f"decided:{body.get('action')}", body["conflict_id"]))
+                        (f"decided:{action}", conflict_id))
         con.commit()
         return {"ok": True}
     finally:
@@ -162,15 +238,21 @@ async def ask_question(request: Request):
     Stateless multi-turn: retrieval is per-turn; history only provides
     follow-up context. Returns {answer, refs, conflicts} with refs carrying
     video_id + start_ms for evidence jump links."""
-    body = await request.json()
-    question = (body or {}).get("question", "").strip()
-    if not question:
+    body = await json_body(request)
+    question = body.get("question")
+    if not isinstance(question, str) or not question.strip():
         raise HTTPException(400, "question required")
+    history = body.get("history")
+    if history is not None and not isinstance(history, list):
+        raise HTTPException(400, "history must be a list of turns")
+    k = body.get("k", 24)
+    if not isinstance(k, int) or isinstance(k, bool) or not (1 <= k <= 100):
+        raise HTTPException(400, "k must be an integer between 1 and 100")
     try:
-        res = ask_module.ask(question,
-                             history=body.get("history") or [],
-                             k=int(body.get("k") or 24))
+        res = ask_module.ask(question.strip(), history=history or [], k=k)
         return JSONResponse(res)
+    except HTTPException:
+        raise
     except Exception as e:  # noqa: BLE001
         raise HTTPException(500, str(e)[:300])
 
@@ -292,8 +374,8 @@ async def set_model(request: Request):
     """Switch the processing model (atomize + judge) at runtime. Writes to
     config.local.json (preserving all other keys incl. secrets) and takes
     effect on the next pipeline run without a server restart."""
-    body = await request.json()
-    model = (body or {}).get("model")
+    body = await json_body(request)
+    model = body.get("model")
     if model not in MODEL_PRESETS:
         raise HTTPException(400, f"model must be one of {MODEL_PRESETS}")
     config.set_local({"atomize_model": model, "judge_models": [model]})

@@ -6,11 +6,17 @@ SHA-256 content addressing makes re-ingest idempotent.
 """
 import hashlib
 import json
+import sqlite3
 import subprocess
+import threading
 import time
 from pathlib import Path
 
 from . import config, db
+
+# single-process guard: concurrent imports of the same URL/content must not
+# both pass the sha dedup check (check-then-insert is a TOCTOU otherwise)
+_register_lock = threading.Lock()
 
 
 def _sha256(p: Path) -> str:
@@ -99,6 +105,11 @@ def _duration_of(v: Path) -> float:
 
 
 def _register(vid, info, v: Path, a: Path, source_type, url) -> dict:
+    with _register_lock:  # serialize dedup-check + insert (see lock comment)
+        return _register_locked(vid, info, v, a, source_type, url)
+
+
+def _register_locked(vid, info, v: Path, a: Path, source_type, url) -> dict:
     con = db.connect()
     try:
         sha = _sha256(v)
@@ -120,9 +131,21 @@ def _register(vid, info, v: Path, a: Path, source_type, url) -> dict:
             "files": {"video": str(v.relative_to(config.ROOT)),
                       "audio": str(a.relative_to(config.ROOT)) if a and a.exists() else None},
             "status": "imported"}
-        db.upsert_asset(con, asset)
-        db.enqueue_job(con, vid, "process")
-        con.commit()
+        try:
+            db.upsert_asset(con, asset)
+            db.enqueue_job(con, vid, "process")
+            con.commit()
+        except sqlite3.IntegrityError:
+            # concurrent import of the same content won the sha race
+            # (content_sha256 is UNIQUE) - report it as a duplicate
+            con.rollback()
+            dup = db.asset_by_sha(con, sha)
+            if dup:
+                db.upsert_asset(con, dict(dup))
+                con.commit()
+                return {"video_id": dup["video_id"], "status": "duplicate",
+                        "duplicate_of": dup["video_id"]}
+            raise
         return {"video_id": vid, "status": "imported"}
     finally:
         con.close()
