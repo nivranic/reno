@@ -25,6 +25,15 @@ cd frontend && npm run dev
 - `data/reno.db` SQLite（含 FTS5）；`media/` 原片/音频/帧；均 gitignore
 - GitHub: `github.com/nivranic/reno`（main 分支）
 
+## 关键事实（2026-09-26 状态）
+
+- **鉴权（局域网/手机访问）**：`config.local.json` 加 `"auth_token": "<令牌>"` 即开启 /api 令牌门（X-Reno-Token 头或 ?token= 查询参数；媒体标签用后者）；留空 = 关闭。前端 401 会弹出令牌输入门（存 localStorage）
+- **数据目录重定位**：环境变量 `RENO_DATA_DIR` 可整体迁移 db/媒体/帧缓存（多实例隔离、测试用）
+- **任务续跑**：serve 启动时自动恢复 pending 任务（守护线程 worker.process_pending），无需手动 `reno run`
+- **judge ID 稳定化**：冲突/聚类 ID 已改为内容哈希（cfl_/clu_ 前缀），judge 重跑后用户决策自动回填 status；重跑前自动快照 `data/reno.db.bak-judge-*`（保留 3 份）
+- **测试**：pytest 56 例（健壮性 28 + 增强 10 + 原始 10 + 性能 5 + 多进程 3 + LLM 探针 4 需 `RENO_LLM_TESTS=1`）+ 前端 41 例；CI 在 .github/workflows/ci.yml
+- **移动端 H5**：底部导航/安全区/触控目标已适配，真机核对清单见 docs/mobile-h5-checklist.md
+
 ## 关键事实（2026-09-24 状态）
 
 - **处理模型**：GLM-5.3-FlashX（atomize + judge），可在采集页 Select 切换（预设 GLM-5.3 / 5.3-Flash / 5.3-FlashX），写 config.local.json 即时生效无需重启
