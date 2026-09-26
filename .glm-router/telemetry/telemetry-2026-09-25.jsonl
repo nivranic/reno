@@ -6,3 +6,4 @@
 {"ts":"2026-09-25T14:38:40.017Z","sessionId":"b993bb40b42c","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
 {"ts":"2026-09-25T14:38:40.980Z","sessionId":"b993bb40b42c","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
 {"ts":"2026-09-25T14:42:00.266Z","sessionId":"b993bb40b42c","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
+{"ts":"2026-09-25T23:15:45.686Z","sessionId":"b993bb40b42c","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
