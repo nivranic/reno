@@ -117,8 +117,14 @@ def main(argv=None):
         return 0
 
     if args.cmd == "serve":
+        import threading
         import uvicorn
         from app.main import app
+        # resume jobs left pending by a previous run (import threads die with
+        # the process) - steps are idempotent/meta-tracked, so this is safe
+        from . import worker
+        threading.Thread(target=worker.process_pending,
+                         kwargs={"follow": False}, daemon=True).start()
         uvicorn.run(app, host=args.host, port=args.port)
         return 0
 

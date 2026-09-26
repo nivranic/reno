@@ -7,9 +7,16 @@ both sides of a dispute reach the model. Answer = one grounded LLM call with
 [n] citations pointing at evidence timestamps. Stateless multi-turn: the
 caller passes trimmed history; each turn re-retrieves from scratch.
 """
+import hashlib
 import json
+from collections import OrderedDict
 
 from . import config, db, llm
+
+# read-mostly answers: identical question + unchanged KB version is served
+# from cache (LLM cost); any atom insert bumps the version stamp
+_answer_cache: "OrderedDict[str, dict]" = OrderedDict()
+_CACHE_MAX = 64
 
 
 def retrieve(con, question: str, k: int = 24, atoms_by_id: dict | None = None) -> list[dict]:
@@ -77,8 +84,16 @@ def ask(question: str, history: list[dict] | None = None, k: int = 24) -> dict:
     if not question:
         raise ValueError("question required")
 
+    model_name = config.get("ask_model") or config.get("atomize_model")
+    cacheable = not (history or [])
+    kb_version = ""
+    cache_key = None
+
     con = db.connect()
     try:
+        kb_version = con.execute(
+            "SELECT COUNT(*) || ':' || COALESCE(MAX(created_at), '')"
+            " FROM knowledge_atom").fetchone()[0]
         atoms_by_id = {a["id"]: a for a in db.all_atoms(con)}
         retrieved = retrieve(con, question, k=k, atoms_by_id=atoms_by_id)
         extra, conflict_summaries = _augment_conflicts(con, retrieved, atoms_by_id)
@@ -88,6 +103,13 @@ def ask(question: str, history: list[dict] | None = None, k: int = 24) -> dict:
             "SELECT video_id, title, source_platform FROM video_asset")}
     finally:
         con.close()
+
+    if cacheable:
+        cache_key = hashlib.sha1(
+            f"{question}|{model_name}|{k}|{kb_version}".encode("utf-8")).hexdigest()
+        if cache_key in _answer_cache:
+            _answer_cache.move_to_end(cache_key)
+            return json.loads(json.dumps(_answer_cache[cache_key]))
 
     if not atoms:
         return {"answer": "知识库里没有检索到与这个问题相关的原子。"
@@ -149,14 +171,19 @@ def ask(question: str, history: list[dict] | None = None, k: int = 24) -> dict:
     answer, _model = llm.chat(
         [{"role": "system", "content": system},
          {"role": "user", "content": user}],
-        model=config.get("ask_model") or None,
+        model=model_name or None,
         temperature=0.3, max_tokens=3000, json_mode=False)
 
     cited = {n for n in _cited_ns(answer) if n <= len(refs)}
     ordered_refs = [r for r in refs if r["n"] in cited] + \
                    [r for r in refs if r["n"] not in cited]
-    return {"answer": answer.strip(), "refs": ordered_refs,
-            "conflicts": conflict_summaries}
+    res = {"answer": answer.strip(), "refs": ordered_refs,
+           "conflicts": conflict_summaries}
+    if cache_key is not None:
+        _answer_cache[cache_key] = json.loads(json.dumps(res))
+        while len(_answer_cache) > _CACHE_MAX:
+            _answer_cache.popitem(last=False)
+    return res
 
 
 def _cited_ns(answer: str) -> list[int]:

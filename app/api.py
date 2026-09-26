@@ -106,8 +106,11 @@ def video_file(video_id: str, request: Request):
 
 
 @router.get("/video/{video_id}/events")
-def events(video_id: str):
-    """Fused timeline events for the detail page panes."""
+def events(video_id: str, from_ms: int = None, to_ms: int = None):
+    """Fused timeline events for the detail page panes. Optional from_ms/to_ms
+    window filters events by timestamp (atoms stay complete)."""
+    from_ms = max(0, from_ms) if from_ms is not None else None
+    to_ms = max(0, to_ms) if to_ms is not None else None
     con = db.connect()
     try:
         ev = []
@@ -124,6 +127,10 @@ def events(video_id: str):
             ev.append({"id": r["id"], "ms": r["pts_ms"], "end": r["pts_ms"] + 1200,
                        "mod": "VIS", "text": t})
         ev.sort(key=lambda x: x["ms"])
+        if from_ms is not None:
+            ev = [e for e in ev if e["ms"] >= from_ms]
+        if to_ms is not None:
+            ev = [e for e in ev if e["ms"] <= to_ms]
         atoms = []
         for a in db.all_atoms(con, video_id=video_id):
             if a["evidence_refs"]:

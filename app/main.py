@@ -37,6 +37,22 @@ def create_app() -> FastAPI:
     from .api import router as api_router
     app.include_router(api_router)
 
+    # Shared-token gate for /api when auth_token is configured (mobile H5 over
+    # LAN is the use case; loopback-only setups leave it empty and keep the
+    # old no-auth behavior). SPA shell/assets stay open - all data flows
+    # through /api. Token travels as X-Reno-Token header or ?token= query
+    # (media <video>/<img> tags cannot send headers).
+    @app.middleware("http")
+    async def token_gate(request, call_next):
+        auth_token = config.get("auth_token", "")  # read per request
+        if auth_token and request.url.path.startswith("/api"):
+            provided = (request.headers.get("x-reno-token")
+                        or request.query_params.get("token"))
+            if provided != auth_token:
+                from fastapi.responses import JSONResponse
+                return JSONResponse({"detail": "unauthorized"}, status_code=401)
+        return await call_next(request)
+
     ui = config.get("web_ui", "auto")
     use_react = (ui == "react") or (ui == "auto" and DIST.exists())
 

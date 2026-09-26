@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { setToken } from "@/lib/api";
 import { useTheme } from "./theme";
 
 const NAV = [
@@ -108,6 +109,15 @@ export function RootLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
   const [params] = useSearchParams();
+  // LAN/mobile deployments with auth_token: any 401 from the API opens the
+  // token gate; saving reloads so every query re-fires with the new token
+  const [tokenPrompt, setTokenPrompt] = useState(false);
+  const [tokenInput, setTokenInput] = useState("");
+  useEffect(() => {
+    const onUnauthorized = () => setTokenPrompt(true);
+    window.addEventListener("reno-unauthorized", onUnauthorized);
+    return () => window.removeEventListener("reno-unauthorized", onUnauthorized);
+  }, []);
 
   // close the mobile drawer on navigation
   useEffect(() => {
@@ -122,6 +132,45 @@ export function RootLayout() {
     location.pathname.startsWith("/videos/") ||
     location.pathname === "/ask" ||
     readingReport;
+
+  if (tokenPrompt) {
+    return (
+      <div className="flex h-dvh flex-col items-center justify-center gap-4 px-6">
+        <div className="w-full max-w-[360px] rounded-panel border border-line bg-surface p-5">
+          <h1 className="mb-1 text-[17px] font-semibold text-ink">需要访问令牌</h1>
+          <p className="mb-4 text-[12.5px] leading-relaxed text-muted">
+            本服务已开启访问控制。输入配置文件 auth_token 中设置的访问令牌后继续。
+          </p>
+          <input
+            aria-label="访问令牌"
+            type="password"
+            autoFocus
+            value={tokenInput}
+            onChange={(e) => setTokenInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && tokenInput.trim()) {
+                setToken(tokenInput.trim());
+                window.location.reload();
+              }
+            }}
+            className="mb-3 w-full rounded-ctl border border-line-2 bg-surface px-3 py-2 text-sm text-ink focus:border-acc focus:outline-none"
+            placeholder="访问令牌"
+          />
+          <button
+            onClick={() => {
+              if (!tokenInput.trim()) return;
+              setToken(tokenInput.trim());
+              window.location.reload();
+            }}
+            className="w-full cursor-pointer rounded-ctl bg-acc px-4 py-2 text-sm font-semibold text-white hover:bg-acc-strong disabled:opacity-50 dark:text-acc-contrast"
+            disabled={!tokenInput.trim()}
+          >
+            保存并刷新
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-dvh overflow-hidden">

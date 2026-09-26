@@ -36,6 +36,30 @@ export class ApiError extends Error {
   }
 }
 
+/** Shared access token (LAN/mobile deployments with auth_token set).
+ * Stored by the AuthGate prompt; empty string = no auth configured. */
+export const TOKEN_KEY = "reno-auth-token";
+export const getToken = () => {
+  try {
+    return localStorage.getItem(TOKEN_KEY) ?? "";
+  } catch {
+    return "";
+  }
+};
+export const setToken = (t: string) => {
+  try {
+    localStorage.setItem(TOKEN_KEY, t);
+  } catch {
+    /* private mode: token lives for the session only */
+  }
+  window.dispatchEvent(new CustomEvent("reno-token-changed"));
+};
+
+function tokenQuery(): string {
+  const t = getToken();
+  return t ? `?token=${encodeURIComponent(t)}` : "";
+}
+
 async function parseError(res: Response, url: string): Promise<ApiError> {
   let message = `HTTP ${res.status}`;
   try {
@@ -46,13 +70,19 @@ async function parseError(res: Response, url: string): Promise<ApiError> {
   } catch {
     /* non-JSON error body: keep HTTP status text */
   }
+  if (res.status === 401) {
+    window.dispatchEvent(new CustomEvent("reno-unauthorized"));
+  }
   return new ApiError(res.status, message, url);
 }
 
 export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(path, { signal, headers: { Accept: "application/json" } });
+    res = await fetch(path, {
+      signal,
+      headers: { Accept: "application/json", "X-Reno-Token": getToken() },
+    });
   } catch (e) {
     if (e instanceof DOMException && e.name === "AbortError") throw e;
     throw new ApiError(0, "无法连接本地服务(reno serve 未启动?)", path);
@@ -70,7 +100,11 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   try {
     res = await fetch(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Reno-Token": getToken(),
+      },
       body: JSON.stringify(body),
     });
   } catch {
@@ -160,7 +194,7 @@ export const postDecision = (payload: {
 // ---------- binary endpoints: URLs only, never fetched as JSON ----------
 
 export const frameUrl = (videoId: string, ms: number) =>
-  `/api/frame/${encodeURIComponent(videoId)}/${Math.round(ms)}`;
+  `/api/frame/${encodeURIComponent(videoId)}/${Math.round(ms)}${tokenQuery()}`;
 
 export const videoFileUrl = (videoId: string) =>
-  `/api/video/${encodeURIComponent(videoId)}/file`;
+  `/api/video/${encodeURIComponent(videoId)}/file${tokenQuery()}`;

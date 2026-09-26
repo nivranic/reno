@@ -21,9 +21,9 @@ AUDIO = MEDIA / "audio"
 ORIG = MEDIA / "originals"
 FRAME_CACHE = MEDIA.parent / "frames_cache"
 
-# racing writers (parallel /api/config/model calls) must not interleave and
-# corrupt config.local.json (robustness suite finding)
-_set_lock = threading.Lock()
+# thread safety: get()'s lazy _load and set_local's cache drop race under
+# concurrent requests (robustness suite finding #11 - NoneType.get 500s)
+_config_lock = threading.Lock()
 
 DEFAULTS = {
     "zhipu_api_key": "",
@@ -47,11 +47,12 @@ _cache = None
 
 def get(key: str = "", default=None):
     global _cache
-    if _cache is None:
-        _load()
-    if not key:
-        return _cache
-    return _cache.get(key, DEFAULTS.get(key, default))
+    with _config_lock:
+        if _cache is None:
+            _load()
+        if not key:
+            return _cache
+        return _cache.get(key, DEFAULTS.get(key, default))
 
 
 def _load():
@@ -79,7 +80,7 @@ def set_local(updates: dict):
     drop the in-memory cache so subsequent get() calls see the new values
     without a process restart. Never touches unrelated keys. The write is
     lock-serialized and atomic (tmp file + rename)."""
-    with _set_lock:
+    with _config_lock:
         local = ROOT / "config.local.json"
         data = {}
         if local.exists():

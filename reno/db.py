@@ -88,6 +88,15 @@ def get_asset(con, video_id: str):
                        (video_id,)).fetchone()
 
 
+def snapshot(con, path):
+    """Consistent backup of a live connection (sqlite backup API)."""
+    dst = sqlite3.connect(path)
+    try:
+        con.backup(dst)
+    finally:
+        dst.close()
+
+
 def asset_by_sha(con, sha: str):
     return con.execute("SELECT * FROM video_asset WHERE content_sha256=?",
                        (sha,)).fetchone()

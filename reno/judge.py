@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """Judge stage: LLM verdicts on cross-video candidate pairs -> clusters +
-conflict cases persisted. Graph clustering over 'same' edges (union-find)."""
+conflict cases persisted. Graph clustering over 'same' edges (union-find).
+Conflict/cluster ids are content-derived so user decisions and deep links
+survive judge reruns."""
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -78,6 +81,13 @@ class UF:
 
 def run(con, sim_threshold: float = 0.22) -> dict:
     t0 = time.time()
+    # snapshot before anything: judge deletes and regenerates
+    # clusters/conflicts, so a rollback point is cheap insurance
+    bak = config.DATA / f"reno.db.bak-judge-{time.strftime('%Y%m%d-%H%M%S')}"
+    db.snapshot(con, bak)
+    old_backups = sorted(config.DATA.glob("reno.db.bak-judge-*"))
+    for stale in old_backups[:-3]:
+        stale.unlink(missing_ok=True)
     sim_pairs = dedup.candidates(con, sim_threshold)
     param_pairs = dedup.param_conflict_candidates(con)
     cands = _merge_candidates(sim_pairs, param_pairs)
@@ -110,8 +120,10 @@ def run(con, sim_threshold: float = 0.22) -> dict:
                 "numeric_conflict" if c.get("parameter") else "polarity_conflict")
             aa, bb = atoms_by_id.get(c["a"]), atoms_by_id.get(c["b"])
             authority_gap = bool(j.get("authority_gap"))
+            pair_key = hashlib.sha1(
+                f"{c['a']}|{c['b']}|{ctype}".encode("utf-8")).hexdigest()[:10]
             conflicts.append({
-                "conflict_id": f"conflict_{len(conflicts)+1:03d}",
+                "conflict_id": f"cfl_{pair_key}",
                 "type": ctype,
                 "status": "needs_user_decision" if authority_gap else "needs_review",
                 "members": {
@@ -156,8 +168,10 @@ def run(con, sim_threshold: float = 0.22) -> dict:
         m0 = atoms_by_id.get(sorted(members)[0]) or {}
         linked = next((cf["conflict_id"] for cf in conflicts
                        if cf["members"]["side_a"]["atoms"][0] in members), None)
+        members_key = hashlib.sha1(
+            ",".join(sorted(members)).encode("utf-8")).hexdigest()[:10]
         clusters.append({
-            "cluster_id": f"cluster_{i+1:03d}",
+            "cluster_id": f"clu_{members_key}",
             "canonical_topic": f"{m0.get('category') or ''}·{m0.get('subject') or (m0.get('claim') or '')[:20]}",
             "relation": relation,
             "judge_reason": f"same:{rel_counts['same']} related:{rel_counts['related']} conflicting:{rel_counts['conflicting']}",
@@ -166,6 +180,16 @@ def run(con, sim_threshold: float = 0.22) -> dict:
         })
     db.replace_clusters(con, clusters)
     db.replace_conflicts(con, conflicts)
+    # carry prior user decisions over to the regenerated conflicts: stable
+    # content-derived ids make this a plain status restore (last decision wins)
+    con.execute(
+        """UPDATE conflict_case SET status =
+             'decided:' || (SELECT ud.action FROM user_decision ud
+                            WHERE ud.conflict_id = conflict_case.conflict_id
+                            ORDER BY ud.decision_id DESC LIMIT 1)
+           WHERE EXISTS (SELECT 1 FROM user_decision ud
+                         WHERE ud.conflict_id = conflict_case.conflict_id)""")
+    con.commit()
     stats = {"candidates": len(cands), "clusters": len(clusters),
              "conflicts": len(conflicts),
              "conflict_types": sorted({c["type"] for c in conflicts}),
