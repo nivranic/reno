@@ -86,9 +86,11 @@ export default function SearchPage() {
           e.preventDefault();
           setParam("q", input.trim());
         }}
-        className="mb-3 flex gap-2"
+        className="mb-3 flex flex-wrap gap-2"
       >
-        <div className="relative flex-1">
+        {/* min width keeps the search box usable when filters wrap to the next
+            line on narrow screens (measured: input shrank to 110px at 375w) */}
+        <div className="relative min-w-[220px] flex-[1_1_220px]">
           <SearchIcon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <Input
             aria-label="搜索知识原子"

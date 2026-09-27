@@ -133,6 +133,7 @@ export function ImportDialog({
                 placeholder="粘贴 B站 / 抖音 视频链接或本地文件路径"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+                className="min-w-0 flex-1 max-md:h-11"
               />
               {canPaste ? (
                 <Button
@@ -146,19 +147,13 @@ export function ImportDialog({
                 </Button>
               ) : null}
             </div>
-            {/* fullscreen-panel phone: pinned to the panel bottom whether the
-                form is short (mt-auto in flex) or taller than the screen
-                (sticky within the scrolling content) */}
-            <div className="flex items-center justify-end gap-2 max-md:sticky max-md:bottom-0 max-md:-mx-4 max-md:mt-auto max-md:justify-between max-md:border-t max-md:border-line max-md:bg-surface max-md:px-4 max-md:py-3">
+            {/* action bar pinned (sticky) at every breakpoint: reachable whether
+                the form is short or taller than the panel */}
+            <div className="sticky bottom-0 -mx-5 -mb-5 mt-4 flex items-center justify-end gap-2 border-t border-line bg-surface px-5 py-3 max-md:-mx-4 max-md:-mb-4 max-md:mt-auto max-md:justify-between max-md:px-4">
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
                 取消
               </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={!url.trim() || single.isPending}
-                className="disabled:border disabled:border-line-2 disabled:bg-surface-2 disabled:text-muted"
-              >
+              <Button type="submit" size="sm" disabled={!url.trim() || single.isPending}>
                 {single.isPending ? <Loader2 size={14} className="animate-spin" /> : null}
                 {single.isPending ? "提交中…" : "导入并处理"}
               </Button>
@@ -213,7 +208,7 @@ export function ImportDialog({
                 </ul>
               </div>
             ) : null}
-            <div className="flex items-center justify-end gap-2 max-md:sticky max-md:bottom-0 max-md:-mx-4 max-md:mt-auto max-md:justify-between max-md:border-t max-md:border-line max-md:bg-surface max-md:px-4 max-md:py-3">
+            <div className="sticky bottom-0 -mx-5 -mb-5 mt-4 flex items-center justify-end gap-2 border-t border-line bg-surface px-5 py-3 max-md:-mx-4 max-md:-mb-4 max-md:mt-auto max-md:justify-between max-md:px-4">
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
                 关闭
               </Button>
@@ -221,7 +216,6 @@ export function ImportDialog({
                 type="submit"
                 size="sm"
                 disabled={validCount === 0 || validCount > 200 || batchMut.isPending}
-                className="disabled:border disabled:border-line-2 disabled:bg-surface-2 disabled:text-muted"
               >
                 {batchMut.isPending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                 {batchMut.isPending ? "提交中…" : `提交 ${validCount} 条`}

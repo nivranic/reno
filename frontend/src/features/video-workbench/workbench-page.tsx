@@ -410,9 +410,15 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
             else return;
             e.preventDefault();
           }}
-          className="hidden w-1.5 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-acc/30 lg:block"
+          className="relative hidden w-1.5 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-acc/30 lg:block"
         >
-          <ChevronsLeftRight size={12} className="mx-auto mt-1/2 text-muted/50" aria-hidden />
+          {/* centered on the (full-height) divider — `mt-1/2` is not a real
+              utility and left the icon at the very top */}
+          <ChevronsLeftRight
+            size={12}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-muted/50"
+            aria-hidden
+          />
         </div>
 
         {/* ---- right: atoms panel (lg+) ---- */}

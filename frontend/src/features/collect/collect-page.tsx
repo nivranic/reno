@@ -11,6 +11,7 @@ import { errMessage } from "@/app/query-utils";
 import { PageHeader, ErrorState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/field";
+import { Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/components/shared/toaster";
 import { cn } from "@/lib/cn";
 
@@ -81,7 +82,7 @@ export default function CollectPage() {
               value={health.data.atomize_model}
               disabled={modelMut.isPending}
               onChange={(e) => modelMut.mutate(e.target.value)}
-              className="h-7 w-[150px] font-mono text-[11.5px]"
+              className="h-8 w-[150px] font-mono text-[11.5px]"
             >
               {(health.data.model_presets ?? []).map((m) => (
                 <option key={m} value={m}>
@@ -93,26 +94,18 @@ export default function CollectPage() {
         </div>
       ) : null}
 
-      {/* platform tabs */}
-      <div className="mb-4 inline-flex rounded-ctl border border-line bg-surface-2 p-1">
-        {(
-          [
-            ["douyin", "抖音收藏"],
-            ["bilibili", "B站收藏夹"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => setPlatform(id)}
-            className={cn(
-              "cursor-pointer rounded-[6px] px-3.5 py-1.5 text-[13px] font-medium transition-colors",
-              platform === id ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink-2",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* platform tabs (shared Tabs component — same segmented look as
+          conflicts filter / workbench mobile tabs) */}
+      <Tabs
+        ariaLabel="选择平台"
+        className="mb-4"
+        value={platform}
+        onChange={setPlatform}
+        items={[
+          { value: "douyin", label: "抖音收藏" },
+          { value: "bilibili", label: "B站收藏夹" },
+        ]}
+      />
 
       {platform === "douyin" ? (
         <StepCard

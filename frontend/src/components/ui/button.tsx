@@ -19,7 +19,9 @@ const buttonVariants = cva(
         md: "h-11 px-4 text-sm md:h-9",
         lg: "h-12 px-5 text-[15px] md:h-10",
         icon: "h-11 w-11 p-0 md:h-9 md:w-9",
-        iconSm: "h-9 w-9 p-0 md:h-7 md:w-7",
+        // compact icon tier matches the sm TEXT button at both breakpoints so
+        // mixed rows (reports header) align — md:h-8, never md:h-7
+        iconSm: "h-9 w-9 p-0 md:h-8 md:w-8",
       },
     },
     defaultVariants: { variant: "default", size: "md" },

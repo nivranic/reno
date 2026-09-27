@@ -142,7 +142,7 @@ export default function AskPage() {
             ) : (
               <div className="max-w-[92%] rounded-panel rounded-bl-sm border border-line bg-surface px-4 py-3">
                 {t.conflicts && t.conflicts.length > 0 && (
-                  <div className="mb-2 flex items-center gap-1.5 rounded-ctl bg-amber-500/10 px-2.5 py-1.5 text-[11.5px] text-amber-700 dark:text-amber-400">
+                  <div className="mb-2 flex items-center gap-1.5 rounded-ctl border border-st-wait-line bg-st-wait-bg px-2.5 py-1.5 text-[11.5px] text-st-wait">
                     <ShieldAlert size={13} />
                     <span>
                       本回答涉及 {t.conflicts.length} 个有分歧的主题(
@@ -200,13 +200,13 @@ export default function AskPage() {
             className="resize-none"
           />
           <Button
-            size="sm"
+            size="icon"
             aria-label="发送问题"
             disabled={!input.trim() || mut.isPending}
             onClick={() => void send()}
-            className="h-9 shrink-0"
+            className="shrink-0"
           >
-            {mut.isPending ? <Loader2 size={15} className="animate-spin" /> : <ArrowUp size={15} />}
+            {mut.isPending ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={16} />}
           </Button>
         </div>
         <p className="mt-1.5 text-[10.5px] text-muted">

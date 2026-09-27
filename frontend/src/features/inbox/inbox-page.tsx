@@ -104,13 +104,13 @@ export default function InboxPage() {
           placeholder="搜索标题 / UP主 / 视频ID…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className="h-8 w-full max-w-[280px] text-[13px]"
+          className="w-full max-w-[280px] text-[13px]"
         />
         <Select
           aria-label="按状态筛选"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="h-8 w-[130px] text-[13px]"
+          className="w-[130px] text-[13px]"
         >
           <option value="">全部状态</option>
           <option value="processed">已完成</option>
@@ -121,7 +121,7 @@ export default function InboxPage() {
           aria-label="排序"
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="h-8 w-[120px] text-[13px]"
+          className="w-[120px] text-[13px]"
         >
           <option value="imported">最近导入</option>
           <option value="atoms">原子最多</option>

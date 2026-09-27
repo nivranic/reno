@@ -45,7 +45,7 @@ function ThemeToggle() {
       onClick={() => setTheme(next)}
       title={`主题:${label}(点击切换)`}
       aria-label={`切换主题,当前${label}`}
-      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-ctl text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+      className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-ctl text-muted transition-colors hover:bg-surface-2 hover:text-ink md:h-8 md:w-8"
     >
       {theme === "light" ? (
         <Sun size={16} />
@@ -192,7 +192,7 @@ export function RootLayout() {
               <button
                 aria-label="关闭导航"
                 onClick={() => setDrawerOpen(false)}
-                className="cursor-pointer rounded-ctl p-1.5 text-muted hover:bg-surface-2"
+                className="cursor-pointer rounded-ctl p-2 text-muted hover:bg-surface-2"
               >
                 <X size={18} />
               </button>
@@ -207,7 +207,7 @@ export function RootLayout() {
           <button
             aria-label="打开导航"
             onClick={() => setDrawerOpen(true)}
-            className="cursor-pointer rounded-ctl p-1.5 text-muted hover:bg-surface-2 md:hidden"
+            className="cursor-pointer rounded-ctl p-2 text-muted hover:bg-surface-2 md:hidden"
           >
             <Menu size={18} />
           </button>

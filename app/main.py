@@ -66,14 +66,17 @@ def create_app() -> FastAPI:
             # only app routes fall through to index.html.
             if full_path.startswith(("api/", "assets/", "static/")):
                 return JSONResponse({"detail": "not found"}, status_code=404)
-            # root-level build files (favicon.svg etc.) when they exist
+            # root-level build files (favicon.svg etc.) when they exist;
+            # index.html must always revalidate or a rebuild ships a stale
+            # shell pointing at old hashed assets (observed in testing)
+            no_cache = {"Cache-Control": "no-cache"}
             if full_path and ".." not in full_path.split("/"):
                 candidate = (DIST / full_path).resolve()
                 if candidate.is_file() and candidate.parent == DIST.resolve():
-                    return FileResponse(candidate)
+                    return FileResponse(candidate, headers=no_cache)
             if full_path and "." in full_path.rsplit("/", 1)[-1]:
                 return JSONResponse({"detail": "not found"}, status_code=404)
-            return FileResponse(DIST / "index.html")
+            return FileResponse(DIST / "index.html", headers=no_cache)
     else:
         from .pages import router as pages_router
         app.include_router(pages_router)

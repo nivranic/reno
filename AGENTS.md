@@ -33,6 +33,8 @@ cd frontend && npm run dev
 - **judge ID 稳定化**：冲突/聚类 ID 已改为内容哈希（cfl_/clu_ 前缀），judge 重跑后用户决策自动回填 status；重跑前自动快照 `data/reno.db.bak-judge-*`（保留 3 份）
 - **测试**：pytest 56 例（健壮性 28 + 增强 10 + 原始 10 + 性能 5 + 多进程 3 + LLM 探针 4 需 `RENO_LLM_TESTS=1`）+ 前端 41 例；CI 在 .github/workflows/ci.yml
 - **移动端 H5**：底部导航/安全区/触控目标已适配，真机核对清单见 docs/mobile-h5-checklist.md
+- **布局样式规则**：控件高度档位/同排同高/令牌纪律/弹层 sticky 等统一规则见 docs/frontend-style-rules.md（2026-09-27 全局审计后沉淀；根字号 15px，h-8=30px、h-9=33.75px、h-11=41.25px）
+- **SPA 缓存**：index.html 以 `Cache-Control: no-cache` 返回（app/main.py），重建后浏览器不会再用旧壳混载新 chunk
 
 ## 关键事实（2026-09-24 状态）
 

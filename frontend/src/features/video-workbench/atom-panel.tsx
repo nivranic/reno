@@ -45,7 +45,7 @@ export function AtomPanel({ atoms, className }: { atoms: WorkbenchAtom[]; classN
             aria-label="排序方式"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as "time" | "confidence")}
-            className="h-7 w-[104px] text-xs"
+            className="h-8 w-[104px] text-xs"
           >
             <option value="time">按时间</option>
             <option value="confidence">按置信度</option>
@@ -54,7 +54,7 @@ export function AtomPanel({ atoms, className }: { atoms: WorkbenchAtom[]; classN
             aria-label="按立场筛选"
             value={polarity}
             onChange={(e) => setPolarity(e.target.value)}
-            className="h-7 w-[88px] text-xs"
+            className="h-8 w-[88px] text-xs"
           >
             <option value="">全部立场</option>
             <option value="recommend">推荐</option>

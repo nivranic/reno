@@ -15,6 +15,8 @@ import { cn } from "@/lib/cn";
 import { PageHeader, EmptyState, ErrorState, ListSkeleton, RefreshWarning } from "@/components/shared/states";
 import { ConflictStatusBadge } from "@/components/shared/status-badge";
 import { Tabs } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/field";
 import { useToast } from "@/components/shared/toaster";
 
 const ACTIONS: { action: DecisionAction; label: string; tone: string }[] = [
@@ -177,57 +179,52 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
             {ACTIONS.map(({ action, label, tone }) => {
               const selected = decision === action;
               return (
-                <button
+                <Button
                   key={action}
+                  variant={selected ? "default" : tone === "default" ? "soft" : "outline"}
+                  size="md"
                   disabled={decide.isPending}
                   aria-pressed={selected}
                   onClick={() => setDecision(action)}
-                  className={cn(
-                    "inline-flex cursor-pointer items-center gap-1.5 rounded-ctl px-3.5 py-2 text-[13px] font-medium transition-colors duration-150 disabled:opacity-50",
-                    selected
-                      ? "bg-acc text-white dark:text-acc-contrast"
-                      : tone === "default"
-                        ? "bg-acc-soft text-acc hover:bg-acc hover:text-white dark:hover:text-acc-contrast"
-                        : "border border-line-2 bg-surface text-ink-2 hover:border-acc hover:text-acc",
-                  )}
                 >
                   {label}
-                </button>
+                </Button>
               );
             })}
             {decided && editing ? (
-              <button
+              <Button
+                variant="ghost"
+                size="md"
                 onClick={() => {
                   setEditing(false);
                   setDecision(null);
                 }}
-                className="cursor-pointer rounded-ctl px-2.5 py-1.5 text-[12.5px] text-muted hover:text-ink"
               >
                 取消
-              </button>
+              </Button>
             ) : null}
-            <input
+            <Input
               aria-label="决策备注(可选)"
               placeholder="备注(可选,随决策入档)"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={500}
-              className="min-w-[180px] flex-1 rounded-ctl border border-line-2 bg-surface px-3 py-2 text-[13px] text-ink placeholder:text-muted/80 focus:border-acc focus:outline-none"
+              className="min-w-[180px] flex-1 max-md:h-11"
             />
           </div>
           <div className="mt-2.5 flex items-center gap-3">
-            <button
+            <Button
+              size="md"
               disabled={decision == null || decide.isPending}
               onClick={() => decision && decide.mutate(decision)}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-ctl bg-acc px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-acc-strong disabled:cursor-not-allowed disabled:opacity-45 dark:text-acc-contrast"
             >
-              {decide.isPending ? <Loader2 size={13} className="animate-spin" /> : null}
+              {decide.isPending ? <Loader2 size={14} className="animate-spin" /> : null}
               {decide.isPending
                 ? "提交中…"
                 : decision
                   ? `提交决策:${ACTIONS.find((a) => a.action === decision)?.label}`
                   : "先选择一个决定"}
-            </button>
+            </Button>
             <span className="text-[11.5px] text-muted">提交前可修改选择与备注。</span>
           </div>
           {decide.isError ? (

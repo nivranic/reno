@@ -34,8 +34,11 @@ export function DialogContent({
           className,
         )}
       >
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div>
+        {/* sticky header: long content scrolls UNDER it, close stays reachable.
+            Spacing to the body comes from the wrapper below — a margin here
+            would leave a transparent strip with content showing through. */}
+        <div className="sticky top-0 z-10 -mx-5 -mt-5 flex shrink-0 items-start justify-between gap-4 border-b border-line bg-surface px-5 pb-3 pt-5 max-md:-mx-4 max-md:-mt-4 max-md:px-4 max-md:pt-4">
+          <div className="min-w-0">
             <DialogPrimitive.Title className="text-[16px] font-semibold text-ink">
               {title}
             </DialogPrimitive.Title>
@@ -47,12 +50,16 @@ export function DialogContent({
           </div>
           <DialogPrimitive.Close
             aria-label="关闭"
-            className="rounded-ctl p-1 text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+            className="shrink-0 cursor-pointer rounded-ctl p-2 text-muted transition-colors hover:bg-surface-2 hover:text-ink"
           >
             <X size={16} />
           </DialogPrimitive.Close>
         </div>
-        {children}
+        {/* body wrapper: keeps the mobile flex chain (forms pin their action
+            bars via mt-auto inside it) and provides the header gap */}
+        <div className="pt-4 max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col">
+          {children}
+        </div>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   );
