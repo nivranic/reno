@@ -2,6 +2,8 @@
 
 > 实现于 `frontend/src/styles/global.css`(Tailwind 4 CSS-first tokens)与
 > `frontend/src/components/`。产品名:**reno · 装修知识工作台**。
+> 姊妹篇:**布局/控件尺寸/状态/弹层规则**见 `docs/frontend-style-rules.md`(2026-09-27);
+> 两份互补,改样式前都看。
 
 ## 1. 设计原则
 
