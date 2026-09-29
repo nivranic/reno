@@ -17,8 +17,14 @@ const badgeVariants = cva(
         review: "bg-st-review-bg text-st-review border-st-review-line",
         acc: "bg-acc-soft text-acc border-acc-line",
       },
+      /** sm: inside dense rows (citations, panel meta) — replaces per-page
+       * scale hacks; mirrors ModalityTag's sm precedent. */
+      size: {
+        md: "",
+        sm: "px-1.5 py-0 text-[10.5px] leading-[15px]",
+      },
     },
-    defaultVariants: { tone: "neutral" },
+    defaultVariants: { tone: "neutral", size: "md" },
   },
 );
 

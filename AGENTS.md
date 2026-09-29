@@ -39,7 +39,7 @@ cd frontend && npm run dev
 - **测试**：pytest 71 例（健壮性 28 + 增强 10 + 多维 15 + 原始 10 + 性能 5 + 多进程 3 + LLM 探针 4 需 `RENO_LLM_TESTS=1`）+ 前端 43 例；CI 在 .github/workflows/ci.yml
 - **移动端 H5**：底部导航/安全区/触控目标已适配，真机核对清单见 docs/mobile-h5-checklist.md
 - **知识问答（/ask）**：基于知识原子的接地问答——[n] 引用芯片跳视频时间点（带证据性质徽章）、冲突主题并列双方观点、价格问题注明证据时点、条件缺失分情景回答、LRU 缓存 64 条（问题|模型|k|库版本键）；报告页含 LLM 全库总结（summary.md）
-- **布局样式规则**：控件高度档位/同排同高/令牌纪律/弹层 sticky 等统一规则见 docs/frontend-style-rules.md（2026-09-27 全局审计后沉淀；根字号 15px，h-8=30px、h-9=33.75px、h-11=41.25px）
+- **布局样式规则**：控件高度档位/同排同高/令牌纪律/弹层 sticky 等统一规则见 docs/frontend-style-rules.md（2026-09-27 全局审计 + 2026-09-29 精细化审计沉淀；根字号 15px，h-8=30px、h-9=33.75px、h-11=41.25px）
 - **SPA 缓存**：index.html 以 `Cache-Control: no-cache` 返回（app/main.py），重建后浏览器不会再用旧壳混载新 chunk
 
 - **处理模型**：GLM-5.3-FlashX（atomize + judge 默认），可在采集页 Select 切换（预设 GLM-5.3 / 5.3-Flash / 5.3-FlashX），写 config.local.json 即时生效无需重启

@@ -37,10 +37,12 @@ export default function ReportsPage() {
     );
 
   const names = Object.keys(data?.reports ?? {});
-  // desktop defaults to the first report; phone enters via the catalog (?r)
-  const isDesktop =
-    typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
-  const reading = active != null || isDesktop;
+  // ?r= is the single source of truth for "reading" — no JS breakpoint probe
+  // (a matchMedia snapshot goes stale when the window resizes, and left the
+  // catalog unreachable between md and lg). CSS handles the rest: below lg
+  // the catalog IS the page until a report is open; at lg+ both columns show
+  // (the article falls back to the first report, as before).
+  const reading = active != null;
   const current = active && names.includes(active) ? active : (names[0] ?? null);
   const md = current ? (data?.reports[current] ?? "") : "";
   const toc = useMemo(() => extractToc(md), [md]);
@@ -170,7 +172,9 @@ export default function ReportsPage() {
                 </aside>
 
                 <article className="order-1 min-w-0 xl:order-2">
-                  <h2 className="mb-3 border-b border-line pb-2 text-[16px] font-semibold text-ink">
+                  {/* report title sits at the page-title tier (19px) so the
+                      rendered markdown h1 (18px) below it never inverts it */}
+                  <h2 className="mb-3 border-b border-line pb-2 text-[19px] font-semibold text-ink">
                     {REPORT_LABEL[current ?? ""] ?? current}
                   </h2>
                   {raw ? (

@@ -201,7 +201,7 @@ export function ImportDialog({
                 </p>
                 <ul className="mt-1 space-y-0.5 font-mono text-[11px] opacity-80">
                   {batchResult.failed_sample.map((s, i) => (
-                    <li key={i} className="truncate">
+                    <li key={i} className="truncate" title={s}>
                       {s}
                     </li>
                   ))}

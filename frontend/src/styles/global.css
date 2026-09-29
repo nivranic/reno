@@ -37,6 +37,9 @@
   --st-wait: #a16207; --st-wait-bg: #fefce8; --st-wait-line: #fde68a;
   --st-bad: #b91c1c; --st-bad-bg: #fef2f2; --st-bad-line: #fecaca;
   --st-review: #6d28d9; --st-review-bg: #f5f3ff; --st-review-line: #ddd6fe;
+
+  /* select chevron follows --muted per theme (was hardcoded light-only) */
+  --ctl-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236f7889' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 .dark {
@@ -66,6 +69,15 @@
   --st-wait: #fde68a; --st-wait-bg: #422006aa; --st-wait-line: #a16207;
   --st-bad: #fca5a5; --st-bad-bg: #450a0aaa; --st-bad-line: #b91c1c;
   --st-review: #c4b5fd; --st-review-bg: #2e1065aa; --st-review-line: #5b21b6;
+
+  --ctl-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b93a3' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* native select chevron (paired with appearance-none + pr-8 in ui/field) */
+.select-arrow {
+  background-image: var(--ctl-arrow);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
 }
 
 @theme inline {
@@ -141,8 +153,10 @@
   margin: 1.4em 0 0.5em;
   scroll-margin-top: 8px;
 }
-.reno-md h1 { font-size: 20px; }
-.reno-md h2 { font-size: 17px; border-bottom: 1px solid var(--line); padding-bottom: 0.3em; }
+/* Heading ladder inside rendered markdown: stays BELOW the page title tier
+ * (PageHeader 19px / report section header 19px) so hierarchy never inverts. */
+.reno-md h1 { font-size: 18px; }
+.reno-md h2 { font-size: 16px; border-bottom: 1px solid var(--line); padding-bottom: 0.3em; }
 .reno-md h3 { font-size: 15px; }
 .reno-md h4 { font-size: 14px; }
 .reno-md p { margin: 0.6em 0; }
@@ -205,7 +219,10 @@
 
 /* dialog animations (kept tiny: 150-160ms) */
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes pop-in { from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+/* No translate here: the dialog is centered via the CSS `translate` property
+ * (Tailwind v4 -translate-x-1/2), which composes WITH `transform` — animating
+ * transform:translate() doubled the offset and jumped after 160ms. */
+@keyframes pop-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
 
 /* print: reports only */
 @media print {

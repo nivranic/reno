@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Scale } from "lucide-react";
+import { Scale, ShieldAlert } from "lucide-react";
 import { compareQuery } from "@/lib/queries";
 import type { CompareSide, SearchRow } from "@/lib/api-types";
 import { fmtMs } from "@/lib/time";
@@ -13,6 +13,7 @@ import { PageHeader, EmptyState, ErrorState, InlineSpinner } from "@/components/
 import { PolarityBadge } from "@/components/shared/status-badge";
 import { DimensionBadge, NatureBadge } from "@/components/shared/knowledge-tags";
 import { Input } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 export default function ComparePage() {
   const [raw, setRaw] = useState("");
@@ -50,16 +51,16 @@ export default function ComparePage() {
             placeholder="输入 2-3 个对象,用空格/逗号分隔,如:瓷砖 地板"
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
-            className="pl-9"
+            className="pl-9 max-md:h-11"
           />
         </div>
-        <button
+        <Button
           type="submit"
-          className="h-9 cursor-pointer rounded-ctl bg-acc px-4 text-sm font-semibold text-white hover:bg-acc-strong disabled:opacity-50 dark:text-acc-contrast"
+          size="md"
           disabled={raw.split(/[,，/ ]+/).filter((s) => s.trim()).length < 2}
         >
           对比
-        </button>
+        </Button>
       </form>
 
       {!items ? (
@@ -77,13 +78,16 @@ export default function ComparePage() {
           {results.data!.conflicts.length > 0 ? (
             <div className="mb-3 rounded-panel border border-st-review-line bg-st-review-bg p-3 text-[12.5px] leading-relaxed text-st-review">
               {results.data!.conflicts.map((c) => (
-                <p key={c.cluster_id}>
-                  ⚠ 库内存在观点分歧:{c.topic}
-                  {c.linked_conflict ? (
-                    <Link to="/conflicts" className="ml-1 underline">
-                      去复核
-                    </Link>
-                  ) : null}
+                <p key={c.cluster_id} className="flex items-start gap-1.5">
+                  <ShieldAlert size={13} className="mt-0.5 shrink-0" />
+                  <span>
+                    库内存在观点分歧:{c.topic}
+                    {c.linked_conflict ? (
+                      <Link to="/conflicts" className="ml-1 underline">
+                        去复核
+                      </Link>
+                    ) : null}
+                  </span>
                 </p>
               ))}
             </div>
@@ -111,9 +115,11 @@ function SideColumn({ side }: { side: CompareSide }) {
         <span className="text-[11.5px] text-muted">{side.total} 条证据</span>
       </header>
       {side.total === 0 ? (
-        <p className="py-4 text-center text-[12.5px] text-muted">
-          库内没有与「{side.item}」词面相关的原子,可先去采集页补充视频。
-        </p>
+        <EmptyState
+          compact
+          title={`库内没有与「${side.item}」词面相关的原子`}
+          desc="可先去采集页补充视频。"
+        />
       ) : (
         <div className="space-y-3">
           {side.groups.map((g) => (
@@ -144,26 +150,36 @@ function SideColumn({ side }: { side: CompareSide }) {
 }
 
 function AtomLine({ row }: { row: SearchRow }) {
+  const body = (
+    <>
+      <div className="flex items-start gap-1.5">
+        <PolarityBadge polarity={row.polarity} className="mt-0.5 shrink-0" />
+        <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-ink">
+          {row.claim}
+        </p>
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-0.5 text-[11px] text-muted">
+        <NatureBadge nature={row.evidence_nature} />
+        <span>{row.space ?? "—"}</span>
+        <span className="font-mono tabular-nums">{fmtMs(row.ms)}</span>
+        <span className="min-w-0 truncate" title={row.video_title || undefined}>
+          {row.video_title || "无来源"}
+        </span>
+      </div>
+    </>
+  );
+  // no-video rows render as a static block, not a dead "#" link that stays
+  // keyboard-focusable (pointer-events-none only blocks the mouse)
+  if (!row.video) {
+    return <li className="block rounded-ctl border border-line px-2.5 py-2">{body}</li>;
+  }
   return (
     <li>
       <Link
-        to={row.video ? `/videos/${row.video}?t=${row.ms}` : "#"}
-        className={`block rounded-ctl border border-line px-2.5 py-2 transition-colors hover:bg-acc-soft/20 ${
-          row.video ? "" : "pointer-events-none"
-        }`}
+        to={`/videos/${row.video}?t=${row.ms}`}
+        className="block rounded-ctl border border-line px-2.5 py-2 transition-colors hover:bg-acc-soft/20"
       >
-        <div className="flex items-start gap-1.5">
-          <PolarityBadge polarity={row.polarity} className="mt-0.5 shrink-0" />
-          <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-ink">
-            {row.claim}
-          </p>
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-0.5 text-[11px] text-muted">
-          <NatureBadge nature={row.evidence_nature} />
-          <span>{row.space ?? "—"}</span>
-          <span className="font-mono tabular-nums">{fmtMs(row.ms)}</span>
-          <span className="min-w-0 truncate">{row.video_title || "无来源"}</span>
-        </div>
+        {body}
       </Link>
     </li>
   );

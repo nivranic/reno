@@ -29,15 +29,16 @@ export function DialogContent({
           "rounded-panel border border-line bg-surface p-5 shadow-xl",
           "data-[state=open]:animate-[pop-in_160ms_ease-out]",
           // phone: fullscreen task panel instead of a floating box (§14);
-          // flex column so forms can pin their action bar via mt-auto
-          "max-md:inset-0 max-md:flex max-md:h-dvh max-md:max-h-dvh max-md:w-full max-md:flex-col max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none max-md:border-0 max-md:p-4",
+          // flex column so forms can pin their action bar via mt-auto;
+          // env() top padding keeps the header clear of notch/status bar
+          "max-md:inset-0 max-md:flex max-md:h-dvh max-md:max-h-dvh max-md:w-full max-md:flex-col max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none max-md:border-0 max-md:p-4 max-md:pt-[max(1rem,env(safe-area-inset-top))]",
           className,
         )}
       >
         {/* sticky header: long content scrolls UNDER it, close stays reachable.
             Spacing to the body comes from the wrapper below — a margin here
             would leave a transparent strip with content showing through. */}
-        <div className="sticky top-0 z-10 -mx-5 -mt-5 flex shrink-0 items-start justify-between gap-4 border-b border-line bg-surface px-5 pb-3 pt-5 max-md:-mx-4 max-md:-mt-4 max-md:px-4 max-md:pt-4">
+        <div className="sticky top-0 z-10 -mx-5 -mt-5 flex shrink-0 items-start justify-between gap-4 border-b border-line bg-surface px-5 pb-3 pt-5 max-md:-mx-4 max-md:-mt-[max(1rem,env(safe-area-inset-top))] max-md:px-4 max-md:pt-4">
           <div className="min-w-0">
             <DialogPrimitive.Title className="text-[16px] font-semibold text-ink">
               {title}

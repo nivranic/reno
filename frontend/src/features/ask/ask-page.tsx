@@ -4,11 +4,12 @@
  * chips that deep-link into the video workbench at the evidence timestamp. */
 import { useRef, useState } from "react";
 import { Link } from "react-router";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowUp, Loader2, MessagesSquare, ShieldAlert } from "lucide-react";
 import { postAsk } from "@/lib/api";
 import type { AskConflictInfo, AskHistoryTurn, AskRef } from "@/lib/api-types";
-import { PageHeader, ErrorState } from "@/components/shared/states";
+import { videosQuery } from "@/lib/queries";
+import { PageHeader, ErrorState, EmptyState } from "@/components/shared/states";
 import { MarkdownView } from "@/components/shared/markdown-view";
 import { NatureBadge } from "@/components/shared/knowledge-tags";
 import { Button } from "@/components/ui/button";
@@ -44,22 +45,36 @@ function RefChips({ refs, cited }: { refs: AskRef[]; cited: number[] }) {
   const byN = new Map(refs.map((r) => [r.n, r]));
   const shown = cited.map((n) => byN.get(n)).filter(Boolean) as AskRef[];
   if (shown.length === 0) return null;
+  const chip = (r: AskRef, linkable: boolean) => {
+    const fullTitle = r.video_title || r.video || r.atom_id;
+    const inner = (
+      <>
+        <span className="font-mono text-[10.5px] text-muted">[{r.n}]</span>
+        <NatureBadge nature={r.evidence_nature} size="sm" />
+        <span className="truncate" title={`${fullTitle}：${r.claim}`}>
+          {fullTitle}
+        </span>
+        <span className="font-mono text-[10.5px] text-muted">{fmtTs(r.ms)}</span>
+      </>
+    );
+    const cls =
+      "inline-flex max-w-[240px] items-center gap-1 rounded-ctl border border-line-2 bg-surface-2 px-2 py-0.5 text-[11.5px] text-ink-2 transition-colors hover:border-acc hover:text-acc";
+    // refs without a video render as a static chip, not a dead "#" link
+    // that stays keyboard-focusable (pointer-events-none only blocks mouse)
+    return linkable && r.video ? (
+      <Link key={r.n} to={`/videos/${r.video}?t=${r.ms}`} className={cls}>
+        {inner}
+      </Link>
+    ) : (
+      <span key={r.n} className={cls}>
+        {inner}
+      </span>
+    );
+  };
   return (
     <div className="mt-2.5 flex flex-wrap gap-1.5">
       <span className="text-[11px] leading-6 text-muted">引用来源:</span>
-      {shown.map((r) => (
-        <Link
-          key={r.n}
-          to={r.video ? `/videos/${r.video}?t=${r.ms}` : "#"}
-          title={r.claim}
-          className="inline-flex max-w-[240px] items-center gap-1 rounded-ctl border border-line-2 bg-surface-2 px-2 py-0.5 text-[11.5px] text-ink-2 transition-colors hover:border-acc hover:text-acc"
-        >
-          <span className="font-mono text-[10.5px] text-muted">[{r.n}]</span>
-          <NatureBadge nature={r.evidence_nature} className="scale-[0.92]" />
-          <span className="truncate">{r.video_title || r.video || r.atom_id}</span>
-          <span className="font-mono text-[10.5px] text-muted">{fmtTs(r.ms)}</span>
-        </Link>
-      ))}
+      {shown.map((r) => chip(r, true))}
     </div>
   );
 }
@@ -69,6 +84,9 @@ export default function AskPage() {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  // shared (cached) videos query — only used for the live KB size in the
+  // empty state; polling stays adaptive/off when no jobs are active
+  const { data: kb } = useQuery(videosQuery);
 
   const mut = useMutation({
     mutationFn: ({ question, history }: { question: string; history: AskHistoryTurn[] }) =>
@@ -112,27 +130,32 @@ export default function AskPage() {
         }
       />
 
-      <div ref={listRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4">
+      <div ref={listRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4">
         {turns.length === 0 && !mut.isPending && (
-          <div className="mt-10 flex flex-col items-center gap-4 text-center">
-            <MessagesSquare size={36} className="text-muted" />
-            <p className="max-w-[420px] text-[13px] leading-relaxed text-muted">
-              向装修知识库提问,回答只依据 {""}
-              <span className="text-ink-2">28 个视频</span>
-              提炼的知识原子,并给出可跳转的证据来源。
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => send(s)}
-                  className="rounded-ctl border border-line-2 bg-surface px-3 py-1.5 text-[12.5px] text-ink-2 transition-colors hover:border-acc hover:text-acc"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
+          <EmptyState
+            icon={<MessagesSquare size={30} />}
+            title="向装修知识库提问"
+            desc={
+              <>
+                回答只依据 {""}
+                <span className="text-ink-2">{kb ? `${kb.stats.videos} 个视频` : "已入库视频"}</span>
+                提炼的知识原子,并给出可跳转的证据来源。
+              </>
+            }
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => send(s)}
+                    className="rounded-ctl border border-line-2 bg-surface px-3 py-1.5 text-[12.5px] text-ink-2 transition-colors hover:border-acc hover:text-acc"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            }
+          />
         )}
 
         {turns.map((t, i) => (
@@ -144,7 +167,7 @@ export default function AskPage() {
             ) : (
               <div className="max-w-[92%] rounded-panel rounded-bl-sm border border-line bg-surface px-4 py-3">
                 {t.conflicts && t.conflicts.length > 0 && (
-                  <div className="mb-2 flex items-center gap-1.5 rounded-ctl border border-st-wait-line bg-st-wait-bg px-2.5 py-1.5 text-[11.5px] text-st-wait">
+                  <div className="mb-2 flex items-center gap-1.5 rounded-ctl border border-st-review-line bg-st-review-bg px-2.5 py-1.5 text-[11.5px] text-st-review">
                     <ShieldAlert size={13} />
                     <span>
                       本回答涉及 {t.conflicts.length} 个有分歧的主题(

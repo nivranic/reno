@@ -1,6 +1,7 @@
-# reno 前端布局与样式规则（2026-09-27 全局优化后）
+# reno 前端布局与样式规则（2026-09-29 精细化审计后）
 
-> 来源：2026-09-27 全局布局/样式审计（静态扫源码 + Playwright 实测几何 + 截图视觉判定）。
+> 来源：2026-09-27 全局布局/样式审计 + 2026-09-29 精细化审计（三视角静态质证 36 条 +
+> Chrome 实测几何/溢出/暗色对比/动画采样，见 §9）。
 > 新页面/组件请直接遵循本规则；与规则冲突的旧写法按「公共层 → 页面层」顺序收敛。
 > 姊妹篇：色彩/字体/动效等**视觉令牌**见 `docs/frontend-design-system.md`；本文管**布局、尺寸档位、状态与弹层**。
 
@@ -12,6 +13,8 @@
   rose 色为有意视觉锚点；中性遮罩允许 `bg-black/40`。
 - 语义纪律：`st-ok/run/wait/bad/review` 表业务状态，模态色（asr/ocr/vis）表证据来源，
   两轴不得混用（OCR 绿 ≠ 成功绿）。warn/警示类一律用 `st-wait`。
+- Select 下拉箭头用 `--ctl-arrow` token（亮/暗各一套内联 SVG data-URI，类 `.select-arrow`），
+  主题跟随自动切换；禁止页面再写 inline `background-image` 覆写。
 - 暗色是独立设计（`.dark` 变量整套重设），新组件写完必须在暗色下过一遍。
 
 ## 2. 控件高度档位
@@ -34,17 +37,30 @@
 - 禁止在页面里给 Input/Select 覆写 `h-8/h-7` 来「对齐旧按钮」——要么升按钮档，要么按
   上表选组件档位。侧栏紧凑档（h-8）整排统一即可。
 - 顶栏图标按钮：移动 36px（h-9 w-9）、桌面 30px（h-8 w-8）。
+- Badge 尺寸档：`md` 默认（紧凑内边距）；`sm`（px-1.5 / 10.5px 字号 / 15px 行高）用于
+  卡内芯片与引用芯片（ask 引用、对比页 CTYPE、采集状态点）。旧写法 `scale-[0.92]`
+  缩放芯片会模糊渲染且不省空间，一律改 `size="sm"`。
 
 ## 3. 布局
 
 - 页面容器：`mx-auto w-full max-w-[<场景宽>] px-4 py-5 md:px-6`。
-  场景宽：表格 1180 / 报告 1080 / 争议 980 / 问答 900 / 搜索 880 / 采集 820。
+  场景宽：表格 1180 / 对比 1100 / 报告 1080 / 争议 980 / 问答 900 / 搜索 880 / 采集 820。
+- 卡片密度两档：**全宽卡**（搜索/收件箱，正文 13.5px）与**窄列卡**（对比页侧列、
+  证据芯片行，12.5px + 更紧内边距）。同密度档内的卡不得混用两种正文字号。
 - 页头：`PageHeader`（标题 19px/600 + 描述 13px muted + 右侧 actions shrink-0，
-  根容器 flex-wrap 允许换行）。各页不要自造标题区。
+  根容器 flex-wrap 允许换行；actions 包装层带 `print:hidden`，打印只留内容）。
+  各页不要自造标题区。
+- 正文排版梯度（`.reno-md` 报告正文）：页面标题 19 > h1 18 > h2 16 > 正文 15。
+  改标题字号必须维持这条单调梯度。
 - 工具栏（搜索/筛选行）：`flex flex-wrap items-center gap-2`；输入类给
   `min-w`（搜索输入 `min-w-[220px] flex-[1_1_220px]`）保证窄屏换行后仍有效，
   禁止让固定宽度筛选器把输入挤扁（实测 375px 曾被挤到 110px）。
 - 列表行/卡片：桌面真表格（`hidden md:block`），手机卡片（`md:hidden`），不做压缩表格。
+- 行内键值对（如价格行）：`flex flex-wrap gap-x-2 gap-y-0.5` + 标签 `shrink-0`，
+  窄屏自然换行到标签下，禁止挤成单行截断。
+- **无归属对象的数据行（video 已删/缺失）渲染静态元素**（div/li/span），禁止
+  `Link to="#"` 或挂 href 的死链——死链点击会导航回首页，且语义上是可用链接。
+  长标题加 `title` 属性保完整内容可达。
 - 滚动归属：页面滚（main）为主；问答页、工作台证据流为局部滚 + `overscroll-contain`。
   局部定高容器用固定高度（如证据流 h-64 / clamp），禁止位图加载引发 CLS。
 
@@ -55,18 +71,30 @@
   max-md:-mb-4 max-md:mt-auto`（全断点贴底，长内容滚动时仍可提交）。
 - 移动端弹窗为全屏任务面板（max-md 变体），表单 flex 链 `max-md:flex max-md:min-h-0
   max-md:flex-1 max-md:flex-col` 不得破坏。
+- 移动端弹窗顶部安全区：面板 `max-md:pt-[max(1rem,env(safe-area-inset-top))]`，
+  sticky 头负边距同值补偿（`max-md:-mt-[max(1rem,env(safe-area-inset-top))]`），
+  刘海屏下关闭钮不被状态条吞掉。
+- pop-in 弹窗动画只允许 scale/opacity；**禁止 translate**。Tailwind v4 里
+  `-translate-x-1/2` 生成独立 `translate` CSS 属性，与 keyframes 的 `transform`
+  叠加（不是覆盖），会让居中弹窗双重偏移跳位（2026-09-29 实测修复）。
 - z 序：toast 70 > dialog/drawer 50。toast 在手机上用
   `max-md:bottom-[calc(var(--reno-bottom-occupy,0px)+12px)]` 避让底部导航。
 
 ## 5. 状态
 
-- disabled：组件基类统一 `disabled:opacity-50 disabled:pointer-events-none`；
+- disabled：组件基类统一 `disabled:pointer-events-none disabled:opacity-50`；
   页面不得再覆写 disabled 配色（已删除 import-dialog 的灰描边覆写）。
 - 焦点：全局 `*:focus-visible` 2px outline；输入类 `focus:border-acc + focus:ring-2
   focus:ring-acc/25`（ring 不产生布局位移）。
 - 加载态尺寸稳定：按钮内 spinner 用等尺寸图标替换文本不发生跳宽；
   骨架屏（ListSkeleton）结构与内容对齐。
 - 空态/错误态/后台刷新警告：一律用 `components/shared/states.tsx`，不得各页自造。
+  `EmptyState` 有 `compact` 档（px-4 py-8 / 13px），用于侧列、面板内的局部空态；
+  页面级首屏空态用默认档并可带 action。
+- 骨架屏防 CLS：数据就位前区域高度已知时用与内容同尺寸的 `Skeleton`
+  （如采集页健康卡 57px），不得渲染 `null` 留塌陷。
+- 骨架行数与真实内容首屏行数对齐（如证据流 4 行 ≈ clamp 下限 240px），
+  避免加载完成瞬间明显跳动。
 
 ## 6. 交互细节
 
@@ -76,6 +104,10 @@
   `!e.nativeEvent.isComposing` 守卫。
 - 图标：行内 lucide 14–16px；按钮内图标与文字 `gap-1.5`；纯图标按钮用 size 档，
   不手工定宽高。
+- 警示图标：横幅/条目内的警示一律 `<ShieldAlert size={13} className="mt-0.5 shrink-0" />`
+  配 `items-start` 行（对比页冲突横幅范本），不再用 ⚠ 文字字符（基线不稳、字号联动）。
+- 「有分歧」横幅统一 `st-review` 语义类（三类横幅同屏时不混 st-wait/st-review）；
+  A/B 侧别标识用 acc/neutral（侧别是对照关系，不是证据模态，禁挪用 asr/ocr/vis 色）。
 
 ## 7. 部署相关
 
@@ -105,3 +137,40 @@
 （桌面鼠标场景、独行等高）；工作台模态过滤钮移动增大/桌面紧凑的触控优先设计；
 采集页书签拖块 rose 色（有意视觉锚点）；工作台标题移动端 truncate（头部高度稳定，
 完整标题有 title 属性 + 收件箱卡片两行截断）。
+
+## 9. 2026-09-29 检查与修复记录
+
+三视角静态审计 36 条（全部经反方质证成立）+ Chrome 实测（1440/768/375 三档、
+亮暗双主题、几何/溢出/对比度/动画采样）。处置分「修复」「仅入册」「不适用」三类。
+
+| 问题 | 位置 | 处置 | 验证 |
+|---|---|---|---|
+| 弹窗 pop-in `transform` 与 `-translate-x-1/2` 的 `translate` 属性叠加 → 居中偏移跳位 | global.css keyframes | keyframes 去 translate 纯 scale | 逐帧采样 11 点中心恒 (720,450) maxDrift=0 ✓ |
+| 报告页 768 死区：目录不可达 + `isDesktop` matchMedia 快照不随 resize 重算 | reports-page | 删 isDesktop，`?r=` 单一事实源 + CSS 断点 `hidden lg:block` | 768 实测目录可见/切换/返回全通 ✓ |
+| 引用芯片 `scale-[0.92]` 模糊 + 无 video 时死链 `Link to="#"` | ask-page | Badge `size="sm"`；无 video 渲染静态 span | 测试 43/43 + 375 目检 ✓ |
+| 搜索/对比结果行无 video 死链 | search-page, compare-page | 无 video 分支渲染静态 div/li | 复测无 a[href="#"] ✓ |
+| 对比页提交钮手写 h-9 按钮不入档位体系 | compare-page | `Button size="md"` | 实测 33.75/41.25 档位 ✓ |
+| 冲突横幅 ⚠ 字符基线不稳 | compare-page | ShieldAlert 13px `mt-0.5 shrink-0` | 暗色+亮色目检 ✓ |
+| ask 分歧横幅 st-wait 与语义 review 不符 | ask-page | 统一 st-review | 类核对 ✓ |
+| A/B 侧别挪用模态色系 | conflicts-page | acc / neutral + 注释 | 暗色实测对比度 ✓ |
+| CTYPE 手写小徽章 | conflicts-page | `Badge tone="neutral"` | 375 复测 ✓ |
+| 采集状态点手写色点 | collect-page | `Badge tone={ok?"ok":"wait"}` | 复测 ✓ |
+| 健康卡 isPending 渲染 null → CLS | collect-page | 同尺寸 Skeleton 57px | 类核对 ✓ |
+| Select 箭头 inline backgroundImage 不随主题 | ui/field | `--ctl-arrow` token + `.select-arrow` | 构建产物 grep 双主题 ✓ |
+| 暗色 `--st-bad-bg` 7 位 hex 无效（存量笔误） | global.css | `#450a0aaa` | 构建产物 grep ✓ |
+| `.reno-md` h1/h2 与页标题 19px 梯度倒挂 | global.css | h1 18 / h2 16 | 构建产物 grep + 实测 ✓ |
+| disabled 60% 与全局 50% 不一致 | ui/field | 统一 50 + pointer-events-none | 类核对 ✓ |
+| 收件箱工具栏 13px 覆写破坏档位 | inbox-page | 删覆写 | 375 实测 33.75 一档 ✓ |
+| 价格行单行挤压 | search-page | flex-wrap + shrink-0 标签 | 类核对 + 375 无溢出 ✓ |
+| 工具栏 print 版式杂入操作钮 | states.tsx | actions `print:hidden` | 构建产物 @media print ✓ |
+| 弹窗移动端顶部无安全区 | ui/dialog | `max(1rem,env(safe-area-inset-top))` 双补偿 | 类级验证（真机未测）△ |
+| 空侧列/空证据流裸 `<p>` 自造空态 | compare/search 页、workbench 面板 | `EmptyState compact` | 375/1440 复测 ✓ |
+| 证据流骨架 7 行 vs clamp 下限 240px | workbench-page | rows=4 | 类核对 ✓ |
+| 令牌门手写 input/button 不入组件体系 | root-layout | Input/Button + IME 守卫 | 代码级验证（运行时未测）△ |
+
+仅入册（不拉平的有意差异）：对比/搜索卡密度两档并存（全宽 13.5 / 窄列 12.5）；
+报告页 xl 档 TOC DOM 顺序在正文之后（键盘 Tab 顺序取舍，视觉布局由 grid 控制）；
+报告目录项与 TOC 输入框跨语义区 5.25px 高度差（目录是内容列表非工具行）。
+
+不适用：error-boundary 手写按钮（崩溃兜底零依赖场景，不应引组件依赖）；
+报告 TOC DOM 顺序同上；三处已确认有意设计的模态过滤钮差异。

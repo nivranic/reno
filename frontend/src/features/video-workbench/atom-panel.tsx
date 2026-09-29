@@ -9,6 +9,7 @@ import { fmtMs } from "@/lib/time";
 import { cn } from "@/lib/cn";
 import { PolarityBadge, AtomStatusBadge } from "@/components/shared/status-badge";
 import { ModalityTag } from "@/components/shared/modality-tag";
+import { EmptyState } from "@/components/shared/states";
 import { Input, Select } from "@/components/ui/field";
 import { useWorkbench } from "./workbench-store";
 
@@ -74,7 +75,7 @@ export function AtomPanel({ atoms, className }: { atoms: WorkbenchAtom[]; classN
       />
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1">
         {sorted.length === 0 ? (
-          <p className="px-2 py-8 text-center text-[13px] text-muted">没有匹配的知识原子</p>
+          <EmptyState compact title="没有匹配的知识原子" />
         ) : null}
         {sorted.map((a) => (
           <AtomCard

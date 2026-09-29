@@ -52,15 +52,17 @@ const NATURE: Record<string, { tone: Tone; label: string }> = {
 export function NatureBadge({
   nature,
   className,
+  size = "md",
 }: {
   nature?: string | null;
   className?: string;
+  size?: "sm" | "md";
 }) {
   if (!nature) return null;
   const m = NATURE[nature];
-  if (!m) return <Badge tone="review" className={className}>{nature}</Badge>;
+  if (!m) return <Badge tone="review" size={size} className={className}>{nature}</Badge>;
   return (
-    <Badge tone={m.tone} className={className}>
+    <Badge tone={m.tone} size={size} className={className}>
       {m.label}
     </Badge>
   );

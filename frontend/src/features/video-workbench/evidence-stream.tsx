@@ -7,6 +7,7 @@ import type { TimelineEvent } from "@/lib/api-types";
 import { fmtMs } from "@/lib/time";
 import { cn } from "@/lib/cn";
 import { ModalityTag } from "@/components/shared/modality-tag";
+import { EmptyState } from "@/components/shared/states";
 
 interface RowProps {
   event: TimelineEvent;
@@ -136,9 +137,7 @@ export function EvidenceStream({
         aria-label={`证据流,共 ${events.length} 条`}
       >
         {events.length === 0 ? (
-          <p className="px-4 py-10 text-center text-[13px] text-muted">
-            当前筛选条件下没有证据事件
-          </p>
+          <EmptyState compact title="当前筛选条件下没有证据事件" />
         ) : (
           <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
             {virtualizer.getVirtualItems().map((vi) => {

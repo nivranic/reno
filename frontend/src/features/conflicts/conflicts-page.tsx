@@ -14,6 +14,7 @@ import { fmtDate } from "@/lib/time";
 import { cn } from "@/lib/cn";
 import { PageHeader, EmptyState, ErrorState, ListSkeleton, RefreshWarning } from "@/components/shared/states";
 import { ConflictStatusBadge } from "@/components/shared/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
@@ -129,9 +130,7 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
     >
       <header className="mb-3 flex flex-wrap items-center gap-2">
         <span className="font-mono text-[11.5px] text-muted">{conflict.conflict_id}</span>
-        <span className="rounded-full border border-line bg-surface-2 px-2 py-0.5 text-[11.5px] text-ink-2">
-          {CTYPE_LABEL[conflict.ctype] ?? conflict.ctype}
-        </span>
+        <Badge tone="neutral">{CTYPE_LABEL[conflict.ctype] ?? conflict.ctype}</Badge>
         <ConflictStatusBadge status={conflict.status} />
         <span className="ml-auto font-mono text-[11px] text-muted">{fmtDate(conflict.created_at)}</span>
       </header>
@@ -244,8 +243,12 @@ function Side({ side, tag }: { side: Conflict["side_a"]; tag: string }) {
       <div className="mb-1 flex items-center gap-2">
         <span
           className={cn(
-            "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold",
-            tag === "A" ? "bg-asr-bg text-asr" : "bg-ocr-bg text-ocr",
+            "flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-bold",
+            // side identity, NOT evidence modality: asr/ocr colors are
+            // reserved for evidence source and must not mark A/B立场
+            tag === "A"
+              ? "border-acc-line bg-acc-soft text-acc"
+              : "border-line bg-surface-2 text-ink-2",
           )}
         >
           {tag}

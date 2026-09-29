@@ -366,7 +366,9 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
             {events.isError ? (
               <ErrorState error={events.error} onRetry={() => void events.refetch()} context="证据数据" />
             ) : !events.isSuccess ? (
-              <ListSkeleton rows={7} />
+              // 4 rows (204px) fit the 240px clamp floor; 7 rows (363px)
+              // overflowed the fixed-height container with no inner scroll
+              <ListSkeleton rows={4} />
             ) : (
               <EvidenceStream
                 events={filtered}

@@ -33,9 +33,12 @@ describe("AskPage", () => {
     });
     // conflict banner for the disputed topic
     expect(screen.getByText(/有分歧的主题/)).toBeInTheDocument();
-    // citation chip deep-links into the workbench at the evidence timestamp
-    const chip = screen.getByTitle("卫生间淋浴区墙面防水应涂刷约1.8米高");
-    expect(chip).toHaveAttribute("href", "/videos/BVmock000?t=210000");
+    // citation chip deep-links into the workbench at the evidence timestamp;
+    // tooltip carries the full video title (what gets truncated) plus claim
+    const chip = screen.getByTitle(
+      "卫生间防水施工全流程(mock)：卫生间淋浴区墙面防水应涂刷约1.8米高",
+    );
+    expect(chip.closest("a")).toHaveAttribute("href", "/videos/BVmock000?t=210000");
     // input cleared after send
     expect(box).toHaveValue("");
   });

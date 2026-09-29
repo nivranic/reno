@@ -23,27 +23,49 @@ export function PageHeader({
         <h1 className="text-[19px] font-semibold leading-7 text-ink">{title}</h1>
         {desc ? <p className="mt-0.5 text-[13px] text-muted">{desc}</p> : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex shrink-0 items-center gap-2 print:hidden">{actions}</div>
+      ) : null}
     </div>
   );
 }
 
+/** EmptyState: page-level by default; compact for dense panels (workbench
+ *  side panels, compare sidebars) so empty states stay single-entry. */
 export function EmptyState({
   icon,
   title,
   desc,
   action,
+  compact,
 }: {
   icon?: ReactNode;
   title: string;
   desc?: ReactNode;
   action?: ReactNode;
+  compact?: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-panel border border-dashed border-line-2 bg-surface/50 px-6 py-14 text-center">
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center gap-1.5 rounded-panel border border-dashed border-line-2 bg-surface/50 text-center",
+        compact ? "px-4 py-8" : "gap-2 px-6 py-14",
+      )}
+    >
       {icon ? <div className="text-muted">{icon}</div> : null}
-      <p className="text-[15px] font-medium text-ink-2">{title}</p>
-      {desc ? <p className="max-w-md text-[13px] leading-relaxed text-muted">{desc}</p> : null}
+      <p className={cn(compact ? "text-[13px]" : "text-[15px]", "font-medium text-ink-2")}>
+        {title}
+      </p>
+      {desc ? (
+        <p
+          className={cn(
+            compact ? "max-w-sm text-[12px]" : "max-w-md text-[13px]",
+            "leading-relaxed text-muted",
+          )}
+        >
+          {desc}
+        </p>
+      ) : null}
       {action ? <div className="mt-2">{action}</div> : null}
     </div>
   );

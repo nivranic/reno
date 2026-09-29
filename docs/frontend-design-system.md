@@ -2,7 +2,7 @@
 
 > 实现于 `frontend/src/styles/global.css`(Tailwind 4 CSS-first tokens)与
 > `frontend/src/components/`。产品名:**reno · 装修知识工作台**。
-> 姊妹篇:**布局/控件尺寸/状态/弹层规则**见 `docs/frontend-style-rules.md`(2026-09-27);
+> 姊妹篇:**布局/控件尺寸/状态/弹层规则**见 `docs/frontend-style-rules.md`(2026-09-29),
 > 两份互补,改样式前都看。
 
 ## 1. 设计原则
@@ -30,17 +30,22 @@
 | 状态 | st-ok/run/wait/bad/review 各三档 | 同名深色套 | 见 status-badge.tsx 映射 |
 
 Tailwind 工具类映射:`bg-bg / bg-surface / text-ink / border-line / bg-acc / text-asr / bg-vis-bg …`
-另有 `--radius-panel: 12px`(`rounded-panel`)与 `--radius-ctl: 8px`(`rounded-ctl`)。
+另有 `--radius-panel: 12px`(`rounded-panel`)与 `--radius-ctl: 8px`(`rounded-ctl`);
+`--ctl-arrow`(light/dark 双套内联 SVG,`.select-arrow` 类)是 Select 下拉箭头专用 token,
+主题切换自动跟随,页面不得 inline 覆写。
 
 ## 3. 字体与排版
 
 - 系统字体栈(离线,无远程字体):`system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei"`
 - 等宽(时间戳):`ui-monospace, Cascadia Mono, Consolas` + `tabular-nums`
 - html 基准 15px;正文 13–15px;页面标题 19px;报告正文 15px/1.75 行高,阅读宽 `74ch`
+- 标题梯度(报告链路):页面标题 19 > `.reno-md` h1 18 > h2 16 > 正文 15,单调递减不倒挂
 
 ## 4. 动效
 
 - 120–200ms 短过渡(颜色/透明度);Dialog 出入 150/160ms keyframes。
+- pop-in 只用 scale/opacity,**禁 translate**(Tailwind v4 的 `-translate-x-1/2` 生成独立
+  `translate` 属性,与 keyframes `transform` 叠加导致居中跳位;详见 style-rules §4)。
 - `prefers-reduced-motion: reduce` 全局降为 0.01ms。
 
 ## 5. 布局体系
@@ -54,10 +59,12 @@ Tailwind 工具类映射:`bg-bg / bg-surface / text-ink / border-line / bg-acc /
 
 ## 6. 共享组件清单
 
-- `ui/`:Button(cva 变体)、Badge(7 tone)、Input/Textarea/Select/Field、
+- `ui/`:Button(cva 变体)、Badge(7 tone × md/sm 两尺寸,sm=10.5px/15px 行高用于卡内芯片)、
+  Input/Textarea/Select/Field、
   Dialog(Radix,焦点陷阱/ESC/焦点归还)、Tabs、Spinner/Skeleton/ListSkeleton
 - `shared/`:StatusBadge 系列(视频/原子/立场/冲突状态,未知值可见可诊断)、
-  ModalityTag(+图例,未知模态显示 `?`)、PageHeader、EmptyState、ErrorState、
+  ModalityTag(+图例,未知模态显示 `?`)、PageHeader(actions 带 print:hidden)、
+  EmptyState(默认档/compact 档)、ErrorState、
   RefreshWarning、MarkdownView(安全渲染+标题锚点+TOC)、Toast(单入口+按 key 去重)
 
 ## 7. 可访问性要点

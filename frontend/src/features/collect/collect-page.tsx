@@ -10,10 +10,11 @@ import { postConfigModel } from "@/lib/api";
 import { errMessage } from "@/app/query-utils";
 import { PageHeader, ErrorState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/field";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/components/shared/toaster";
-import { cn } from "@/lib/cn";
 
 function bookmarkletCode(origin: string) {
   return (
@@ -92,7 +93,11 @@ export default function CollectPage() {
             </Select>
           </div>
         </div>
-      ) : null}
+      ) : (
+        // reserve the status bar's height while health loads — inserting the
+        // ~57px bar after fetch shifted every step card below (CLS)
+        <Skeleton className="mb-4 h-[57px] w-full rounded-panel" />
+      )}
 
       {/* platform tabs (shared Tabs component — same segmented look as
           conflicts filter / workbench mobile tabs) */}
@@ -215,17 +220,10 @@ export default function CollectPage() {
 
 function StatusChip({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11.5px]",
-        ok
-          ? "border-st-ok-line bg-st-ok-bg text-st-ok"
-          : "border-st-wait-line bg-st-wait-bg text-st-wait",
-      )}
-    >
+    <Badge tone={ok ? "ok" : "wait"}>
       {ok ? <Check size={11} /> : <Info size={11} />}
       {label}
-    </span>
+    </Badge>
   );
 }
 

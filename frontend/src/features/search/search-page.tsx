@@ -206,13 +206,8 @@ function ResultCard({ row, tokens }: { row: SearchRow; tokens: string[] }) {
   const cond = Object.entries(row.conditions ?? {}).filter(
     ([k, v]) => k !== "_notes" && v !== "" && v != null,
   );
-  return (
-    <Link
-      to={row.video ? `/videos/${row.video}?t=${row.ms}` : "#"}
-      className={row.video ? "" : "pointer-events-none"}
-      aria-label={`跳转到视频 ${row.video_title || row.video},时间 ${fmtMs(row.ms)}`}
-    >
-      <div className="rounded-panel border border-line bg-surface p-3.5 transition-colors hover:border-acc-line hover:bg-acc-soft/20">
+  const card = (
+    <div className="rounded-panel border border-line bg-surface p-3.5 transition-colors hover:border-acc-line hover:bg-acc-soft/20">
         <div className="flex items-start gap-2">
           <PolarityBadge polarity={row.polarity} className="mt-0.5 shrink-0" />
           <p className="min-w-0 flex-1 text-[13.5px] font-medium leading-relaxed text-ink">
@@ -225,16 +220,16 @@ function ResultCard({ row, tokens }: { row: SearchRow; tokens: string[] }) {
           </p>
         ) : null}
         {row.prices?.length ? (
-          <p className="mt-1 pl-1 text-[12px] text-muted">
-            价格:
+          <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 pl-1 text-[12px] text-muted">
+            <span className="shrink-0">价格:</span>
             {row.prices?.map((p, i) => (
-              <span key={i} className="mr-2 whitespace-nowrap">
+              <span key={i} className="whitespace-nowrap">
                 {p.object} {p.amount}
                 {p.unit ?? ""}
                 {p.price_kind ? `(${p.price_kind})` : "(未注明口径)"}
               </span>
             ))}
-          </p>
+          </div>
         ) : null}
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 pl-1 text-[11.5px] text-muted">
           <span>{row.category ?? "—"}</span>
@@ -249,17 +244,30 @@ function ResultCard({ row, tokens }: { row: SearchRow; tokens: string[] }) {
           <DimensionBadge dimension={row.dimension} />
           <NatureBadge nature={row.evidence_nature} />
           {cond.length > 0 ? (
-            <span className="min-w-0 truncate">
+            <span
+              className="min-w-0 truncate"
+              title={cond.map(([k, v]) => `${k}=${String(v)}`).join(";")}
+            >
               条件:{cond.map(([k, v]) => `${k}=${String(v)}`).join(";")}
             </span>
           ) : null}
           {row.mod ? <ModalityTag mod={row.mod} size="sm" /> : null}
           <span className="font-mono tabular-nums">{fmtMs(row.ms)}</span>
-          <span className="min-w-0 truncate">
+          <span className="min-w-0 truncate" title={row.video_title || row.video || undefined}>
             {row.video_title || row.video || "无来源"}
           </span>
         </div>
       </div>
+  );
+  // rows without a video render as a static card, not a dead "#" link that
+  // stays keyboard-focusable (pointer-events-none only blocks the mouse)
+  if (!row.video) return card;
+  return (
+    <Link
+      to={`/videos/${row.video}?t=${row.ms}`}
+      aria-label={`跳转到视频 ${row.video_title || row.video},时间 ${fmtMs(row.ms)}`}
+    >
+      {card}
     </Link>
   );
 }
