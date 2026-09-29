@@ -1,0 +1,5 @@
+{"ts":"2026-09-29T07:15:37.513Z","sessionId":"2e1d6c5fc83e","hookEvent":"SessionStart","mode":"session-start","toolName":null,"policyVersion":"0.1.0","status":"session-start"}
+{"ts":"2026-09-29T07:30:36.591Z","sessionId":"87f6ce25b1e8","hookEvent":"SessionStart","mode":"session-start","toolName":null,"policyVersion":"0.1.0","status":"session-start"}
+{"ts":"2026-09-29T07:38:23.218Z","sessionId":"87f6ce25b1e8","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
+{"ts":"2026-09-29T07:46:57.900Z","sessionId":"87f6ce25b1e8","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}
+{"ts":"2026-09-29T07:46:58.824Z","sessionId":"87f6ce25b1e8","hookEvent":"PostToolUseFailure","mode":"tool-failure","toolName":"Edit","policyVersion":"0.1.0","status":"tool-failed"}

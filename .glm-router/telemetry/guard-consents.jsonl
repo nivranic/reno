@@ -17,3 +17,6 @@
 {"ts":"2026-09-27T08:09:32.723Z","rule":"write_outside_workspace","detail":"C:\\Users\\11585\\.zcode\\cli\\memories\\projects\\reno-9aec0a30dd1ba9d5\\memory\\MEMORY.md"}
 {"ts":"2026-09-27T08:09:47.083Z","rule":"write_outside_workspace","detail":"C:\\Users\\11585\\.zcode\\cli\\memories\\projects\\reno-9aec0a30dd1ba9d5\\memory\\MEMORY.md"}
 {"ts":"2026-09-27T08:26:05.967Z","rule":"git_push","detail":"git add .glm-router/telemetry/ && git commit -m \"chore: telemetry housekeeping (2026-09-27)\" && git push 2>&1 && git status -sb | head -1"}
+{"ts":"2026-09-27T10:58:22.307Z","rule":"git_push","detail":"git push 2>&1 && git status -sb | head -1"}
+{"ts":"2026-09-29T08:06:23.525Z","rule":"write_outside_workspace","detail":"C:\\Users\\11585\\.zcode\\cli\\memories\\projects\\reno-9aec0a30dd1ba9d5\\memory\\reno-development-project.md"}
+{"ts":"2026-09-29T08:06:41.394Z","rule":"write_outside_workspace","detail":"C:\\Users\\11585\\.zcode\\cli\\memories\\projects\\reno-9aec0a30dd1ba9d5\\memory\\MEMORY.md"}
