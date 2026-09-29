@@ -27,7 +27,9 @@ def connect(db: Path = None) -> sqlite3.Connection:
 
 def _migrate(con):
     """Idempotent lightweight migrations (ALTER ADD COLUMN style)."""
-    need = {"visual_observation": {"measurement": "TEXT"}}
+    need = {"visual_observation": {"measurement": "TEXT"},
+            "knowledge_atom": {"dimension": "TEXT", "evidence_nature": "TEXT",
+                               "exceptions": "TEXT", "prices_json": "TEXT"}}
     for table, cols in need.items():
         have = {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}
         if not have:
@@ -139,20 +141,43 @@ def replace_visual(con, video_id, obs):
 
 # ---------- atoms ----------
 
+# v2 enrichment columns that survive atomize reruns: the LLM may re-emit the
+# same atom id (idx-stable) without these fields, so prior backfill/manual
+# values are carried over unless the new row supplies its own.
+V2_ATOM_COLS = ("dimension", "evidence_nature", "exceptions", "prices_json")
+
+
+def _json_col(v) -> str | None:
+    """Accept dict/list round-tripped from all_atoms or a pre-serialized str."""
+    if v is None or isinstance(v, str):
+        return v
+    return j(v)
+
+
 def replace_atoms(con, video_id, atoms):
     for a in atoms:
+        old = con.execute(
+            f"SELECT {', '.join(V2_ATOM_COLS)} FROM knowledge_atom WHERE id=?",
+            (a["id"],)).fetchone()
+        carried = dict(old) if old else {}
+        for col in V2_ATOM_COLS:
+            if not a.get(col) and carried.get(col):
+                a[col] = carried[col]
         con.execute("DELETE FROM knowledge_atom WHERE id=?", (a["id"],))
         con.execute(
             """INSERT INTO knowledge_atom (id, video_id, category, stage, space, subject,
                    claim, reason, risk_if_ignored, polarity, conditions_json,
-                   parameters_json, confidence, status, cluster_id, model, prompt_version, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   parameters_json, confidence, status, cluster_id, model, prompt_version, created_at,
+                   dimension, evidence_nature, exceptions, prices_json)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (a["id"], video_id, a.get("category"), a.get("stage"), a.get("space"),
              a.get("subject"), a["claim"], a.get("reason"), a.get("risk_if_ignored"),
              a["polarity"], j(a.get("conditions")), j(a.get("parameters")),
              a.get("confidence", 0.5), a.get("status", "candidate"),
              a.get("cluster_id"), a.get("model"), a.get("prompt_version"),
-             a.get("created_at", now())))
+             a.get("created_at", now()),
+             a.get("dimension"), a.get("evidence_nature"),
+             _json_col(a.get("exceptions")), _json_col(a.get("prices_json"))))
         con.execute("DELETE FROM evidence_ref WHERE atom_id=?", (a["id"],))
         for r in a["evidence_refs"]:
             con.execute(
@@ -201,6 +226,8 @@ def all_atoms(con, video_id: str | None = None):
         a = dict(row)
         a["conditions"] = uj(a.pop("conditions_json"))
         a["parameters"] = uj(a.pop("parameters_json")) or []
+        a["prices"] = uj(a.pop("prices_json")) or []
+        a["exceptions"] = uj(a.pop("exceptions")) or []
         a["evidence_refs"] = []
         out.append(a)
     by_id = {a["id"]: a for a in out}

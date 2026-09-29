@@ -11,6 +11,7 @@
 import type {
   AskHistoryTurn,
   AskResponse,
+  CompareResponse,
   ConflictsResponse,
   EventsResponse,
   FacetsResponse,
@@ -152,14 +153,28 @@ export async function getEvents(
 export const getConflicts = (signal?: AbortSignal) =>
   apiGet<ConflictsResponse>("/api/conflicts", signal);
 
+export interface SearchFilters {
+  category?: string;
+  space?: string;
+  stage?: string;
+  dimension?: string;
+}
+
 export const searchAtoms = (
   q: string,
-  category: string,
-  space: string,
+  filters: SearchFilters = {},
   signal?: AbortSignal,
-) =>
-  apiGet<SearchResponse>(
-    `/api/search?q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}&space=${encodeURIComponent(space)}`,
+) => {
+  const params = new URLSearchParams({ q });
+  for (const [k, v] of Object.entries(filters)) {
+    if (v) params.set(k, v);
+  }
+  return apiGet<SearchResponse>(`/api/search?${params.toString()}`, signal);
+};
+
+export const getCompare = (items: string, signal?: AbortSignal) =>
+  apiGet<CompareResponse>(
+    `/api/compare?items=${encodeURIComponent(items)}`,
     signal,
   );
 

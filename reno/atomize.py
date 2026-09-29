@@ -7,10 +7,19 @@ import time
 from pathlib import Path
 
 from . import config, db, llm
-from .dict import normalize_param, taxonomy
+from .dict import normalize_param, stage_for, taxonomy
 
-PROMPT_FILE = Path(__file__).parent / "prompts" / "atomize_v1.txt"
+PROMPT_DIR = Path(__file__).parent / "prompts"
 TAX = taxonomy()
+
+
+def _prompt_text() -> str:
+    """Prompt file selected by config version; falls forward to v2."""
+    ver = config.get("atomize_prompt_version") or "v2"
+    p = PROMPT_DIR / f"atomize_{ver}.txt"
+    if not p.exists():
+        p = PROMPT_DIR / "atomize_v2.txt"
+    return p.read_text(encoding="utf-8")
 
 
 def timeline_text(con, video_id: str) -> str:
@@ -39,12 +48,48 @@ def composite_confidence(atom, refs):
     mods = {r["modality"] for r in refs}
     c += 0.2 if "ocr" in mods else 0.0
     c += 0.1 if len(mods) >= 2 else 0.0
-    c += 0.1 if (atom.get("conditions") or {}).get("authority_level") else 0.0
+    # single source of truth for "cited a standard": evidence_nature column
+    # (conditions.authority_level is the legacy v1 location, still honored)
+    c += 0.1 if (atom.get("evidence_nature") == "cited_standard"
+                 or (atom.get("conditions") or {}).get("authority_level")) else 0.0
     if mods <= {"asr"}:
         c -= 0.05
     if atom.get("parameters") and len({r["video_id"] for r in refs}) == 1:
         c -= 0.05
     return round(max(0.0, min(1.0, c)), 2)
+
+
+def _validate_price(raw_price):
+    """Keep only price entries with a numeric amount and an object name;
+    price_kind outside the controlled vocabulary degrades to None (shown as
+    未注明口径) instead of being silently coerced to a wrong bucket."""
+    out = []
+    for p in raw_price or []:
+        if not isinstance(p, dict):
+            continue
+        amount = p.get("amount")
+        if not isinstance(amount, (int, float)) or isinstance(amount, bool):
+            continue
+        if not (p.get("object") or "").strip():
+            continue
+        kind = p.get("price_kind")
+        out.append({
+            "object": str(p["object"]).strip()[:80],
+            "brand": (p.get("brand") or "").strip()[:40],
+            "model": (p.get("model") or "").strip()[:40],
+            "spec": (p.get("spec") or "").strip()[:80],
+            "region": (p.get("region") or "").strip()[:40],
+            "channel": (p.get("channel") or "").strip()[:60],
+            "amount": float(amount),
+            "unit": (p.get("unit") or "").strip()[:20],
+            "basis": (p.get("basis") or "").strip()[:40],
+            "price_kind": kind if kind in TAX["price_kinds"] else None,
+            "includes": [str(x)[:40] for x in (p.get("includes") or [])[:8]
+                         if isinstance(x, str)],
+            "valid_at": (p.get("valid_at") or "").strip()[:40],
+            "note": (p.get("note") or "").strip()[:200],
+        })
+    return out
 
 
 def _validate_atom(raw, video_id, idx, index, dur):
@@ -72,27 +117,48 @@ def _validate_atom(raw, video_id, idx, index, dur):
     cat = raw.get("category") or "其他"
     if cat not in TAX["categories"]:
         cat = "其他"
+    # stage is derived, never trusted from the model (v2)
+    stage = stage_for(cat)
     space = raw.get("space") or "全屋"
     if space not in TAX["spaces"]:
         space = "全屋"
     pol = raw.get("polarity") or "neutral"
     if pol not in TAX["polarities"]:
         pol = "neutral"
+    conditions = raw.get("conditions") or {}
+    # legacy single-source migration: conditions.authority_level ->
+    # evidence_nature column (v1 prompts wrote it into conditions)
+    nature = raw.get("evidence_nature")
+    if nature not in TAX["evidence_natures"]:
+        nature = None
+    legacy_auth = conditions.pop("authority_level", None)
+    if nature is None and legacy_auth:
+        nature = legacy_auth  # v1 only ever wrote cited_standard here
+    dim = raw.get("dimension")
+    if dim not in TAX["dimensions"]:
+        dim = None  # unclassifiable stays empty -> 待归类, never force-fitted
+    exceptions = [str(x).strip()[:200] for x in (raw.get("exceptions") or [])
+                  if isinstance(x, str) and str(x).strip()][:8]
+    prices = _validate_price(raw.get("price"))
     atom = {
         "id": f"atom_{video_id[-6:]}_{idx:03d}".replace("_", "_", 1),
-        "video_id": video_id, "category": cat,
-        "stage": raw.get("stage"), "space": space, "subject": raw.get("subject"),
+        "video_id": video_id, "category": cat, "stage": stage, "space": space,
+        "subject": raw.get("subject"),
         "claim": claim, "reason": raw.get("reason"),
         "risk_if_ignored": raw.get("risk_if_ignored"), "polarity": pol,
-        "conditions": raw.get("conditions") or {},
+        "conditions": conditions,
+        "dimension": dim, "evidence_nature": nature,
+        "exceptions": json.dumps(exceptions, ensure_ascii=False) if exceptions else None,
+        "prices_json": json.dumps(prices, ensure_ascii=False) if prices else None,
         "parameters": params, "evidence_refs": ev_refs,
-        "confidence": composite_confidence(raw, ev_refs),
+        "confidence": composite_confidence(
+            {"evidence_nature": nature, "conditions": conditions}, ev_refs),
         "status": "candidate", "cluster_id": None,
         "model": None, "prompt_version": config.get("atomize_prompt_version"),
         "created_at": db.now(),
     }
     if raw.get("notes"):
-        atom["conditions"]["_notes"] = raw["notes"]
+        conditions["_notes"] = raw["notes"]
     return atom
 
 
@@ -105,7 +171,7 @@ def run(con, video_id: str) -> dict:
         db.log_run(con, video_id, "atomize", ok=False, detail="empty timeline")
         con.commit()
         return {"n_atoms": 0, "error": "empty timeline"}
-    system = PROMPT_FILE.read_text(encoding="utf-8")
+    system = _prompt_text()
     messages = [{"role": "system", "content": system},
                 {"role": "user",
                  "content": f"视频标题:{asset['title']}\nUP主:{asset['author']}\n时长:{dur/1000:.0f}秒\n\n时间轴:\n{tl}"}]

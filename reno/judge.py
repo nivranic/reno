@@ -11,7 +11,15 @@ from pathlib import Path
 from . import config, db, llm
 from . import dedup
 
-PROMPT_FILE = Path(__file__).parent / "prompts" / "judge_v1.txt"
+PROMPT_DIR = Path(__file__).parent / "prompts"
+
+
+def _prompt_text() -> str:
+    ver = config.get("judge_prompt_version") or "v2"
+    p = PROMPT_DIR / f"judge_{ver}.txt"
+    if not p.exists():
+        p = PROMPT_DIR / "judge_v2.txt"
+    return p.read_text(encoding="utf-8")
 
 
 def _merge_candidates(sim_pairs, param_pairs):
@@ -34,12 +42,14 @@ def _merge_candidates(sim_pairs, param_pairs):
                         "a_claim": sim["a_claim"], "b_claim": sim["b_claim"],
                         "a_polarity": sim["a_polarity"], "b_polarity": sim["b_polarity"],
                         "a_conditions": sim["a_conditions"], "b_conditions": sim["b_conditions"],
+                        "a_nature": sim.get("a_nature"), "b_nature": sim.get("b_nature"),
                         "similarity": sim["similarity"]})
         else:
             out.append({"pair_id": i, "a": param["a"]["atom"], "b": param["b"]["atom"],
                         "a_claim": param["a"]["claim"], "b_claim": param["b"]["claim"],
                         "a_polarity": None, "b_polarity": None,
                         "a_conditions": param["a"]["conditions"], "b_conditions": param["b"]["conditions"],
+                        "a_nature": param["a"].get("nature"), "b_nature": param["b"].get("nature"),
                         "parameter": param["parameter"],
                         "a_value": param["a"]["value"], "b_value": param["b"]["value"]})
     return out
@@ -48,7 +58,7 @@ def _merge_candidates(sim_pairs, param_pairs):
 def _judge_llm(cands, batch_size: int = 15):
     """Batch judging: one JSON response per <=15 pairs. A single call over
     dozens of pairs exceeds max_tokens and gets truncated mid-JSON."""
-    system = PROMPT_FILE.read_text(encoding="utf-8")
+    system = _prompt_text()
     all_j, model_used = [], None
     for i in range(0, len(cands), batch_size):
         chunk = cands[i:i + batch_size]

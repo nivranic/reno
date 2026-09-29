@@ -61,6 +61,7 @@ describe("SearchPage (MSW-backed)", () => {
           return HttpResponse.json({
             results: [{ id: "stale", claim: "这是过期慢响应的结果", category: null,
                         space: null, polarity: "recommend", status: "candidate",
+                        conditions: {}, parameters: [], prices: [],
                         video: "BVslow", video_title: "慢", ms: 0, mod: "ASR",
                         evidence_text: "" }],
           });
@@ -68,6 +69,7 @@ describe("SearchPage (MSW-backed)", () => {
         return HttpResponse.json({
           results: [{ id: "fresh", claim: "这是新查询的结果", category: null,
                       space: null, polarity: "recommend", status: "candidate",
+                      conditions: {}, parameters: [], prices: [],
                       video: "BVfresh", video_title: "快", ms: 0, mod: "ASR",
                       evidence_text: "" }],
         });

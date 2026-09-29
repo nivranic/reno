@@ -2,6 +2,7 @@
  * Pages consume these; nothing duplicates server data into other stores. */
 import { queryOptions } from "@tanstack/react-query";
 import {
+  getCompare,
   getConflicts,
   getEvents,
   getFacets,
@@ -10,6 +11,7 @@ import {
   getVideoMeta,
   getVideos,
   searchAtoms,
+  type SearchFilters,
 } from "./api";
 
 export const qk = {
@@ -20,8 +22,9 @@ export const qk = {
   facets: ["facets"] as const,
   reports: ["reports"] as const,
   health: ["health"] as const,
-  search: (q: string, category: string, space: string) =>
-    ["search", q, category, space] as const,
+  search: (q: string, filters: SearchFilters) =>
+    ["search", q, filters] as const,
+  compare: (items: string) => ["compare", items] as const,
 };
 
 /** Inbox: adaptive polling — 3s while jobs are active, off otherwise
@@ -78,10 +81,18 @@ export const healthQuery = queryOptions({
   refetchOnWindowFocus: true,
 });
 
-export const searchQuery = (q: string, category: string, space: string) =>
+export const searchQuery = (q: string, filters: SearchFilters) =>
   queryOptions({
-    queryKey: qk.search(q, category, space),
-    queryFn: ({ signal }) => searchAtoms(q, category, space, signal),
+    queryKey: qk.search(q, filters),
+    queryFn: ({ signal }) => searchAtoms(q, filters, signal),
     enabled: q.trim().length > 0,
+    retry: 1,
+  });
+
+export const compareQuery = (items: string) =>
+  queryOptions({
+    queryKey: qk.compare(items),
+    queryFn: ({ signal }) => getCompare(items, signal),
+    enabled: items.split(",").filter((s) => s.trim()).length >= 2,
     retry: 1,
   });

@@ -69,31 +69,107 @@ def diff_report(video_ids=None) -> dict:
 
 
 def checklist_report() -> Path:
+    """v2: grouped by the DERIVED controlled stage; acceptance atoms get the
+    full inspection structure (stage/object/conditions/method/criteria).
+    Acceptance items without numeric parameters are flagged 判定依据待核实 —
+    the model must not invent thresholds."""
     con = db.connect()
     try:
         atoms = db.all_atoms(con)
         by_stage = defaultdict(list)
         for a in atoms:
-            if a["polarity"] in ("recommend", "require", "avoid") and a.get("confidence", 0) >= 0.55:
-                by_stage[a.get("stage") or a["category"] or "其他"].append(a)
-        lines = ["# 施工与验收 Checklist(自动生成)", ""]
+            if a["polarity"] in ("recommend", "require", "avoid", "optional") \
+                    and (a.get("confidence") or 0) >= 0.55:
+                by_stage[a.get("stage") or "未分类"].append(a)
+        lines = ["# 施工与验收 Checklist(自动生成)", "",
+                 f"生成时间:{time.strftime('%Y-%m-%d %H:%M')}"
+                 " | 判定依据缺失的验收项标注「待核实」,不代表库中无此要求。", ""]
         for stage in sorted(by_stage):
             lines.append(f"## {stage}")
             lines.append("")
-            for a in sorted(by_stage[stage], key=lambda x: -x.get("confidence", 0)):
+            check_atoms = [a for a in by_stage[stage]
+                           if a.get("dimension") == "验收质检" or a.get("category") == "验收"]
+            other = [a for a in by_stage[stage]
+                     if a not in check_atoms]
+            for a in sorted(check_atoms, key=lambda x: -x.get("confidence", 0)):
+                mark = {"require": "[必须检查]", "recommend": "[建议检查]",
+                        "avoid": "[禁止]", "optional": "[可选]"}.get(
+                            a["polarity"], "[检查]")
+                criteria = ";".join(
+                    f"{p.get('name')}={p.get('value')}{p.get('unit') or ''}"
+                    for p in a.get("parameters") or [])
+                basis = (f"判定依据:{criteria}" if criteria
+                         else "判定依据:**待核实**(视频中未给出可执行阈值)")
+                cond = a.get("conditions") or {}
+                cs = ";".join(f"{k}={v}" for k, v in cond.items()
+                              if k not in ("authority_level", "_notes")) if cond else ""
+                ev = a["evidence_refs"][0] if a["evidence_refs"] else None
+                src = f"`{ev['video_id']}@{ev['start_ms'] // 1000}s`" if ev else ""
+                nature_cn = {"cited_standard": "转述标准", "author_test": "实测"}.get(
+                    a.get("evidence_nature"), a.get("evidence_nature") or "经验观点")
+                lines.append(f"- {mark} **{a['claim']}**"
+                             + (f"(对象条件:{cs})" if cs else "")
+                             + f" | {basis}"
+                             + f" | 证据性质:{nature_cn}"
+                             + (f" | 来源 {src}" if src else ""))
+            for a in sorted(other, key=lambda x: -x.get("confidence", 0)):
                 mark = {"require": "[必须]", "recommend": "[建议]",
                         "avoid": "[避免]"}.get(a["polarity"], "[ ]")
                 cond = a.get("conditions") or {}
                 cs = ";".join(f"{k}={v}" for k, v in cond.items()
-                              if k != "authority_level") if cond else ""
+                              if k not in ("authority_level", "_notes")) if cond else ""
                 ev = a["evidence_refs"][0] if a["evidence_refs"] else None
-                src = f"_{ev['video_id']}@{ev['start_ms']//1000}s_" if ev else ""
+                src = f"_{ev['video_id']}@{ev['start_ms'] // 1000}s_" if ev else ""
                 lines.append(f"- {mark} {a['claim']}"
                              + (f"(条件:{cs})" if cs else "")
                              + (f" [来源 {src}]" if src else ""))
             lines.append("")
         OUT_DIR.mkdir(parents=True, exist_ok=True)
         p = OUT_DIR / "checklist.md"
+        p.write_text("\n".join(lines), encoding="utf-8")
+        return p
+    finally:
+        con.close()
+
+
+def prices_report() -> Path:
+    """Structured price observations with their quoting basis. Entries missing
+    kind/spec/region are shown AS-IS with the gap marked; nothing is inferred.
+    With no data at all the report says so explicitly — no fabricated market
+    conclusions (§8: 口径不可比不排序)."""
+    con = db.connect()
+    try:
+        atoms = db.all_atoms(con)
+        rows = []
+        for a in atoms:
+            for p in a.get("prices") or []:
+                rows.append((a, p))
+        lines = ["# 价格记录(自动生成)", "",
+                 f"生成时间:{time.strftime('%Y-%m-%d %H:%M')}"
+                 " | 全部来自视频口播/字幕,未经渠道核验;口径(规格/单位/含项/地区)"
+                 "不同的记录不可直接比较。", ""]
+        if not rows:
+            lines.append("**暂无可核验价格数据。** 当前库内没有结构化价格记录;"
+                         "含价格描述的原子可在搜索页按维度「报价采购」筛选查看原文。")
+        else:
+            lines.append("| 对象 | 金额 | 计价 | 口径类型 | 规格 | 地区/渠道 | 含项 | 时点 | 来源 |")
+            lines.append("|---|---|---|---|---|---|---|---|---|")
+            for a, p in rows:
+                ev = a["evidence_refs"][0] if a["evidence_refs"] else None
+                src = f"{ev['video_id']}@{ev['start_ms'] // 1000}s" if ev else "-"
+                kind = p.get("price_kind") or "**未注明口径**"
+                inc = ";".join(p.get("includes") or []) or "-"
+                lines.append(
+                    f"| {p.get('object')} | {p.get('amount')}{p.get('unit') or ''} "
+                    f"| {p.get('basis') or '-'} | {kind} "
+                    f"| {p.get('spec') or '未注明'} | {p.get('region') or '未注明'}/"
+                    f"{p.get('channel') or '未注明'} | {inc} "
+                    f"| {p.get('valid_at') or '未注明'} | {src} |")
+            lines.append("")
+            lines.append("> 源头成本、经销价与行情预测:当前无可靠数据来源,"
+                         "不提供估算或预测,以免误导。")
+        OUT_DIR.mkdir(parents=True, exist_ok=True)
+        p = OUT_DIR / "prices.md"
         p.write_text("\n".join(lines), encoding="utf-8")
         return p
     finally:
@@ -229,6 +305,7 @@ def run_all(video_ids=None):
     d = diff_report(video_ids)
     checklist_report()
     conflict_report()
+    prices_report()
     try:
         summary_report()
         d["summary"] = "ok"

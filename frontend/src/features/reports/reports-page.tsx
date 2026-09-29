@@ -196,4 +196,5 @@ const REPORT_LABEL: Record<string, string> = {
   incremental_diff: "增量对比",
   checklist: "验收清单",
   conflicts: "争议汇总",
+  prices: "价格记录",
 };

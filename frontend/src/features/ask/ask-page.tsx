@@ -10,6 +10,7 @@ import { postAsk } from "@/lib/api";
 import type { AskConflictInfo, AskHistoryTurn, AskRef } from "@/lib/api-types";
 import { PageHeader, ErrorState } from "@/components/shared/states";
 import { MarkdownView } from "@/components/shared/markdown-view";
+import { NatureBadge } from "@/components/shared/knowledge-tags";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
@@ -54,6 +55,7 @@ function RefChips({ refs, cited }: { refs: AskRef[]; cited: number[] }) {
           className="inline-flex max-w-[240px] items-center gap-1 rounded-ctl border border-line-2 bg-surface-2 px-2 py-0.5 text-[11.5px] text-ink-2 transition-colors hover:border-acc hover:text-acc"
         >
           <span className="font-mono text-[10.5px] text-muted">[{r.n}]</span>
+          <NatureBadge nature={r.evidence_nature} className="scale-[0.92]" />
           <span className="truncate">{r.video_title || r.video || r.atom_id}</span>
           <span className="font-mono text-[10.5px] text-muted">{fmtTs(r.ms)}</span>
         </Link>

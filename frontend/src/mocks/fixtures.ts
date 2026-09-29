@@ -3,6 +3,7 @@
  * (100 / 1,000 / 10,000 evidence events) for perf and edge testing. */
 import type {
   AskResponse,
+  CompareResponse,
   ConflictsResponse,
   EventsResponse,
   FacetsResponse,
@@ -210,6 +211,8 @@ export const makeConflicts = (): ConflictsResponse => ({
 export const makeFacets = (): FacetsResponse => ({
   categories: ["水电", "泥瓦", "涂装", "电气", "防水", "验收"],
   spaces: ["全屋", "卫生间", "厨房", "客厅", "阳台"],
+  stages: ["前期准备", "水电", "泥瓦", "涂装", "验收", "入住维护"],
+  dimensions: ["安全合规", "材料产品", "施工工艺", "验收质检", "报价采购"],
 });
 
 const SEARCHABLE = ["防水", "瓷砖", "美缝", "水电", "插座", "留缝"];
@@ -221,10 +224,17 @@ export const makeSearch = (q: string): SearchResponse => {
       {
         id: "atom_mock_000",
         claim: `卫生间墙面防水要达到两米，并且覆盖用水区域（含“${q}”）`,
+        subject: "卫生间墙面防水",
         category: "防水",
         space: "卫生间",
+        stage: "泥瓦",
+        dimension: "施工工艺",
+        evidence_nature: "author_opinion",
         polarity: "require",
         status: "candidate",
+        conditions: { 空间: "卫生间", 部位: "淋浴区" },
+        parameters: [{ name: "卫生间墙面防水高度", value: 2000, unit: "mm" }],
+        prices: [],
         video: "BVmock000",
         video_title: TITLES[0],
         ms: 42_000,
@@ -234,6 +244,141 @@ export const makeSearch = (q: string): SearchResponse => {
     ],
   };
 };
+
+export const makeCompare = (): CompareResponse => ({
+  sides: [
+    {
+      item: "瓷砖",
+      total: 2,
+      groups: [
+        {
+          dimension: "施工工艺",
+          atoms: [
+            {
+              id: "atom_mock_010",
+              claim: "瓷砖铺贴要留缝并做美缝，防止渗污",
+              subject: "瓷砖留缝",
+              category: "泥瓦",
+              space: "全屋",
+              stage: "泥瓦",
+              dimension: "施工工艺",
+              evidence_nature: "cited_standard",
+              polarity: "recommend",
+              status: "candidate",
+              conditions: { 材料: "瓷砖" },
+              parameters: [{ name: "瓷砖留缝宽度", value: 3, unit: "mm" }],
+              prices: [],
+              video: "BVmock001",
+              video_title: TITLES[1],
+              ms: 61_000,
+              mod: "OCR",
+              evidence_text: "留缝宽度宜为5mm~10mm",
+            },
+          ],
+        },
+        {
+          dimension: "报价采购",
+          atoms: [
+            {
+              id: "atom_mock_011",
+              claim: "瓷砖铺贴人工费每平米约60元",
+              subject: "铺贴人工费",
+              category: "泥瓦",
+              space: "全屋",
+              stage: "泥瓦",
+              dimension: "报价采购",
+              evidence_nature: "author_opinion",
+              polarity: "neutral",
+              status: "candidate",
+              conditions: {},
+              parameters: [],
+              prices: [
+                {
+                  object: "瓷砖铺贴人工",
+                  amount: 60,
+                  unit: "元/平米",
+                  basis: "每平米",
+                  price_kind: "工程报价",
+                  includes: ["含水泥砂浆"],
+                },
+              ],
+              video: "BVmock001",
+              video_title: TITLES[1],
+              ms: 122_000,
+              mod: "ASR",
+              evidence_text: "人工费一平米60块钱左右",
+            },
+          ],
+        },
+      ],
+      missing_dimensions: [
+        "安全合规",
+        "性能可靠",
+        "维护维修",
+        "问题排查",
+        "成本行情",
+        "方案比较",
+      ],
+    },
+    {
+      item: "地板",
+      total: 1,
+      groups: [
+        {
+          dimension: "场景适配",
+          atoms: [
+            {
+              id: "atom_mock_012",
+              claim: "地暖房间选地板要认准导热与耐热等级",
+              subject: "地暖地板",
+              category: "地板",
+              space: "客厅",
+              stage: "安装收尾",
+              dimension: "场景适配",
+              evidence_nature: "author_opinion",
+              polarity: "recommend",
+              status: "candidate",
+              conditions: { 环境: "地暖" },
+              parameters: [],
+              prices: [],
+              video: "BVmock004",
+              video_title: TITLES[4],
+              ms: 88_000,
+              mod: "ASR",
+              evidence_text: "地暖房间要用耐热的地板",
+            },
+          ],
+        },
+      ],
+      missing_dimensions: [
+        "安全合规",
+        "材料产品",
+        "施工工艺",
+        "验收质检",
+        "报价采购",
+        "方案比较",
+      ],
+    },
+  ],
+  conflicts: [],
+  dimensions: [
+    "安全合规",
+    "材料产品",
+    "性能可靠",
+    "场景适配",
+    "施工工艺",
+    "使用注意",
+    "维护维修",
+    "验收质检",
+    "问题排查",
+    "报价采购",
+    "成本行情",
+    "方案比较",
+    "空间体验",
+    "工期协同",
+    "其他",
+  ],
+});
 
 export const makeAsk = (question: string): AskResponse => ({
   answer:
@@ -250,7 +395,15 @@ export const makeAsk = (question: string): AskResponse => ({
       ms: 210_000,
       modality: "asr",
       polarity: "recommend",
-      stage: "防水施工",
+      stage: "泥瓦",
+      category: "防水",
+      space: "卫生间",
+      subject: "淋浴区防水高度",
+      dimension: "施工工艺",
+      evidence_nature: "author_opinion",
+      conditions: { 空间: "卫生间" },
+      parameters: [],
+      prices: [],
     },
     {
       n: 2,
@@ -261,7 +414,15 @@ export const makeAsk = (question: string): AskResponse => ({
       ms: 95_000,
       modality: "asr",
       polarity: "require",
-      stage: "防水施工",
+      stage: "泥瓦",
+      category: "防水",
+      space: "卫生间",
+      subject: "淋浴区防水高度",
+      dimension: "验收质检",
+      evidence_nature: "cited_standard",
+      conditions: { 空间: "卫生间" },
+      parameters: [],
+      prices: [],
     },
   ],
   conflicts: [
@@ -276,6 +437,8 @@ export const makeReports = (): ReportsResponse => ({
       "# 验收清单\n\n## 水电\n- [x] 强弱电分槽间距 ≥300mm\n- [ ] 水管打压试验记录\n\n## 防水\n| 项目 | 要求 | 结果 |\n|---|---|---|\n| 墙面高度 | ≥2000mm | 待验 |\n\n> 依据 `/videos/BVmock000?t=42000` 可跳转证据。\n",
     conflicts: "## 争议汇总\n\n- conflict_mock_001:美缝时机分歧(待复核)\n",
     incremental_diff: "本次运行无新增视频。\n",
+    prices:
+      "# 价格记录\n\n**暂无可核验价格数据。** 当前库内没有结构化价格记录。\n",
   },
 });
 

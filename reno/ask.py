@@ -20,7 +20,10 @@ _CACHE_MAX = 64
 
 
 def retrieve(con, question: str, k: int = 24, atoms_by_id: dict | None = None) -> list[dict]:
-    """Top-k atoms for a question, best first (bm25)."""
+    """Top-k atoms for a question, best first (bm25). Phrase match first, then
+    CJK-bigram OR + ascii prefix; synonym variants of the question fill any
+    remaining slots (e.g. 磁砖 -> 瓷砖)."""
+    from .dict import expand_synonyms
     from .db import fts_prep
 
     def _match(query: str, limit: int) -> list[str]:
@@ -32,20 +35,29 @@ def retrieve(con, question: str, k: int = 24, atoms_by_id: dict | None = None) -
         except Exception:  # noqa: BLE001 - malformed query -> no hits
             return []
 
+    def _collect(q: str, limit: int) -> list[str]:
+        hits: list[str] = []
+        phrase = fts_prep(q).replace('"', " ").strip()
+        if phrase:
+            hits = _match('"' + phrase + '"', limit)
+        if len(hits) < limit:
+            chars = [c for c in q if "\u4e00" <= c <= "\u9fff"]
+            terms = [f'"{chars[i]} {chars[i + 1]}"' for i in range(len(chars) - 1)]
+            import re as _re
+            terms += [t + "*" for t in _re.findall(r"[A-Za-z0-9]{2,}", q)]
+            if terms:
+                for aid in _match(" OR ".join(terms[:48]), limit * 2):
+                    if aid not in hits:
+                        hits.append(aid)
+        return hits
+
     if atoms_by_id is None:
         atoms_by_id = {a["id"]: a for a in db.all_atoms(con)}
     atoms = atoms_by_id
-    phrase = fts_prep(question).replace('"', " ").strip()
-    hits: list[str] = []
-    if phrase:
-        hits = _match('"' + phrase + '"', k * 2)
+    hits = _collect(question, k * 2)
     if len(hits) < k:
-        chars = [c for c in question if "\u4e00" <= c <= "\u9fff"]
-        terms = [f'"{chars[i]} {chars[i + 1]}"' for i in range(len(chars) - 1)]
-        import re as _re
-        terms += [t + "*" for t in _re.findall(r"[A-Za-z0-9]{2,}", question)]
-        if terms:
-            for aid in _match(" OR ".join(terms[:48]), k * 3):
+        for variant in expand_synonyms(question)[:4]:
+            for aid in _collect(variant, k):
                 if aid not in hits:
                     hits.append(aid)
     return [atoms[aid] for aid in hits if aid in atoms][:k]
@@ -126,16 +138,37 @@ def ask(question: str, history: list[dict] | None = None, k: int = 24) -> dict:
             "video": vid, "video_title": titles.get(vid, {}).get("title", "") if vid else "",
             "ms": ev["start_ms"] if ev else 0,
             "modality": ev["modality"] if ev else None,
-            "polarity": a.get("polarity"), "stage": a.get("stage") or a.get("category"),
+            "polarity": a.get("polarity"), "stage": a.get("stage"),
+            "category": a.get("category"), "space": a.get("space"),
+            "subject": a.get("subject"), "dimension": a.get("dimension"),
+            "evidence_nature": a.get("evidence_nature"),
+            "conditions": a.get("conditions") or {},
+            "parameters": a.get("parameters") or [],
+            "prices": a.get("prices") or [],
         })
         pol = {"require": "必须", "recommend": "建议", "avoid": "避免"}.get(
             a.get("polarity"), "陈述")
         stage = a.get("stage") or a.get("category") or "未分类"
+        nature_cn = {"cited_standard": "转述标准", "author_test": "实测",
+                     "product_claim": "商家宣传", "third_party": "第三方",
+                     "user_feedback": "他人经验", "inference": "推断",
+                     "author_opinion": "经验观点"}.get(a.get("evidence_nature"), "")
         src = ""
         if vid:
             t = int((ev["start_ms"] or 0) / 1000)
             src = f" | 来源[{vid}]{t // 60:02d}:{t % 60:02d}({ev['modality'] or '?'})"
-        lines.append(f"[{i}] [{pol}/{stage}] {a['claim']}{src}")
+        cond = a.get("conditions") or {}
+        cond_s = ";".join(f"{k}={v}" for k, v in cond.items()
+                          if k != "_notes") if cond else ""
+        params = a.get("parameters") or []
+        param_s = ";".join(f"{p.get('name')}={p.get('value')}{p.get('unit') or ''}"
+                           for p in params[:4]) if params else ""
+        lines.append(f"[{i}] [{pol}/{stage}"
+                     + (f"/{a.get('dimension')}" if a.get("dimension") else "")
+                     + (f"/{nature_cn}" if nature_cn else "") + f"] {a['claim']}"
+                     + (f" (条件:{cond_s})" if cond_s else "")
+                     + (f" (参数:{param_s})" if param_s else "")
+                     + src)
 
     vid_lines = [f"- {vid}: {info['title']}({info.get('source_platform') or '?'})"
                  for vid, info in titles.items()]
@@ -154,6 +187,10 @@ def ask(question: str, history: list[dict] | None = None, k: int = 24) -> dict:
 
     system = ("你是装修知识库的问答助手。只依据给定材料回答,不编造;每个事实性陈述的句尾"
               "用[n]标注所依据的原子编号;材料里有分歧的主题要同时呈现双方观点与适用条件;"
+              "经验观点、商家宣传与转述的标准条文要区分表述,不得把观点说成标准;"
+              "涉及价格或费用时注明证据来自视频的时点,不得把旧报价表述为当前行情;"
+              "关键条件(空间/基层/材料/规格等)缺失时,要么说明缺失条件,要么按不同情景分别回答,"
+              "不得擅自假设后给出唯一结论;"
               "材料不足以完整回答时,如实说明已答部分与缺失部分。输出简体中文 Markdown,"
               "不要开场白和结束语。")
     user = f"""## 视频索引

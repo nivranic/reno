@@ -138,6 +138,10 @@ def events(video_id: str, from_ms: int = None, to_ms: int = None):
                               "space": a["space"], "claim": a["claim"],
                               "polarity": a["polarity"], "confidence": a["confidence"],
                               "status": a["status"],
+                              "stage": a.get("stage"),
+                              "dimension": a.get("dimension"),
+                              "evidence_nature": a.get("evidence_nature"),
+                              "exceptions": a.get("exceptions") or [],
                               "cluster_id": a["cluster_id"],
                               "parameters": a["parameters"],
                               "evidence": [{"id": e["source_item_id"],
@@ -335,7 +339,7 @@ def conflicts():
 
 @router.get("/facets")
 def facets():
-    """Distinct atom categories / spaces for search filters."""
+    """Distinct controlled-vocabulary values for search filters."""
     con = db.connect()
     try:
         return {
@@ -343,6 +347,10 @@ def facets():
                 "SELECT DISTINCT category FROM knowledge_atom WHERE category IS NOT NULL ORDER BY category")],
             "spaces": [r["space"] for r in con.execute(
                 "SELECT DISTINCT space FROM knowledge_atom WHERE space IS NOT NULL ORDER BY space")],
+            "stages": [r["stage"] for r in con.execute(
+                "SELECT DISTINCT stage FROM knowledge_atom WHERE stage IS NOT NULL ORDER BY stage")],
+            "dimensions": [r["dimension"] for r in con.execute(
+                "SELECT DISTINCT dimension FROM knowledge_atom WHERE dimension IS NOT NULL ORDER BY dimension")],
         }
     finally:
         con.close()
@@ -353,7 +361,7 @@ def reports():
     """Generated markdown reports (was reports.html template context)."""
     gen = Path(__file__).parent.parent / "docs" / "generated"
     out = {}
-    for name in ("summary.md", "incremental_diff.md", "checklist.md", "conflicts.md"):
+    for name in ("summary.md", "incremental_diff.md", "checklist.md", "conflicts.md", "prices.md"):
         p = gen / name
         out[name[:-3]] = p.read_text(encoding="utf-8") if p.exists() else ""
     return {"reports": out}
@@ -389,34 +397,112 @@ async def set_model(request: Request):
     return {"ok": True, "atomize_model": model}
 
 
+SEARCH_FILTERS = ("category", "space", "stage", "dimension", "polarity", "status")
+
+
 @router.get("/search")
-def search(q: str = "", category: str = "", space: str = ""):
+def search(q: str = "", category: str = "", space: str = "", stage: str = "",
+           dimension: str = "", polarity: str = "", status: str = ""):
+    """Atom search: phrase match first, then CJK-bigram OR fallback (the same
+    retrieval as /ask) so multi-term queries like 卫生间防水高度 still hit.
+    Filters are exact-match on controlled-vocabulary columns."""
     con = db.connect()
     try:
         rows = []
         if q:
-            from reno.db import fts_prep
-            try:
-                cur = con.execute(
-                    """SELECT atom_id FROM atom_fts WHERE atom_fts MATCH ? LIMIT 100""",
-                    ('"' + fts_prep(q).strip().replace('"', '""') + '"',))
-                ids = [r["atom_id"] for r in cur]
-            except Exception:
-                ids = []
-            for a in db.all_atoms(con):
-                if a["id"] in ids and (not category or a["category"] == category) \
-                   and (not space or a["space"] == space):
+            from reno.ask import retrieve
+            atoms_by_id = {a["id"]: a for a in db.all_atoms(con)}
+            hits = retrieve(con, q.strip(), k=100, atoms_by_id=atoms_by_id)
+            filters = {"category": category, "space": space, "stage": stage,
+                       "dimension": dimension, "polarity": polarity, "status": status}
+            for a in hits:
+                if all(not v or a.get(k) == v for k, v in filters.items()):
                     rows.append(a)
         titles = {r["video_id"]: r["title"] for r in con.execute(
             "SELECT video_id, title FROM video_asset")}
-        return {"results": [
-            {"id": a["id"], "claim": a["claim"], "category": a["category"],
-             "space": a["space"], "polarity": a["polarity"], "status": a["status"],
-             "video": a["evidence_refs"][0]["video_id"] if a["evidence_refs"] else None,
-             "video_title": titles.get(a["evidence_refs"][0]["video_id"], "") if a["evidence_refs"] else "",
-             "ms": a["evidence_refs"][0]["start_ms"] if a["evidence_refs"] else 0,
-             "mod": a["evidence_refs"][0]["modality"] if a["evidence_refs"] else None,
-             "evidence_text": (a["evidence_refs"][0]["evidence_text"] or "")[:120] if a["evidence_refs"] else ""}
-            for a in rows[:80]]}
+        return {"results": [_search_row(a, titles) for a in rows[:80]]}
+    finally:
+        con.close()
+
+
+def _search_row(a: dict, titles: dict) -> dict:
+    ev = a["evidence_refs"][0] if a["evidence_refs"] else None
+    vid = ev["video_id"] if ev else None
+    return {"id": a["id"], "claim": a["claim"], "subject": a.get("subject"),
+            "category": a["category"], "space": a["space"], "stage": a.get("stage"),
+            "dimension": a.get("dimension"), "evidence_nature": a.get("evidence_nature"),
+            "polarity": a["polarity"], "status": a["status"],
+            "conditions": a.get("conditions") or {},
+            "parameters": a.get("parameters") or [],
+            "prices": a.get("prices") or [],
+            "video": vid,
+            "video_title": titles.get(vid, "") if vid else "",
+            "ms": ev["start_ms"] if ev else 0,
+            "mod": ev["modality"] if ev else None,
+            "evidence_text": (ev["evidence_text"] or "")[:120] if ev else ""}
+
+
+# ---------- compare: dimension-grouped side-by-side evidence ----------
+
+def _lexical_gate(a: dict, query: str) -> bool:
+    """Cheap relevance gate for compare: at least one CJK bigram of the query
+    (or the query itself for ascii tokens) must appear in the atom's own
+    text fields — keeps generic single-char strays out of the comparison."""
+    hay = " ".join(filter(None, [
+        a.get("claim"), a.get("subject"), a.get("category"), a.get("space"),
+        json.dumps(a.get("conditions") or {}, ensure_ascii=False),
+        " ".join(p.get("name", "") for p in a.get("parameters") or [])]))
+    import re
+    chars = [c for c in query if "\u4e00" <= c <= "\u9fff"]
+    bigrams = {query[i:i + 2] for i in range(len(chars) - 1)} or {query}
+    if any(b in hay for b in bigrams):
+        return True
+    return bool(re.findall(r"[A-Za-z0-9]{2,}", query)) and \
+        any(t.lower() in hay.lower() for t in re.findall(r"[A-Za-z0-9]{2,}", query))
+
+
+@router.get("/compare")
+def compare(items: str = ""):
+    """Side-by-side evidence for 2-3 objects/schemes: each item gets its own
+    retrieval (gated), atoms grouped by knowledge dimension, plus conflict
+    hints from judge clusters spanning both sides. No LLM synthesis — the
+    grouping is deterministic over real evidence."""
+    names = [s.strip() for s in (items or "").split(",") if s.strip()][:3]
+    if len(names) < 2:
+        raise HTTPException(400, "items must contain 2-3 comma-separated objects")
+    con = db.connect()
+    try:
+        from reno.ask import retrieve
+        from reno.dict import dimensions
+        atoms_by_id = {a["id"]: a for a in db.all_atoms(con)}
+        titles = {r["video_id"]: r["title"] for r in con.execute(
+            "SELECT video_id, title FROM video_asset")}
+        all_dims = dimensions()
+        sides, hit_ids = [], {}
+        for name in names:
+            hits = [a for a in retrieve(con, name, k=60, atoms_by_id=atoms_by_id)
+                    if _lexical_gate(a, name)][:10]
+            grouped = {d: [] for d in all_dims}
+            for a in hits:
+                grouped.setdefault(a.get("dimension") or "其他", []).append(
+                    _search_row(a, titles))
+                hit_ids.setdefault(a["id"], set()).add(name)
+            sides.append({"item": name,
+                          "groups": [{"dimension": d, "atoms": g}
+                                     for d, g in grouped.items() if g],
+                          "missing_dimensions": [d for d in all_dims if not grouped[d]],
+                          "total": len(hits)})
+        # conflicts: clusters marked conflicting that contain gated atoms from >=2 items
+        conflict_hints = []
+        for c in con.execute("SELECT * FROM knowledge_cluster WHERE relation='conflicting'"):
+            members = json.loads(c["members_json"] or "[]")
+            involved = {nm for m in members for nm in hit_ids.get(m, set())}
+            if len(involved) >= 2:
+                conflict_hints.append({"cluster_id": c["cluster_id"],
+                                       "topic": c["canonical_topic"],
+                                       "linked_conflict": c["linked_conflict"],
+                                       "items": sorted(involved)})
+        return {"sides": sides, "conflicts": conflict_hints,
+                "dimensions": all_dims}
     finally:
         con.close()

@@ -44,6 +44,8 @@ def candidates(con, sim_threshold: float = 0.22):
                           "b_polarity": b["polarity"],
                           "a_conditions": a["conditions"],
                           "b_conditions": b["conditions"],
+                          "a_nature": a.get("evidence_nature"),
+                          "b_nature": b.get("evidence_nature"),
                           "similarity": round(sim, 3)})
     pairs.sort(key=lambda p: -p["similarity"])
     return pairs
@@ -68,7 +70,9 @@ def param_conflict_candidates(con):
                 out.append({"type": "numeric_conflict_candidate",
                             "parameter": name,
                             "a": {"atom": a["id"], "video": va, "value": pa[name],
-                                  "claim": a["claim"], "conditions": a["conditions"]},
+                                  "claim": a["claim"], "conditions": a["conditions"],
+                                  "nature": a.get("evidence_nature")},
                             "b": {"atom": b["id"], "video": vb, "value": pb[name],
-                                  "claim": b["claim"], "conditions": b["conditions"]}})
+                                  "claim": b["claim"], "conditions": b["conditions"],
+                                  "nature": b.get("evidence_nature")}})
     return out

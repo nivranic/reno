@@ -72,6 +72,10 @@ export interface WorkbenchAtom {
   confidence: number;
   status: string;
   cluster_id: string | null;
+  stage?: string | null;
+  dimension?: string | null;
+  evidence_nature?: string | null;
+  exceptions?: string[];
   parameters: AtomParameter[];
   evidence: AtomEvidence[];
 }
@@ -110,13 +114,36 @@ export interface ConflictsResponse {
   conflicts: Conflict[];
 }
 
+export interface AtomPrice {
+  object: string;
+  brand?: string;
+  model?: string;
+  spec?: string;
+  region?: string;
+  channel?: string;
+  amount: number;
+  unit?: string;
+  basis?: string;
+  price_kind: string | null; // null = 未注明口径 (never coerced)
+  includes?: string[];
+  valid_at?: string;
+  note?: string;
+}
+
 export interface SearchRow {
   id: string;
   claim: string;
+  subject: string | null;
   category: string | null;
   space: string | null;
+  stage: string | null;
+  dimension: string | null;
+  evidence_nature: string | null;
   polarity: string;
   status: string;
+  conditions: Record<string, unknown>;
+  parameters: AtomParameter[];
+  prices: AtomPrice[];
   video: string | null;
   video_title: string;
   ms: number;
@@ -126,6 +153,24 @@ export interface SearchRow {
 
 export interface SearchResponse {
   results: SearchRow[];
+}
+
+export interface CompareSide {
+  item: string;
+  total: number;
+  groups: { dimension: string; atoms: SearchRow[] }[];
+  missing_dimensions: string[];
+}
+
+export interface CompareResponse {
+  sides: CompareSide[];
+  conflicts: {
+    cluster_id: string;
+    topic: string | null;
+    linked_conflict: string | null;
+    items: string[];
+  }[];
+  dimensions: string[];
 }
 
 export interface AskHistoryTurn {
@@ -143,6 +188,14 @@ export interface AskRef {
   modality: string | null;
   polarity: string | null;
   stage: string | null;
+  category: string | null;
+  space: string | null;
+  subject: string | null;
+  dimension: string | null;
+  evidence_nature: string | null;
+  conditions: Record<string, unknown>;
+  parameters: AtomParameter[];
+  prices: AtomPrice[];
 }
 
 export interface AskConflictInfo {
@@ -160,6 +213,8 @@ export interface AskResponse {
 export interface FacetsResponse {
   categories: string[];
   spaces: string[];
+  stages: string[];
+  dimensions: string[];
 }
 
 export interface ReportsResponse {

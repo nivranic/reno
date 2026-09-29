@@ -1,4 +1,11 @@
-# taxonomy v1 —— 按装修流程(方案文档),空间独立维度
+# taxonomy v2 —— 多轴知识组织
+# 轴1 categories: 工程系统/工序(原子归类的主体轴)
+# 轴2 spaces: 空间
+# 轴3 stage: 装修阶段——不由 LLM 选择,由 stage_map 从 category 确定性派生
+#            (v1 曾让 LLM 自由填写,实测产生 44 种失控取值,已废弃)
+# 轴4 dimensions: 知识维度(安全/材料/性能/场景/工艺/维护/验收/排查/报价...)
+# 轴5 evidence_natures: 证据性质(单一事实源;v1 曾放 conditions.authority_level,已迁移)
+# condition_keys: 条件字段规范键(未知键保留原样,不强行映射)
 categories:
   - 设计规划
   - 拆改
@@ -35,4 +42,83 @@ spaces:
   - 阳台
   - 设备间
 
+stages:
+  - 前期准备
+  - 拆改
+  - 水电
+  - 泥瓦
+  - 木工
+  - 涂装
+  - 安装收尾
+  - 验收
+  - 入住维护
+  - 全程
+
+# category -> stage 派生表(唯一事实源;新增 category 必须补映射)
+stage_map:
+  设计规划: 前期准备
+  拆改: 拆改
+  水电: 水电
+  电气: 水电
+  暖通: 水电
+  防水: 泥瓦
+  泥瓦: 泥瓦
+  木工: 木工
+  吊顶: 木工
+  涂装: 涂装
+  地板: 安装收尾
+  门窗: 安装收尾
+  橱柜: 安装收尾
+  卫浴: 安装收尾
+  灯光: 安装收尾
+  收纳: 安装收尾
+  软装: 安装收尾
+  环保: 全程
+  验收: 验收
+  入住维护: 入住维护
+
+dimensions:
+  - 安全合规
+  - 材料产品
+  - 性能可靠
+  - 场景适配
+  - 施工工艺
+  - 使用注意
+  - 维护维修
+  - 验收质检
+  - 问题排查
+  - 报价采购
+  - 成本行情
+  - 方案比较
+  - 空间体验
+  - 工期协同
+  - 其他
+
+evidence_natures:
+  - author_opinion    # UP主本人经验观点
+  - cited_standard    # 转述标准/规范/条文
+  - author_test       # UP主现场实测/演示
+  - product_claim     # 产品宣传/商家说法
+  - third_party       # 第三方数据(检测报告/行业数据)
+  - user_feedback     # 转述他人经验/评论区反馈
+  - inference         # 基于证据的推断
+
+# conditions 规范键(v2 起写入时映射;键值含义见 atomize prompt)
+condition_keys:
+  - 空间
+  - 部位
+  - 基层
+  - 材料
+  - 规格
+  - 环境
+  - 工艺
+  - 设备
+  - 地域
+  - 时间
+  - 适用对象
+  - authority_level   # 兼容保留:v1 数据迁移期只读,新数据一律写 evidence_nature
+
 polarities: [recommend, avoid, require, optional, neutral]
+
+# 价格口径受控值(prices_json.price_kind)
+price_kinds: [标价, 促销价, 工程报价, 成交价, 估算价]

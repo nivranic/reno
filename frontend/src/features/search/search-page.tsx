@@ -1,5 +1,6 @@
 /** Search: IME-safe input, debounced as-you-type + immediate Enter, URL-held
- * filters, token highlighting via <mark> (no raw HTML), ms-precise deep links. */
+ * filters, token highlighting via <mark> (no raw HTML), ms-precise deep links.
+ * v2: multi-axis filters (工种/空间/阶段/知识维度) + dimension/nature tags. */
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +11,7 @@ import { fmtMs } from "@/lib/time";
 import { useScrollRestore } from "@/lib/url-state";
 import { PageHeader, EmptyState, ErrorState, ListSkeleton, InlineSpinner } from "@/components/shared/states";
 import { PolarityBadge } from "@/components/shared/status-badge";
+import { DimensionBadge, NatureBadge } from "@/components/shared/knowledge-tags";
 import { ModalityTag } from "@/components/shared/modality-tag";
 import { Input, Select } from "@/components/ui/field";
 
@@ -18,6 +20,12 @@ export default function SearchPage() {
   const q = params.get("q") ?? "";
   const category = params.get("category") ?? "";
   const space = params.get("space") ?? "";
+  const stage = params.get("stage") ?? "";
+  const dimension = params.get("dimension") ?? "";
+  const filters = useMemo(
+    () => ({ category, space, stage, dimension }),
+    [category, space, stage, dimension],
+  );
 
   // local input state; committed to URL (which drives the query) debounced or on submit
   const [input, setInput] = useState(q);
@@ -44,18 +52,18 @@ export default function SearchPage() {
   useEffect(() => setInput(q), [q]); // back/forward sync
 
   const facets = useQuery(facetsQuery);
-  const results = useQuery(searchQuery(q, category, space));
+  const results = useQuery(searchQuery(q, filters));
   // §4.2: a list page must not pop the soft keyboard on arrival — autofocus
   // is a desktop-only affordance; phones enter via explicit tap
   const [autoFocus] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches,
   );
-  const scroll = useScrollRestore(`search:${q}:${category}:${space}`);
+  const scroll = useScrollRestore(`search:${q}:${category}:${space}:${stage}:${dimension}`);
   useEffect(() => {
     scroll.restore();
     return scroll.save;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, category, space]);
+  }, [q, category, space, stage, dimension]);
 
   const setParam = (key: string, v: string) =>
     setParams(
@@ -78,7 +86,7 @@ export default function SearchPage() {
 
   return (
     <div className="mx-auto w-full max-w-[880px] px-4 py-5 md:px-6">
-      <PageHeader title="搜索" desc="全库知识原子检索(匹配主张与依据文本)" />
+      <PageHeader title="搜索" desc="全库知识原子检索(匹配主张与依据文本,支持组合词)" />
 
       <form
         role="search"
@@ -110,7 +118,7 @@ export default function SearchPage() {
           aria-label="按工种筛选"
           value={category}
           onChange={(e) => setParam("category", e.target.value)}
-          className="w-[110px]"
+          className="w-[104px]"
         >
           <option value="">全部工种</option>
           {facets.data?.categories.map((c) => (
@@ -123,12 +131,38 @@ export default function SearchPage() {
           aria-label="按空间筛选"
           value={space}
           onChange={(e) => setParam("space", e.target.value)}
-          className="w-[110px]"
+          className="w-[104px]"
         >
           <option value="">全部空间</option>
           {facets.data?.spaces.map((s) => (
             <option key={s} value={s}>
               {s}
+            </option>
+          ))}
+        </Select>
+        <Select
+          aria-label="按装修阶段筛选"
+          value={stage}
+          onChange={(e) => setParam("stage", e.target.value)}
+          className="w-[104px]"
+        >
+          <option value="">全部阶段</option>
+          {facets.data?.stages.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </Select>
+        <Select
+          aria-label="按知识维度筛选"
+          value={dimension}
+          onChange={(e) => setParam("dimension", e.target.value)}
+          className="w-[104px]"
+        >
+          <option value="">全部维度</option>
+          {facets.data?.dimensions.map((d) => (
+            <option key={d} value={d}>
+              {d}
             </option>
           ))}
         </Select>
@@ -138,7 +172,7 @@ export default function SearchPage() {
         <EmptyState
           icon={<SearchIcon size={30} />}
           title="输入关键词开始搜索"
-          desc="支持中文分词匹配;结果可一键跳到视频证据时间点。"
+          desc="支持中文组合词与同义词;可按工种/空间/阶段/维度交叉筛选,结果一键跳到视频证据时间点。"
         />
       ) : results.isError ? (
         <ErrorState error={results.error} onRetry={() => void results.refetch()} context="搜索" />
@@ -150,7 +184,7 @@ export default function SearchPage() {
         <EmptyState
           icon={<SearchIcon size={30} />}
           title={`没有 "${q}" 的匹配结果`}
-          desc="尝试更短的词,或清空工种/空间筛选。"
+          desc="尝试更短的词,或清空筛选条件。"
         />
       ) : (
         <>
@@ -169,6 +203,9 @@ export default function SearchPage() {
 }
 
 function ResultCard({ row, tokens }: { row: SearchRow; tokens: string[] }) {
+  const cond = Object.entries(row.conditions ?? {}).filter(
+    ([k, v]) => k !== "_notes" && v !== "" && v != null,
+  );
   return (
     <Link
       to={row.video ? `/videos/${row.video}?t=${row.ms}` : "#"}
@@ -187,10 +224,35 @@ function ResultCard({ row, tokens }: { row: SearchRow; tokens: string[] }) {
             依据:<Highlight text={row.evidence_text} tokens={tokens} />
           </p>
         ) : null}
+        {row.prices?.length ? (
+          <p className="mt-1 pl-1 text-[12px] text-muted">
+            价格:
+            {row.prices?.map((p, i) => (
+              <span key={i} className="mr-2 whitespace-nowrap">
+                {p.object} {p.amount}
+                {p.unit ?? ""}
+                {p.price_kind ? `(${p.price_kind})` : "(未注明口径)"}
+              </span>
+            ))}
+          </p>
+        ) : null}
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 pl-1 text-[11.5px] text-muted">
           <span>{row.category ?? "—"}</span>
           <span aria-hidden>·</span>
           <span>{row.space ?? "—"}</span>
+          {row.stage ? (
+            <>
+              <span aria-hidden>·</span>
+              <span>{row.stage}</span>
+            </>
+          ) : null}
+          <DimensionBadge dimension={row.dimension} />
+          <NatureBadge nature={row.evidence_nature} />
+          {cond.length > 0 ? (
+            <span className="min-w-0 truncate">
+              条件:{cond.map(([k, v]) => `${k}=${String(v)}`).join(";")}
+            </span>
+          ) : null}
           {row.mod ? <ModalityTag mod={row.mod} size="sm" /> : null}
           <span className="font-mono tabular-nums">{fmtMs(row.ms)}</span>
           <span className="min-w-0 truncate">

@@ -36,10 +36,10 @@ DEFAULTS = {
     "max_frames_per_video": 22,
     "safety_interval_s": 2.5,
     "hf_endpoint": "https://hf-mirror.com",
-    "atomize_prompt_version": "v1",
-    "judge_prompt_version": "v1",
-    "taxonomy_version": "v1",
-    "schema_version": "1.0.0",
+    "atomize_prompt_version": "v2",
+    "judge_prompt_version": "v2",
+    "taxonomy_version": "v2",
+    "schema_version": "2.0.0",
 }
 
 _cache = None

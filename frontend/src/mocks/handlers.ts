@@ -7,6 +7,7 @@
 import { http, HttpResponse } from "msw";
 import {
   makeAsk,
+  makeCompare,
   makeConflicts,
   makeEvents,
   makeFacets,
@@ -60,6 +61,13 @@ export const handlers = [
     const q = url.searchParams.get("q") ?? "";
     if (!q) return HttpResponse.json({ results: [] });
     return HttpResponse.json(makeSearch(q));
+  }),
+
+  http.get("/api/compare", ({ request }) => {
+    const items = new URL(request.url).searchParams.get("items") ?? "";
+    if (items.split(",").filter((s) => s.trim()).length < 2)
+      return new HttpResponse(null, { status: 400 });
+    return HttpResponse.json(makeCompare());
   }),
 
   http.get("/api/frame/:vid/:ms", () =>

@@ -48,6 +48,28 @@ def taxonomy() -> dict:
     return _load("taxonomy.yaml")
 
 
+def stage_for(category: str) -> str | None:
+    """Stage is DERIVED from category (v2): one authority table, no LLM vote,
+    so the two axes can never contradict each other."""
+    return _load("taxonomy.yaml")["stage_map"].get(category)
+
+
+def dimensions() -> list[str]:
+    return _load("taxonomy.yaml")["dimensions"]
+
+
+def evidence_natures() -> list[str]:
+    return _load("taxonomy.yaml")["evidence_natures"]
+
+
+def condition_keys() -> list[str]:
+    return _load("taxonomy.yaml")["condition_keys"]
+
+
+def price_kinds() -> list[str]:
+    return _load("taxonomy.yaml")["price_kinds"]
+
+
 def normalize_text(text: str) -> str:
     """Canonical text for similarity & retrieval."""
     s = _t2s.convert(text or "")
@@ -96,4 +118,14 @@ def normalize_param(p: dict) -> dict:
             out["param_status"] = "unnormalized"
     except (TypeError, ValueError):
         out["param_status"] = "unnormalized"
+    return out
+
+
+def expand_synonyms(text: str) -> list[str]:
+    """Query-side synonym expansion: alternative phrasings with one known
+    synonym replaced (used by retrieval when the raw query under-matches)."""
+    out = []
+    for k, v in synonyms().items():
+        if k in text and v not in text:
+            out.append(text.replace(k, v))
     return out
