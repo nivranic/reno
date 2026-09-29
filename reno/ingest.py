@@ -64,12 +64,25 @@ def _sha256(p: Path) -> str:
     return h.hexdigest()
 
 
+def _ytdlp_cmd() -> list[str]:
+    """Locate yt-dlp across install layouts: PATH first, then the bin dir of
+    the *running* interpreter (Windows venvs: Scripts/, POSIX venvs: bin/),
+    finally `python -m yt_dlp`. The old hardcoded .venv/Scripts path broke
+    every non-Windows environment (CI runs 1-6)."""
+    import os
+    import shutil
+    import sys
+    found = shutil.which("yt-dlp")
+    if found:
+        return [found]
+    local = Path(sys.executable).parent / ("yt-dlp.exe" if os.name == "nt" else "yt-dlp")
+    if local.exists():
+        return [str(local)]
+    return [sys.executable, "-m", "yt_dlp"]
+
+
 def _ytdlp(*args):
-    venv_bin = Path(config.ROOT) / ".venv" / "Scripts"
-    exe = venv_bin / "yt-dlp.exe"
-    if not exe.exists():
-        exe = venv_bin / "yt-dlp"
-    full = [str(exe), *args]
+    full = [*_ytdlp_cmd(), *args]
     # optional passthroughs: cookies file (douyin needs fresh ones; bilibili
     # private favlists need owner cookies) and arbitrary extra args
     cookies = config.get("ytdlp_cookies")
