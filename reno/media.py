@@ -92,8 +92,8 @@ def run(con, video_id: str) -> dict:
     asset = dict(db.get_asset(con, video_id))
     import json as _json
     files = _json.loads(asset["files_json"]) if isinstance(asset["files_json"], str) else asset["files_json"]
-    v = config.ROOT / files["video"]
-    a = config.ROOT / files["audio"] if files.get("audio") else None
+    v = config.resolve_media(files["video"])
+    a = config.resolve_media(files.get("audio")) if files.get("audio") else None
     vdir = config.FRAMES / video_id
     vdir.mkdir(parents=True, exist_ok=True)
     adir = config.AUDIO / video_id

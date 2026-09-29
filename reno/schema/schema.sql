@@ -163,6 +163,21 @@ CREATE INDEX IF NOT EXISTS idx_atom_video ON knowledge_atom(video_id);
 CREATE INDEX IF NOT EXISTS idx_ev_atom ON evidence_ref(atom_id);
 CREATE INDEX IF NOT EXISTS idx_job_status ON job(status);
 
+-- cloud-role import queue: /api/import enqueues URLs here on a cloud node,
+-- the home sync agent claims them (atomic UPDATE) with a lease; see
+-- docs/sync-plan.md section 4.1
+CREATE TABLE IF NOT EXISTS sync_queue (
+  item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  url TEXT NOT NULL,
+  status TEXT DEFAULT 'queued',
+  attempts INTEGER DEFAULT 0,
+  lease_until TEXT,
+  last_error_class TEXT,
+  created_at TEXT,
+  updated_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_syncq_status ON sync_queue(status);
+
 CREATE VIRTUAL TABLE IF NOT EXISTS atom_fts USING fts5(
   atom_id UNINDEXED, claim, reason, category UNINDEXED, space UNINDEXED
 );

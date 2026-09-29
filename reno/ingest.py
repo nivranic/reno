@@ -7,6 +7,7 @@ SHA-256 content addressing makes re-ingest idempotent.
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import time
@@ -27,20 +28,26 @@ else:
 
 
 def _store_path(p: Path) -> str:
-    """files_json stores repo-relative paths, but a relocated data dir
-    (RENO_DATA_DIR) lives outside ROOT - fall back to an absolute path
-    (consumers do config.ROOT / stored, which absolutes pass through)."""
+    """Canonical files_json path: POSIX separators, relative to the media base
+    (MEDIA.parent) so both a repo checkout and a relocated RENO_DATA_DIR
+    resolve identically via config.resolve_media(). Legacy rows (backslashes
+    or absolute paths) still resolve; scripts/normalize_files_json.py rewrites
+    them to this canonical form."""
     try:
-        return str(p.relative_to(config.ROOT))
+        rel = p.relative_to(config.MEDIA.parent)
     except ValueError:
-        return str(p)
+        rel = p  # truly outside the media tree: keep absolute (passes through)
+    return rel.as_posix()
 
 
 @contextmanager
 def _vid_lock(vid: str):
     lock_dir = config.ORIG
     lock_dir.mkdir(parents=True, exist_ok=True)
-    lf = lock_dir / f".lock-{vid}"
+    # vid ultimately comes from platform URLs -> keep it out of path-metachar
+    # territory when it names a lock file on disk
+    safe_vid = re.sub(r"[^A-Za-z0-9_-]", "_", vid)
+    lf = lock_dir / f".lock-{safe_vid}"
     with open(lf, "w") as f:
         if os.name == "nt":
             msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)

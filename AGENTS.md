@@ -40,6 +40,8 @@ cd frontend && npm run dev
 - **移动端 H5**：底部导航/安全区/触控目标已适配，真机核对清单见 docs/mobile-h5-checklist.md
 - **知识问答（/ask）**：基于知识原子的接地问答——[n] 引用芯片跳视频时间点（带证据性质徽章）、冲突主题并列双方观点、价格问题注明证据时点、条件缺失分情景回答、LRU 缓存 64 条（问题|模型|k|库版本键）；报告页含 LLM 全库总结（summary.md）
 - **布局样式规则**：控件高度档位/同排同高/令牌纪律/弹层 sticky 等统一规则见 docs/frontend-style-rules.md（2026-09-27 全局审计 + 2026-09-29 精细化审计沉淀；根字号 15px，h-8=30px、h-9=33.75px、h-11=41.25px）
+- **云端/本地分体（Phase 0 已落地，2026-09-30）**：`node_role`（all/cloud/home，config 键）——cloud 下 serve 不起 worker、CLI 流水线命令拒绝、/api/import(-batch) 只入 `sync_queue` 新表、/api/config/model 403、llm 层硬拒 glm-5.3*（配错 key 也打不出去）；/api/sync/* 独立 sync_token 门（仅 X-Sync-Token 头，未配置即关闭）；/ask 失败降级纯检索（degraded 标记，不进缓存）+限速（ask_rate_per_min）+错误脱敏；files_json 规范为 POSIX 相对路径（config.resolve_media 统一解析，存量 26 行已迁，脚本 scripts/normalize_files_json.py 幂等）；报告落点迁 DATA/generated（out_dir() 动态取，docs/generated 已出 git）；deploy.sh 加 --role、导入白名单只收 reno.db（dy_cookies 永不上云）。完整同步方案与 Phase 1/2 路线图见 docs/sync-plan.md
+- **云部署**：一键脚本 deploy/deploy.sh（Ubuntu/Debian，幂等：clone+venv+前端构建/dist 包+数据导入+systemd），nginx 配套 deploy/nginx-reno.conf，容量参考与流程见 docs/deploy.md
 - **SPA 缓存**：index.html 以 `Cache-Control: no-cache` 返回（app/main.py），重建后浏览器不会再用旧壳混载新 chunk
 
 - **处理模型**：GLM-5.3-FlashX（atomize + judge 默认），可在采集页 Select 切换（预设 GLM-5.3 / 5.3-Flash / 5.3-FlashX），写 config.local.json 即时生效无需重启

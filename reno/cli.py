@@ -34,7 +34,15 @@ def main(argv=None):
     p.add_argument("--port", type=int, default=8765)
 
     args = ap.parse_args(argv)
-    from . import db
+    from . import config, db
+
+    if config.is_cloud() and args.cmd in (
+            "import", "import-batch", "import-favlist", "run", "judge", "report"):
+        # a cloud node never spends pipeline/LLM quota (docs/sync-plan.md §1);
+        # use the web UI, which enqueues URLs for the home agent instead
+        print(f"node_role=cloud: '{args.cmd}' is disabled on a cloud node "
+              "(serving only; imports go through the web UI queue)")
+        return 2
 
     if args.cmd == "import":
         from . import ingest
@@ -121,10 +129,14 @@ def main(argv=None):
         import uvicorn
         from app.main import app
         # resume jobs left pending by a previous run (import threads die with
-        # the process) - steps are idempotent/meta-tracked, so this is safe
+        # the process) - steps are idempotent/meta-tracked, so this is safe.
+        # Cloud nodes must not run the pipeline (docs/sync-plan.md §1).
         from . import worker
-        threading.Thread(target=worker.process_pending,
-                         kwargs={"follow": False}, daemon=True).start()
+        if not config.is_cloud():
+            threading.Thread(target=worker.process_pending,
+                             kwargs={"follow": False}, daemon=True).start()
+        else:
+            print("[serve] node_role=cloud: pipeline worker disabled", flush=True)
         uvicorn.run(app, host=args.host, port=args.port)
         return 0
 

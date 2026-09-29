@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 """Reports: incremental diff per new video batch + deliverables (checklist,
-conflict report, decisions digest). Markdown output under docs/generated/."""
+conflict report, decisions digest). Markdown output under <data>/generated/."""
 import time
 from collections import defaultdict
 from pathlib import Path
 
 from . import config, db
 
-OUT_DIR = config.ROOT / "docs" / "generated"
+# reports live under the data dir (RENO_DATA_DIR aware), NOT the git-tracked
+# repo checkout: a cloud deploy's git reset --hard would wipe repo copies, and
+# the sync pipeline ships them from the home node (docs/sync-plan.md §3.3).
+# Resolved per call (not module-level) so a patched/moved DATA dir is honored.
+def out_dir() -> Path:
+    return config.DATA / "generated"
 
 
 def diff_report(video_ids=None) -> dict:
@@ -60,8 +65,8 @@ def diff_report(video_ids=None) -> dict:
             sum(1 for a in all_atoms if members.get(a["id"])) / new_atoms, 2) or 0
         lines.append(f"**信息增益(聚类覆盖率)**:{info_gain} —— "
                      "新增视频若 90%+ 原子落入已有聚类,继续收藏同类视频的边际价值低。")
-        OUT_DIR.mkdir(parents=True, exist_ok=True)
-        (OUT_DIR / "incremental_diff.md").write_text("\n".join(lines), encoding="utf-8")
+        out_dir().mkdir(parents=True, exist_ok=True)
+        (out_dir() / "incremental_diff.md").write_text("\n".join(lines), encoding="utf-8")
         return {"videos": len(order), "atoms": new_atoms, "clusters": len(clusters),
                 "conflicts": len(conflicts), "cluster_coverage": info_gain}
     finally:
@@ -124,8 +129,8 @@ def checklist_report() -> Path:
                              + (f"(条件:{cs})" if cs else "")
                              + (f" [来源 {src}]" if src else ""))
             lines.append("")
-        OUT_DIR.mkdir(parents=True, exist_ok=True)
-        p = OUT_DIR / "checklist.md"
+        out_dir().mkdir(parents=True, exist_ok=True)
+        p = out_dir() / "checklist.md"
         p.write_text("\n".join(lines), encoding="utf-8")
         return p
     finally:
@@ -168,8 +173,8 @@ def prices_report() -> Path:
             lines.append("")
             lines.append("> 源头成本、经销价与行情预测:当前无可靠数据来源,"
                          "不提供估算或预测,以免误导。")
-        OUT_DIR.mkdir(parents=True, exist_ok=True)
-        p = OUT_DIR / "prices.md"
+        out_dir().mkdir(parents=True, exist_ok=True)
+        p = out_dir() / "prices.md"
         p.write_text("\n".join(lines), encoding="utf-8")
         return p
     finally:
@@ -193,8 +198,8 @@ def conflict_report() -> Path:
                       f"- 权威差异:{an.get('conditional_conclusion', {}).get('authority_gap')}",
                       f"- 判定理由:{an.get('judge_note')}",
                       f"- 建议动作:{c['recommended_action']}", ""]
-        OUT_DIR.mkdir(parents=True, exist_ok=True)
-        p = OUT_DIR / "conflicts.md"
+        out_dir().mkdir(parents=True, exist_ok=True)
+        p = out_dir() / "conflicts.md"
         p.write_text("\n".join(lines), encoding="utf-8")
         return p
     finally:
@@ -295,8 +300,8 @@ def summary_report() -> Path:
     header = (f"# 全库总结(自动生成)\n\n"
               f"- 生成时间:{time.strftime('%Y-%m-%d %H:%M')} | 模型:{used}\n"
               f"- 视频:{len(videos)} | 原子:{len(atoms)} | 聚类:{len(clusters)} | 冲突:{len(conflicts)}\n\n")
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    p = OUT_DIR / "summary.md"
+    out_dir().mkdir(parents=True, exist_ok=True)
+    p = out_dir() / "summary.md"
     p.write_text(header + content.strip() + "\n", encoding="utf-8")
     return p
 

@@ -13,3 +13,5 @@ work_*.json
 docs/serve.log
 .playwright-mcp/
 .zcode-shots/
+.mimosa/
+docs/generated/

@@ -328,3 +328,15 @@ def claim_next_job(con):
                 (now(), row["job_id"]))
     con.commit()
     return dict(row)
+
+
+def enqueue_sync_urls(con, urls) -> int:
+    """Cloud-role import path: record URLs for the home sync agent to claim
+    (docs/sync-plan.md §4.1). Home-side dedup by content sha still applies
+    when the agent processes them, so no duplicate check here."""
+    rows = [(u, now(), now()) for u in urls]
+    con.executemany(
+        "INSERT INTO sync_queue (url, status, attempts, created_at, updated_at) "
+        "VALUES (?, 'queued', 0, ?, ?)", rows)
+    con.commit()
+    return len(rows)

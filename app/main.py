@@ -42,14 +42,25 @@ def create_app() -> FastAPI:
     # old no-auth behavior). SPA shell/assets stay open - all data flows
     # through /api. Token travels as X-Reno-Token header or ?token= query
     # (media <video>/<img> tags cannot send headers).
+    # /api/sync/* is a separate credential (X-Sync-Token header only, never a
+    # query param - it must not land in proxy logs); empty sync_token keeps
+    # the sync surface closed (Phase 1 sync agent, docs/sync-plan.md §7).
     @app.middleware("http")
     async def token_gate(request, call_next):
+        import hmac as _hmac
+        from fastapi.responses import JSONResponse
+        path = request.url.path
+        if path.startswith("/api/sync"):
+            expected = config.get("sync_token", "")  # read per request
+            provided = request.headers.get("x-sync-token") or ""
+            if not expected or not _hmac.compare_digest(provided, expected):
+                return JSONResponse({"detail": "unauthorized"}, status_code=401)
+            return await call_next(request)
         auth_token = config.get("auth_token", "")  # read per request
-        if auth_token and request.url.path.startswith("/api"):
+        if auth_token and path.startswith("/api"):
             provided = (request.headers.get("x-reno-token")
-                        or request.query_params.get("token"))
-            if provided != auth_token:
-                from fastapi.responses import JSONResponse
+                        or request.query_params.get("token") or "")
+            if not _hmac.compare_digest(provided, auth_token):
                 return JSONResponse({"detail": "unauthorized"}, status_code=401)
         return await call_next(request)
 

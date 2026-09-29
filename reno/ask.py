@@ -205,11 +205,21 @@ def ask(question: str, history: list[dict] | None = None, k: int = 24) -> dict:
 ## 当前问题
 {question}"""
 
-    answer, _model = llm.chat(
-        [{"role": "system", "content": system},
-         {"role": "user", "content": user}],
-        model=model_name or None,
-        temperature=0.3, max_tokens=3000, json_mode=False)
+    answer = None
+    try:
+        answer, _model = llm.chat(
+            [{"role": "system", "content": system},
+             {"role": "user", "content": user}],
+            model=model_name or None,
+            temperature=0.3, max_tokens=3000, json_mode=False)
+    except Exception:  # noqa: BLE001 - no key / cloud llm guard / provider down:
+        # degrade to retrieval-only instead of a 500; deliberately NOT cached
+        # (degraded answers must not pollute the LRU, and retrying the model
+        # on the next question is cheap and often recovers)
+        return {"answer": "问答模型暂不可用，以下为检索到的相关知识条目"
+                          "（未经模型归纳，仅供参考）：\n\n" + "\n".join(lines),
+                "refs": refs, "conflicts": conflict_summaries,
+                "degraded": True}
 
     cited = {n for n in _cited_ns(answer) if n <= len(refs)}
     ordered_refs = [r for r in refs if r["n"] in cited] + \

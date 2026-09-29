@@ -42,7 +42,7 @@ def frame_at(video_id: str, ms: int):
         if asset is None:
             raise HTTPException(404, "unknown video")
         files = json.loads(asset["files_json"])
-        v = config.ROOT / files["video"]
+        v = config.resolve_media(files["video"])
         # clamp 200ms inside the file: seeking the very last instant of a
         # container yields no frame and must not fall out as a 500
         dur = asset["duration_ms"] or ms
@@ -72,7 +72,10 @@ def video_file(video_id: str, request: Request):
         if asset is None:
             raise HTTPException(404)
         files = json.loads(asset["files_json"])
-        v = Path(config.ROOT / files["video"]).resolve()
+        resolved = config.resolve_media(files["video"])
+        if resolved is None:
+            raise HTTPException(404, "no media file")
+        v = resolved.resolve()
         size = v.stat().st_size
         range_h = request.headers.get("range")
         if not range_h:
@@ -163,6 +166,16 @@ async def import_url(request: Request):
     from urllib.parse import urlparse
     if urlparse(target).scheme.lower() not in ("http", "https"):
         raise HTTPException(400, "url must be an http(s) link")
+    if config.is_cloud():
+        # cloud node never downloads/ingests (docs/sync-plan.md §1) - queue
+        # the URL for the home sync agent instead
+        con = db.connect()
+        try:
+            db.enqueue_sync_urls(con, [target])
+        finally:
+            con.close()
+        return JSONResponse({"status": "queued", "queued": 1,
+                             "note": "node_role=cloud: 已排队等待本地同步器处理"})
     try:
         res = ingest.ingest_url(target)
         if res["status"] != "duplicate":
@@ -191,6 +204,17 @@ async def import_batch(request: Request):
     urls = [u.strip() for u in urls_raw if u.strip()]
     if not urls:
         raise HTTPException(400, "urls required")
+    if config.is_cloud():
+        from urllib.parse import urlparse
+        ok = [u for u in urls[:200]
+              if urlparse(u).scheme.lower() in ("http", "https")]
+        con = db.connect()
+        try:
+            n = db.enqueue_sync_urls(con, ok) if ok else 0
+        finally:
+            con.close()
+        return JSONResponse({"queued": n, "skipped": len(urls[:200]) - len(ok),
+                             "note": "node_role=cloud: 已排队等待本地同步器处理"})
     from reno.favlist import import_urls
     stats = import_urls(urls[:200])
     return JSONResponse({k: len(v) for k, v in stats.items()} |
@@ -242,6 +266,32 @@ async def decision(request: Request):
         con.close()
 
 
+# per-token sliding window for /ask (public billing surface on a cloud node;
+# limit is ask_rate_per_min per minute, 0 disables - sync-plan §6)
+_ASK_BUCKETS: dict = {}
+_ASK_LOCK = threading.Lock()
+
+
+def _ask_allowed(key: str) -> bool:
+    from collections import deque
+    import time as _time
+    try:
+        limit = int(config.get("ask_rate_per_min", 10) or 0)
+    except (TypeError, ValueError):
+        limit = 10
+    if limit <= 0:
+        return True
+    now = _time.monotonic()
+    with _ASK_LOCK:
+        dq = _ASK_BUCKETS.setdefault(key, deque())
+        while dq and now - dq[0] > 60:
+            dq.popleft()
+        if len(dq) >= limit:
+            return False
+        dq.append(now)
+        return True
+
+
 @router.post("/ask")
 async def ask_question(request: Request):
     """Grounded Q&A: {question, history?: [{role, content}], k?: int}.
@@ -259,13 +309,19 @@ async def ask_question(request: Request):
     k = body.get("k", 24)
     if not isinstance(k, int) or isinstance(k, bool) or not (1 <= k <= 100):
         raise HTTPException(400, "k must be an integer between 1 and 100")
+    if not _ask_allowed(request.headers.get("x-reno-token")
+                        or request.query_params.get("token") or "anon"):
+        raise HTTPException(429, "rate limited, retry in a minute")
     try:
         res = ask_module.ask(question.strip(), history=history or [], k=k)
         return JSONResponse(res)
     except HTTPException:
         raise
     except Exception as e:  # noqa: BLE001
-        raise HTTPException(500, str(e)[:300])
+        # provider detail must not reach visitors (key validity probing);
+        # ask() itself already degrades LLM failures to retrieval-only
+        print(f"[ask] error: {e!r}", flush=True)
+        raise HTTPException(500, "问答服务暂不可用，请稍后重试")
 
 
 # ---------- read APIs for the React client (previously Jinja2-injected) ----------
@@ -307,7 +363,7 @@ def video_meta(video_id: str):
         if asset is None:
             raise HTTPException(404, "unknown video")
         files = json.loads(asset["files_json"] or "{}")
-        has_video = "video" in files and (config.ROOT / files["video"]).exists()
+        has_video = "video" in files and (config.resolve_media(files["video"]) or Path()).exists()
         return {
             "video_id": asset["video_id"], "title": asset["title"],
             "author": asset["author"], "status": asset["status"],
@@ -358,8 +414,11 @@ def facets():
 
 @router.get("/reports")
 def reports():
-    """Generated markdown reports (was reports.html template context)."""
-    gen = Path(__file__).parent.parent / "docs" / "generated"
+    """Generated markdown reports (was reports.html template context).
+    Reads from the data dir (RENO_DATA_DIR aware), never from the git-tracked
+    repo checkout - a cloud deploy's git reset would wipe those (sync-plan §3)."""
+    from reno import report
+    gen = report.out_dir()
     out = {}
     for name in ("summary.md", "incremental_diff.md", "checklist.md", "conflicts.md", "prices.md"):
         p = gen / name
@@ -389,6 +448,10 @@ async def set_model(request: Request):
     """Switch the processing model (atomize + judge) at runtime. Writes to
     config.local.json (preserving all other keys incl. secrets) and takes
     effect on the next pipeline run without a server restart."""
+    if config.is_cloud():
+        # every preset is glm-5.3* (coding plan) - a cloud node must not run
+        # the pipeline anyway, and switching would arm the llm guard
+        raise HTTPException(403, "node_role=cloud: processing model is managed by the home node")
     body = await json_body(request)
     model = body.get("model")
     if model not in MODEL_PRESETS:

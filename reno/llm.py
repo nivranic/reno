@@ -114,6 +114,12 @@ def chat(messages, model=None, temperature=0.3, max_tokens=4096, json_mode=True,
     if timeout is None:
         # long structured outputs (atomize) need far more than default 120s
         timeout = max(120, int(max_tokens * 0.06))
+    if config.is_cloud() and any(_is_anthropic(m) for m in models):
+        # coding-plan quota must never be spent from a cloud node - fail fast
+        # before any request leaves the process (docs/sync-plan.md §1/§6)
+        raise RuntimeError(
+            "node_role=cloud forbids glm-5.3* (coding-plan) models; "
+            "configure ask_model/atomize_model to a paas model instead")
     errors = []
     for m in models:
         try:

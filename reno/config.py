@@ -3,7 +3,7 @@
 import json
 import os
 import threading
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 # RENO_DATA_DIR relocates every mutable path (db / media / frame cache).
@@ -40,7 +40,39 @@ DEFAULTS = {
     "judge_prompt_version": "v2",
     "taxonomy_version": "v2",
     "schema_version": "2.0.0",
+    # deployment role: "all" = current single-machine behavior; "cloud" =
+    # serving only (no pipeline worker, imports enqueue, glm-5.3* coding-plan
+    # models refused - see docs/sync-plan.md); "home" = full pipeline + sync
+    "node_role": "all",
+    # cloud /ask model: a paas (non glm-5.3*) model, empty falls back to
+    # atomize_model - which on cloud must not be glm-5.3* (llm guard)
+    "ask_model": "",
+    "summary_model": "",
+    # separate credential for /api/sync/* (Phase 1 sync agent); empty = sync
+    # endpoints stay closed. Header-only (X-Sync-Token), never a query param
+    "sync_token": "",
+    # /ask per-token rate limit per minute, 0 = off
+    "ask_rate_per_min": 10,
 }
+
+
+def is_cloud() -> bool:
+    return str(get("node_role") or "all").lower() == "cloud"
+
+
+def resolve_media(p) -> "Path | None":
+    """Resolve a files_json path entry against the media base (MEDIA.parent).
+
+    Canonical stored form is POSIX-relative ("media/originals/x.mp4"), which
+    resolves identically for a repo checkout and a relocated RENO_DATA_DIR.
+    Legacy rows may hold backslash separators or absolute Windows paths;
+    absolute values pass through unchanged, separators are normalized."""
+    if not p:
+        return None
+    s = str(p)
+    if s.startswith(("/", "\\\\")) or (len(s) > 2 and s[1] == ":"):
+        return Path(s)
+    return MEDIA.parent / PurePosixPath(s.replace("\\", "/"))
 
 _cache = None
 
