@@ -64,10 +64,11 @@ jobs:
   reconciliation:
     runs-on: ubuntu-latest
     env:
-      TMPDIR: ${{ runner.temp }}
-      RENO_E2E_MANIFEST: ${{ runner.temp }}/reno-reconciliation/qa-manifest.json
       RENO_E2E_PYTHON: python
     steps:
+      - name: configure isolated QA paths
+        run: |
+          printf '%s\n' "TMPDIR=$RUNNER_TEMP" "RENO_E2E_MANIFEST=$RUNNER_TEMP/reno-reconciliation/qa-manifest.json" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
@@ -100,10 +101,11 @@ jobs:
   derivation:
     runs-on: ubuntu-latest
     env:
-      TMPDIR: ${{ runner.temp }}
-      RENO_E2E_MANIFEST: ${{ runner.temp }}/reno-derivation/qa-manifest.json
       RENO_E2E_PYTHON: python
     steps:
+      - name: configure isolated QA paths
+        run: |
+          printf '%s\n' "TMPDIR=$RUNNER_TEMP" "RENO_E2E_MANIFEST=$RUNNER_TEMP/reno-derivation/qa-manifest.json" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
@@ -136,10 +138,11 @@ jobs:
   sync-recovery:
     runs-on: ubuntu-latest
     env:
-      TMPDIR: ${{ runner.temp }}
-      RENO_E2E_MANIFEST: ${{ runner.temp }}/reno-sync-recovery/qa-manifest.json
       RENO_E2E_PYTHON: python
     steps:
+      - name: configure isolated QA paths
+        run: |
+          printf '%s\n' "TMPDIR=$RUNNER_TEMP" "RENO_E2E_MANIFEST=$RUNNER_TEMP/reno-sync-recovery/qa-manifest.json" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
@@ -175,10 +178,10 @@ jobs:
 
   sync-chain:
     runs-on: ubuntu-latest
-    env:
-      TMPDIR: ${{ runner.temp }}
-      RENO_E2E_MANIFEST: ${{ runner.temp }}/reno-sync-chain/qa-manifest.json
     steps:
+      - name: configure isolated QA paths
+        run: |
+          printf '%s\n' "TMPDIR=$RUNNER_TEMP" "RENO_E2E_MANIFEST=$RUNNER_TEMP/reno-sync-chain/qa-manifest.json" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
