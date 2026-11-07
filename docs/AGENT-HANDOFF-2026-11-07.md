@@ -166,3 +166,7 @@ header 的服务表示不含 `_Py_MakeCoro` 声明和完整 generator 对象布�
 后继只读核对从官方 PyPI 元数据确认：无条件固定的 NumPy 2.5.3 要求 Python >=3.12，与项目 >=3.11 的声明及 checkpoint-runtime 的 Python 3.11 不兼容。已按 Python 版本使用环境标记：3.11 选择 NumPy 2.4.6，3.12 及以上选择 2.5.3；其他依赖和最低支持版本保持。
 
 六个 Python 版本的环境标记选择及发行版 Requires-Python 核对通过，未安装或运行 NumPy。此证据支持修正依赖声明，旧 pip 日志全文和另外三个失败的具体原因仍未取得。详细事实、来源和验证界限见 [依赖修正记录](closeout/2026-11-07-python311-numpy.md)，实际结果须核对后继 fix(deps) 提交的关联 CI；不将元数据核对称作运行通过。
+
+**已取得修正后的有限实际结果。** 源码 `bbc5c6b` 的 [运行 42362145344](https://github.com/nivranic/reno/actions/runs/42362145344) 七项均终态，3 项成功／4 项失败。checkpoint 已从旧 pip 安装失败推进到第 5 步实际测试失败，当前退出码 1；默认步骤成功条件支持此前 pip 安装已完成的判断，但不证明具体测试通过。其余三个失败仍是 backend、sync-chain、sync-recovery。详见 [后继结果](closeout/2026-11-07-python311-ci-result.json)。
+
+公开 API 后继触发限流；公开页面和现有浏览器仍要求 GitHub 登录查看详细日志。当前没有可用的已登录日志通道，不读取用户密码、Cookie、token 或私密配置，不根据有限退出码继续猜测修补。源码与原生候选的其余未完成范围保持，后继须先取得授权日志或明确新的工作方向。

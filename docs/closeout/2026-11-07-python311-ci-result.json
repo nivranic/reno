@@ -1,0 +1,45 @@
+{
+  "source_commit": "bbc5c6bd4bba63f874ad9beff13c046d9992b601",
+  "workflow_run_id": 42362145344,
+  "workflow_run_url": "https://github.com/nivranic/reno/actions/runs/42362145344",
+  "public_run_page_shows_all_seven_jobs_terminal": true,
+  "jobs_passed": 3,
+  "jobs_failed": 4,
+  "jobs": [
+    {"name": "frontend", "id": 128372574620, "conclusion": "success"},
+    {"name": "reconciliation", "id": 128372574698, "conclusion": "success"},
+    {"name": "derivation", "id": 128372574518, "conclusion": "success"},
+    {
+      "name": "checkpoint-runtime",
+      "id": 128372574699,
+      "conclusion": "failure",
+      "failed_step": "verify minimum Python and SQLite archive support",
+      "failed_step_number": 5,
+      "test_step_reached": true,
+      "reported_exit_code": 1,
+      "root_cause_of_test_failure_confirmed": false
+    },
+    {"name": "backend", "id": 128372574784, "conclusion": "failure", "reported_exit_code": 2},
+    {"name": "sync-chain", "id": 128372574679, "conclusion": "failure", "reported_exit_code": 1},
+    {"name": "sync-recovery", "id": 128372574703, "conclusion": "failure", "reported_exit_code": 1}
+  ],
+  "evidence": {
+    "public_run_page_receipt": "fc62ad",
+    "seven_job_status_and_exit_annotation_extraction": "19dcae",
+    "checkpoint_public_job_page": "2c77c3",
+    "checkpoint_test_step_annotation_and_login_requirement": "6e1bd5",
+    "requires_python_and_six_marker_selection_checks": "4d4711"
+  },
+  "access_limitations": {
+    "public_rest_api_rate_limited_at_followup": true,
+    "connected_browser_and_public_page_require_github_login_for_logs": true,
+    "detailed_failure_logs_obtained": false,
+    "local_password_cookie_or_token_files_read": false,
+    "owned_browser_tab_restored_to_blank": true
+  },
+  "numpy_python311_declaration_conflict_corrected": true,
+  "checkpoint_test_passed": false,
+  "ci_passed": false,
+  "candidate_executed": false,
+  "full_goal_complete": false
+}

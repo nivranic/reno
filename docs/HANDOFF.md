@@ -10,4 +10,6 @@
 
 后继已证实并修正 Python 3.11 与无条件 NumPy 2.5.3 的依赖声明冲突，详见 [兼容修正](closeout/2026-11-07-python311-numpy.md)。修正的实际 CI 结果与旧运行结果分别核实。
 
+最新源码 `bbc5c6b` 的 CI 仍为 **3 项成功／4 项失败**；checkpoint 已进入实际测试，具体失败日志仍需 GitHub 登录。[后继结果](closeout/2026-11-07-python311-ci-result.json)保存已核实边界，结果补记提交不重复运行 CI。
+
 早期 [r1112 原生根交接](plans/2026-10-18-h01-native-root-handoff-r1112.md) 与 `completion-audit.md` 属于各自历史阶段，不作为当前完成度结论。
