@@ -8,4 +8,6 @@
 
 源码后继 `4e2a96e` 已解除工作流校验错误；远端 CI 实际为 **3 项成功／4 项失败**，详情及日志访问缺口见 [结果记录](closeout/2026-11-07-ci-remote-result.json)。最终补记为纯文档提交，不另行重复 CI。
 
+后继已证实并修正 Python 3.11 与无条件 NumPy 2.5.3 的依赖声明冲突，详见 [兼容修正](closeout/2026-11-07-python311-numpy.md)。修正的实际 CI 结果与旧运行结果分别核实。
+
 早期 [r1112 原生根交接](plans/2026-10-18-h01-native-root-handoff-r1112.md) 与 `completion-audit.md` 属于各自历史阶段，不作为当前完成度结论。
