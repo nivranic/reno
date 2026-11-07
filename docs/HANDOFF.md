@@ -6,4 +6,6 @@
 
 首版交接提交为 `2d4b15c`。推送后发现的工作流上下文错误及配置修正见 [CI 收尾记录](closeout/2026-11-07-ci-env-followup.md)；GitHub 运行状态与本地验证分别判断。
 
+源码后继 `4e2a96e` 已解除工作流校验错误；远端 CI 实际为 **3 项成功／4 项失败**，详情及日志访问缺口见 [结果记录](closeout/2026-11-07-ci-remote-result.json)。最终补记为纯文档提交，不另行重复 CI。
+
 早期 [r1112 原生根交接](plans/2026-10-18-h01-native-root-handoff-r1112.md) 与 `completion-audit.md` 属于各自历史阶段，不作为当前完成度结论。

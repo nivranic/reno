@@ -1,0 +1,66 @@
+{
+  "source_commit": "4e2a96eaeedfbc57f04c8d7ee7c21f463889339e",
+  "workflow_run_id": 42361078787,
+  "workflow_run_url": "https://github.com/nivranic/reno/actions/runs/42361078787",
+  "status": "completed",
+  "conclusion": "failure",
+  "updated_at_utc": "2026-11-07T09:47:31Z",
+  "workflow_accepted_and_seven_jobs_started": true,
+  "jobs_passed": 3,
+  "jobs_failed": 4,
+  "jobs": [
+    {"name": "frontend", "id": 128369406216, "conclusion": "success"},
+    {"name": "reconciliation", "id": 128369406183, "conclusion": "success"},
+    {"name": "derivation", "id": 128369406250, "conclusion": "success"},
+    {
+      "name": "checkpoint-runtime",
+      "id": 128369406149,
+      "conclusion": "failure",
+      "failed_step": "Run pip install -r requirements.txt",
+      "test_step_executed": false,
+      "reported_exit_code": 1,
+      "root_cause_confirmed": false
+    },
+    {
+      "name": "backend",
+      "id": 128369406226,
+      "conclusion": "failure",
+      "failed_step": "pytest (robustness + units; LLM probes opt-in, skipped here)",
+      "reported_exit_code": 2,
+      "root_cause_confirmed": false
+    },
+    {
+      "name": "sync-chain",
+      "id": 128369406144,
+      "conclusion": "failure",
+      "failed_step": "publish through isolated home and cloud processes with fault recovery",
+      "reported_exit_code": 1,
+      "root_cause_confirmed": false
+    },
+    {
+      "name": "sync-recovery",
+      "id": 128369406270,
+      "conclusion": "failure",
+      "failed_step": "restore, hold and republish through independent real processes",
+      "reported_exit_code": 1,
+      "root_cause_confirmed": false
+    }
+  ],
+  "evidence_receipts": {
+    "jobs_and_failed_step_snapshot": "1d876e",
+    "checkpoint_step_and_annotations": "00e180",
+    "terminal_run_and_public_login_requirement": "bf57fc",
+    "other_failure_annotations": "488c15"
+  },
+  "detailed_logs": {
+    "available_in_current_public_read_channel": false,
+    "job_log_rest_status": 403,
+    "public_job_page_requires_github_sign_in": true,
+    "local_credentials_read": false,
+    "logs_or_scenarios_replayed": false
+  },
+  "local_and_remote_results_are_distinct": true,
+  "ci_passed": false,
+  "native_candidate_compiled_or_executed": false,
+  "full_goal_complete": false
+}

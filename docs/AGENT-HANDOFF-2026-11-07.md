@@ -154,3 +154,9 @@ header 的服务表示不含 `_Py_MakeCoro` 声明和完整 generator 对象布�
 修正将 TMPDIR／RENO_E2E_MANIFEST 放到四个任务的首个 runner shell 步骤，通过实际 RUNNER_TEMP 写入 GITHUB_ENV，其余测试步骤和路径保持。完整 YAML 对象保持性核对、四条 Bash 命令的隔离执行及带空格路径检查通过。没有触及产品模块、原生候选或正常库／服务。
 
 详细原因、官方文档、原始失败与验证范围见 [CI 收尾记录](closeout/2026-11-07-ci-env-followup.md)。新提交的 GitHub 工作流状态需按关联运行核实；本交接不预先宣称 CI、后端或 E2E 通过。
+
+**已取得后继实际终态。** 修正源码 `4e2a96e` 的 [运行 42361078787](https://github.com/nivranic/reno/actions/runs/42361078787) 已完成，工作流被接收并实际启动七项任务：frontend、reconciliation、derivation 成功；checkpoint-runtime 的 pip 安装、backend 的 pytest、sync-chain 与 sync-recovery 的场景步骤失败。checkpoint 测试没有执行。完整记录见 [远端 CI 结果](closeout/2026-11-07-ci-remote-result.json)。
+
+四项失败的具体原因尚未取得：公开日志 API 为 403，任务页面要求 GitHub 登录，有限注记只给退出码。先获得同一失败任务的授权日志再改代码，不猜测 numpy 版本、collection 原因、native 机制或恢复行为。上述失败和原工作流错误不能合并为同一个根因。
+
+最终结果补记仅改文档并标记 `[skip ci]`，不会为相同源码再次触发七项任务。最新文档 HEAD 不具有新的 CI 通过结论，完整目标仍开放。
