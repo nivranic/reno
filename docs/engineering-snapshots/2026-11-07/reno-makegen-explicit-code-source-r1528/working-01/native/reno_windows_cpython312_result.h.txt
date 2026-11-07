@@ -1,0 +1,66 @@
+#ifndef RENO_WINDOWS_CPYTHON312_RESULT_H
+#define RENO_WINDOWS_CPYTHON312_RESULT_H
+
+#include <Python.h>
+#include "reno_windows_cpython312_audit.h"
+
+#if defined(_WIN32)
+/* Internal C envelope, not a Python object, authorization token or an owner.
+ * Exactly the same runtime/CRT/GIL, entry-indicator and actual owner-lifetime
+ * preconditions as the audited API apply. In particular the caller retains
+ * the real owner through this whole call and the original publication path.
+ * No field here manufactures that root or grants a source/caller identity.
+ */
+typedef struct {
+    RenoWindowsAuditedTransferResult transfer;
+    /* If non-NULL, exactly one NEW reference owned by the C caller. Move it
+     * into the actual Python return or DECREF it exactly once on abandonment;
+     * do not DECREF a moved reference. The fd remains owned by the session.
+     * Never reconstruct/close a resource from this integer or its refcount.
+     */
+    PyObject *fd_object;
+} RenoWindowsPythonTransferResult;
+
+/* Original OPEN audit, actual transfer, IPH restore, then PyLong_FromLong
+ * of the actual successful fd, all under one gate. This conversion is not
+ * attempted for an audit/native failure or a pre-attempt rejection.
+ * A NULL result with actual core OK means result conversion failed, not that
+ * native transfer was undone. The fd slot is retained and the original
+ * raised indicator is pending; no GET, reverse transfer or close is added.
+ * Other typed pre-rejections can return NULL WITHOUT an exception: this is
+ * not a PyCFunction signature, full Clinic binder or direct Python return.
+ * The original caller must still handle its own domain errors and sync/event
+ * sequence from actual facts, without guessing ownership from error class.
+ * Success of PyLong conversion also does not establish later raw retirement.
+ */
+RenoWindowsPythonTransferResult reno_windows_cpython312_transfer_python_result_once(
+    RenoWindowsSerializedSlot *session, int crt_flags);
+
+typedef struct {
+    RenoWindowsAuditedIdentityResult identity;
+    /* One NEW reference on conversion success, including an internal native
+     * mismatch. The C caller must move it or DECREF it exactly once. NULL
+     * means no successful Python result, not that the fd was closed.
+     */
+    PyObject *handle_object;
+} RenoWindowsPythonIdentityResult;
+
+/* Separate GET entry after the original caller's fd commit/sync events.
+ * Holds the gate and a registered fd borrow through original audit, actual
+ * runtime helper and optional PyLong_FromVoidPtr conversion. The legacy
+ * C-only entry omits that conversion. A conversion failure marks FAILED,
+ * settles the borrow and preserves the actual exception; comparison stays
+ * unperformed and the fd remains the only resource cleanup root.
+ * Successful conversion precedes the internal scalar view comparison/end.
+ * MATCHED still means only that internal operation: this entry has NOT done
+ * the original Python RHS holder['raw'] lookup or its rich comparison.
+ * A mismatch may have a non-NULL owned handle_object and no Python exception;
+ * the original domain-error path and result-reference settlement still belong
+ * to the real adapter. Pre-rejection may also have no pending exception.
+ * This is a typed C envelope, not PyCFunction, owner or source authority.
+ */
+RenoWindowsPythonIdentityResult reno_windows_cpython312_validate_transfer_python_result_once(
+    RenoWindowsSerializedSlot *session);
+
+#endif
+#endif

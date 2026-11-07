@@ -11,36 +11,73 @@ import time
 import urllib.error
 import urllib.request
 
-from . import config
+from . import budget, budget_contract, config, model_budget
+from .sync_source_opportunity17 import ReadmissionRequired17
+
+_BUDGET_ERRORS = (budget_contract.BudgetDeferred, budget_contract.BudgetContractError,
+                  budget.BudgetLedgerError, ReadmissionRequired17)
+
+
+def _send_response(req, payload, timeout):
+    if req.data != payload:
+        raise budget.BudgetLedgerError("BUDGET_REQUEST_CONFLICT")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return model_budget.ProviderResponse(getattr(response, "status", 200), response.read())
+    except urllib.error.HTTPError as error:
+        # A complete HTTP response is a receipt, including a retryable error.
+        # Read failures still propagate as an uncertain transport observation.
+        return model_budget.ProviderResponse(error.code, error.read())
+
+
+def _provider_outcome(adapter, response):
+    if response.status >= 400:
+        return "http_retry" if response.status in {429, 500, 502, 503} else "terminal_error"
+    value = json.loads(response.body.decode("utf-8"))
+    if adapter == "glm53_anthropic":
+        content = "".join(part.get("text", "") for part in value.get("content", []) if part.get("type") == "text")
+    else:
+        content = value["choices"][0]["message"].get("content") or ""
+    if model_budget.expects_json():
+        return "full_result" if content.strip() and extract_json(content) is not None else "repair"
+    return "full_result" if content.strip() else "terminal_error"
+
+
+def _http_error(response):
+    payload = response.body.decode("utf-8", "replace")[:400]
+    return RuntimeError(f"HTTP {response.status}: {payload}")
 
 
 def _post(path: str, body: dict, timeout: int = 120) -> dict:
+    if config.is_cloud() and _is_anthropic(body.get("model")):
+        raise RuntimeError("node_role=cloud forbids glm-5.3* (coding-plan) models")
     url = config.get("zhipu_base_url").rstrip("/") + path
-    req = urllib.request.Request(
-        url, data=json.dumps(body).encode("utf-8"),
-        headers={"Authorization": f"Bearer {config.get('zhipu_api_key')}",
-                 "Content-Type": "application/json"})
+    def build():
+        return urllib.request.Request(
+            url, data=model_budget.payload_bytes(body),
+            headers={"Authorization": f"Bearer {config.get('zhipu_api_key')}", "Content-Type": "application/json"})
+    req = build()
     last = None
     backoffs = {429: (6, 18, 54), 500: (2, 4, 8), 502: (2, 4, 8), 503: (2, 4, 8)}
     for attempt in range(4):
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                return json.loads(r.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            payload = e.read().decode("utf-8", "replace")[:400]
-            last = RuntimeError(f"HTTP {e.code}: {payload}")
-            if e.code in backoffs and attempt < 3:
-                time.sleep(backoffs[e.code][attempt])
-                # rebuild request: the consumed body can't be reused
-                req = urllib.request.Request(
-                    url, data=json.dumps(body).encode("utf-8"),
-                    headers={"Authorization": f"Bearer {config.get('zhipu_api_key')}",
-                             "Content-Type": "application/json"})
-                continue
-            raise last
+            response = model_budget.request_once("paas_v4", body, lambda payload: _send_response(req, payload, timeout),
+                classify=lambda result: _provider_outcome("paas_v4", result),
+                transport_admission=_coding_plan_admission if _is_anthropic(body.get("model")) else None)
+            if response.status >= 400:
+                last = _http_error(response)
+                if response.status in backoffs and attempt < 3:
+                    time.sleep(backoffs[response.status][attempt])
+                    req = build()
+                    continue
+                raise last
+            return json.loads(response.body.decode("utf-8"))
+        except _BUDGET_ERRORS:
+            raise
         except (urllib.error.URLError, TimeoutError) as e:
             last = e
             time.sleep(3 * (attempt + 1))
+            req = build()
     raise last
 
 
@@ -55,9 +92,18 @@ def _is_anthropic(model: str) -> bool:
     return (model or "").lower().startswith(ANTHROPIC_PREFIX)
 
 
+def _coding_plan_admission():
+    # Entry guards keep their historical public error. Once work is underway,
+    # role changes must stop only a new physical opportunity, before dispatch.
+    if config.is_cloud():
+        raise budget_contract.BudgetDeferred("unsupported_capability")
+
+
 def _post_anthropic(messages, model, temperature, max_tokens, timeout) -> str:
     """chat() path for GLM-5.3* models via /api/anthropic (coding-plan quota).
     Same backoff policy as _post; JSON tolerance handled by extract_json."""
+    if config.is_cloud():
+        raise RuntimeError("node_role=cloud forbids glm-5.3* (coding-plan) models")
     system = "\n\n".join(m.get("content", "") for m in messages
                          if m.get("role") == "system")
     rest = [{"role": m["role"], "content": m.get("content", "")}
@@ -73,7 +119,7 @@ def _post_anthropic(messages, model, temperature, max_tokens, timeout) -> str:
 
     def build():
         return urllib.request.Request(
-            ANTHROPIC_URL, data=json.dumps(body).encode("utf-8"),
+            ANTHROPIC_URL, data=model_budget.payload_bytes(body),
             headers={"x-api-key": config.get("zhipu_api_key"),
                      "Authorization": f"Bearer {config.get('zhipu_api_key')}",
                      "anthropic-version": "2023-06-01",
@@ -84,24 +130,31 @@ def _post_anthropic(messages, model, temperature, max_tokens, timeout) -> str:
     backoffs = {429: (6, 18, 54), 500: (2, 4, 8), 502: (2, 4, 8), 503: (2, 4, 8)}
     for attempt in range(4):
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                d = json.loads(r.read().decode("utf-8"))
+            response = model_budget.request_once("glm53_anthropic", body,
+                lambda payload: _send_response(req, payload, timeout),
+                classify=lambda result: _provider_outcome("glm53_anthropic", result),
+                transport_admission=_coding_plan_admission)
+            if response.status >= 400:
+                last = _http_error(response)
+                if response.status in backoffs and attempt < 3:
+                    time.sleep(backoffs[response.status][attempt])
+                    req = build()
+                    continue
+                raise last
+            d = json.loads(response.body.decode("utf-8"))
             text = "".join(p.get("text", "") for p in d.get("content", [])
                            if p.get("type") == "text").strip()
             if not text:
+                if model_budget.is_tracked() and model_budget.expects_json():
+                    return text
                 raise RuntimeError("empty content (reasoning-only response)")
             return text
-        except urllib.error.HTTPError as e:
-            payload = e.read().decode("utf-8", "replace")[:400]
-            last = RuntimeError(f"HTTP {e.code}: {payload}")
-            if e.code in backoffs and attempt < 3:
-                time.sleep(backoffs[e.code][attempt])
-                req = build()  # body stream was consumed
-                continue
-            raise last
+        except _BUDGET_ERRORS:
+            raise
         except (urllib.error.URLError, TimeoutError) as e:
             last = e
             time.sleep(3 * (attempt + 1))
+            req = build()
     raise last
 
 
@@ -137,8 +190,11 @@ def chat(messages, model=None, temperature=0.3, max_tokens=4096, json_mode=True,
             msg = d["choices"][0]["message"]
             content = msg.get("content") or ""
             if not content.strip():
-                raise RuntimeError("empty content (reasoning-only response)")
+                if not (model_budget.is_tracked() and model_budget.expects_json()):
+                    raise RuntimeError("empty content (reasoning-only response)")
             return content, m
+        except _BUDGET_ERRORS:
+            raise
         except Exception as e:  # noqa: BLE001 - fall through to next model
             errors.append(f"{m}: {e}")
     raise RuntimeError("all models failed: " + " | ".join(str(e) for e in errors))
@@ -147,17 +203,19 @@ def chat(messages, model=None, temperature=0.3, max_tokens=4096, json_mode=True,
 def chat_json(messages, model=None, max_tokens=4096):
     """Chat that must return a JSON object. Tolerates code fences and
     reasoning prefixes; one repair retry with an explicit reminder."""
-    content, m = chat(messages, model=model, max_tokens=max_tokens)
-    obj = extract_json(content)
-    if obj is None:
-        content, m = chat(
-            messages + [{"role": "user",
-                         "content": "你上一条回复不是合法JSON。请重新输出,只输出JSON对象,不要任何其他文字。"}],
-            model=model, max_tokens=max_tokens)
+    with model_budget.classification(expects_json=True):
+        content, m = chat(messages, model=model, max_tokens=max_tokens)
         obj = extract_json(content)
-    if obj is None:
-        raise ValueError(f"model {m} failed to produce JSON: {content[:200]}")
-    return obj, m
+        if obj is None:
+            with model_budget.phase("repair"):
+                content, m = chat(
+                    messages + [{"role": "user",
+                                 "content": "你上一条回复不是合法JSON。请重新输出,只输出JSON对象,不要任何其他文字。"}],
+                    model=model, max_tokens=max_tokens)
+            obj = extract_json(content)
+        if obj is None:
+            raise ValueError(f"model {m} failed to produce JSON: {content[:200]}")
+        return obj, m
 
 
 def extract_json(text: str):

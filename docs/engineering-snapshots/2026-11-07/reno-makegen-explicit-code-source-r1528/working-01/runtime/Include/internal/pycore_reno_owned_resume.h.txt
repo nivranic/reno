@@ -1,0 +1,405 @@
+#ifndef Py_INTERNAL_RENO_OWNED_RESUME_H
+#define Py_INTERNAL_RENO_OWNED_RESUME_H
+
+#ifndef Py_BUILD_CORE
+#  error "this header requires Py_BUILD_CORE define"
+#endif
+
+#include "Python.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* The primitive ABI and this code image's lifetime must be independently
+   established before the first query.  Self-reported words cannot do that.
+   This spelling is shared by the declaration and definition.  Unsupported
+   target/compiler combinations are rejected in the complete query TU. */
+#ifdef RENO_OWNED_RESUME_QUERY_CALL
+#  error "query calling convention is owned by the companion header"
+#endif
+#if defined(_WIN32)
+#  define RENO_OWNED_RESUME_QUERY_CALL __cdecl
+#elif (defined(__GNUC__) || defined(__clang__)) && defined(__x86_64__)
+#  define RENO_OWNED_RESUME_QUERY_CALL __attribute__((sysv_abi))
+#else
+/* The admitted AArch64 source profile uses its proven default C ABI. */
+#  define RENO_OWNED_RESUME_QUERY_CALL
+#endif
+
+/* Fixed indices 0..255; all other indices return 0.  No native output buffer
+   or code address is returned.  Query and independent expected comparison
+   belong before Prepare and fresh source checks, never in pending/armed/
+   attached intervals.  A legal metadata build is required to define it. */
+PyAPI_FUNC(uint32_t) RENO_OWNED_RESUME_QUERY_CALL
+RenoOwnedResumeDescribeWordV1(uint32_t index);
+
+/* Selected private design versions; not a build or layout attestation. */
+enum {
+    RENO_OWNED_RESUME_ABI_MAJOR = 1,
+    RENO_OWNED_RESUME_ABI_MINOR = 1,
+    RENO_OWNED_RESUME_PHASE_VERSION = 2,
+    RENO_OWNED_RESUME_PROTOCOL_VERSION = 3
+};
+
+enum {
+    RENO_OWNED_RESUME_PHASE_ZERO = 0,
+    RENO_OWNED_RESUME_PHASE_PREPARING = 1,
+    RENO_OWNED_RESUME_PHASE_READY_PRIVATE = 2,
+    RENO_OWNED_RESUME_PHASE_ARENA_NULL_PRIVATE = 3,
+    RENO_OWNED_RESUME_PHASE_PREPARE_FAILED_PRIVATE = 4,
+    RENO_OWNED_RESUME_PHASE_NOT_SELECTED = 5,
+    RENO_OWNED_RESUME_PHASE_INVOKING_PRIVATE = 6,
+    RENO_OWNED_RESUME_PHASE_ARMED_PRIVATE = 7,
+    RENO_OWNED_RESUME_PHASE_TAKEN_PRIVATE = 8,
+    RENO_OWNED_RESUME_PHASE_ATTACHED_UNMOVED = 9,
+    RENO_OWNED_RESUME_PHASE_DETACHED_OWNED = 10,
+    RENO_OWNED_RESUME_PHASE_RETURNED_PRIVATE = 11,
+    RENO_OWNED_RESUME_PHASE_COMMITTED = 12,
+    RENO_OWNED_RESUME_PHASE_CLOSED = 13
+};
+
+/* Prepare C return statuses, distinct from record phases. */
+enum {
+    RENO_OWNED_RESUME_PREPARE_READY = 0,
+    RENO_OWNED_RESUME_PREPARE_ARENA_NULL = 1,
+    RENO_OWNED_RESUME_PREPARE_ERROR = 2,
+    RENO_OWNED_RESUME_PREPARE_NOT_SELECTED = 3
+};
+
+enum {
+    RENO_OWNED_RESUME_FAILURE_NONE = 0,
+    RENO_OWNED_RESUME_FAILURE_PREPARE_PROTOCOL = 1,
+    RENO_OWNED_RESUME_FAILURE_PREPARE_SOURCE = 2
+};
+
+/* Original locals choices, recorded once by the companion producer. */
+enum {
+    RENO_OWNED_RESUME_LOCALS_UNSELECTED = 0,
+    RENO_OWNED_RESUME_LOCALS_NULL = 1,
+    RENO_OWNED_RESUME_LOCALS_GLOBALS = 2
+};
+
+/* Real typed, naturally laid out storage. Only companion operations write it.
+   Field visibility and record_address do not authenticate arbitrary pointers. */
+typedef struct {
+    uint32_t abi_major;                 /* U01 */
+    uint32_t abi_minor;                 /* U02 */
+    uint32_t phase;                     /* U03 */
+    uint32_t failure_reason;            /* U04 */
+    uint32_t function_site_executed;    /* U05 */
+    uint32_t frame_site_executed;       /* U06 */
+    uint32_t saved_old_top_valid;       /* U07 */
+    uint32_t locals_mode;              /* U08 */
+    size_t storage_bytes;              /* S01 */
+    size_t nargsf;                     /* S02 */
+    size_t positional;                 /* S03 */
+    size_t keyword_count;              /* S04 */
+    size_t values_owned_count;         /* S05 */
+    size_t raw_bytes;                  /* S06 */
+    size_t frame_slots;                /* S07 */
+    size_t old_chunk_top;              /* S08 */
+    PyThreadState *actual_tstate;      /* D01 */
+    PyObject *actual_callable;         /* D02 */
+    PyObject *function_owned;          /* D03 */
+    PyObject *locals_owned;            /* D04 */
+    PyObject *pending_owned;           /* D05 */
+    PyObject *kwnames;                 /* D06 */
+    PyObject *const *argv;             /* D07 */
+    PyObject *frame_code;              /* D08 */
+    void *raw_owned;                   /* D09 */
+    void *free_debt;                   /* D10 */
+    void *old_chunk;                   /* D11 */
+    PyObject **old_top;                /* D12 */
+    PyObject **old_limit;              /* D13 */
+    void *reserved_frame;              /* D14 */
+    void *record_address;              /* D15 */
+    vectorcallfunc expected_standard;  /* F01 */
+} RenoOwnedResumeRecordV1;
+
+typedef struct {
+    PyObject *function_owned;
+    PyObject *locals_owned;
+    PyObject *pending_owned;
+    PyObject *const *argv;
+    size_t values_owned_count;
+    void *raw_to_free;
+    size_t raw_bytes;
+} RenoOwnedResumeMoveOutV1;
+
+/* Separate method transport. The basic nine-symbol query/32+7 records do not
+   certify this added primitive ABI, callback signature, field or code image.
+   These declarations and matching runtime must join the actual M/independent
+   expected/export and lifetime proof before use. Nothing registers a source. */
+typedef int (*RenoOwnedResumeMethodSourceV1)(void *source_context);
+typedef struct RenoOwnedMethodResumeRequestV1 RenoOwnedMethodResumeRequestV1;
+
+/* Legal caller: matching current interpreter/GIL, empty entry indicator, both
+   request slots empty; actual original method/function/self/code roots plus
+   outer entered/module/owner roots and fixed C callback/context stay live
+   throughout this call and the caller's later F0 classification. The callback
+   must check that full independent source chain with no external callout and
+   return 1 with empty indicator only on a fresh match. A nonNULL callback or
+   context is not provenance. Context is borrowed and never escapes this call.
+   The actual matching full/nondebug reference and pending-deallocator envelope
+   must independently justify finite duplicate Set/Get/DECREF cleanup. Existing
+   F1 evidence does not establish that envelope for F0 or exempt its callbacks.
+   The actual slot inline's debug assertions also require the matching build
+   closure; preserving the original slot selection is not a build attestation.
+
+   Original method outer inputs and adapter malloc/copy/Free are retained.
+   Inner Prepare may enter with malloc's original pending restored; READY's
+   D05 is the actual after-arena pending. Prefix/out debt ends in the adapter
+   before scratch restore or Free. That ORIGINAL Free can change indicator;
+   its real effect is preserved for the original outer result check.
+   Outer public method is attempted once; adapter/Prepare failure may leave
+   inner attempts at zero. No retry; custom/NULL method slots remain ordinary.
+   Private BUSY misuse returns unchanged NULL without a cleanup grant.
+   This does not implement caller source checks, loader/seed or full D1/D2. */
+PyAPI_FUNC(PyObject *) RenoOwnedResumeCallMethodV1(
+    PyObject *method, PyObject *source_frame_code, PyObject *const *args,
+    size_t nargsf, PyObject *kwnames,
+    RenoOwnedResumeMethodSourceV1 source_check, void *source_context);
+
+/* P22 locals only: 0 ordinary / 1 associated exact method+outer inputs and
+   actual slot / -1 terminated after revoking this request before creator.
+   No basic record is stored or read in the independent method slot. */
+PyAPI_FUNC(int) _PyRenoOwnedResumeMethodDispatchBeginV1(
+    PyThreadState *tstate, PyObject *method, PyObject *const *args,
+    size_t nargsf, PyObject *kwnames,
+    RenoOwnedMethodResumeRequestV1 **request_out, vectorcallfunc *slot_out);
+
+/* Same live outer P22 activation. CLAIMED retires without any error transport
+   or first refill; missed claim revokes before creator. No adapted/prefix debt
+   may escape method body. Private foreign/misuse has no cleanup guarantee. */
+PyAPI_FUNC(void) _PyRenoOwnedResumeMethodDispatchEndV1(
+    PyThreadState *tstate, RenoOwnedMethodResumeRequestV1 *request);
+
+/* One fresh aggregate-zero typed record; all inputs and the independent source
+   root stay live under the GIL on the same current tstate and interpreter.
+   READY/ARENA_NULL own one transferred pending instance, possibly NULL, and
+   leave the indicator empty. Normal ERROR is before the arena, does not Get,
+   keeps D05 NULL, and preserves the actual indicator and partial owned debts.
+   NOT_SELECTED is before effects and also preserves the indicator. A nonZERO
+   private misuse returns ERROR unchanged, outside normal cleanup guarantees.
+   The method adapter may restore its original nonNULL-malloc pending
+   before entry: Prepare does not reject it, NOT_SELECTED/normal ERROR
+   preserve it, and READY/ARENA_NULL transfer the actual AFTER-arena
+   pending. The method consumer must not refill an older entry error.
+   This interface does not prove source provenance or actual build matching. */
+PyAPI_FUNC(uint32_t) RenoOwnedResumePrepareV1(
+    RenoOwnedResumeRecordV1 *record, PyObject *actual_callable,
+    PyObject *source_frame_code, PyObject *const *args, size_t nargsf,
+    PyObject *kwnames);
+
+/* Only the selected Prepare producer calls this bridge with its same live
+   PREPARING record/current tstate, chosen locals and checked numeric inputs.
+   NonPREPARING private misuse is unchanged ERROR, not cleanup success. */
+PyAPI_FUNC(uint32_t) _PyRenoOwnedResumePreparePrefixV1(
+    PyThreadState *tstate, RenoOwnedResumeRecordV1 *record,
+    PyFunctionObject *func, PyObject *locals, PyObject *source_frame_code,
+    size_t expected_slots, int allocation_bytes);
+
+/* Same live/current initialized tstate and GIL; one real READY record and a
+   distinct live uint32_t output.  Phase/current/BUSY private misuse exits keep
+   the record/request/indicator unchanged (output 0), without cleanup promises.
+   The real writer/call graph, not this guard, must exclude normal BUSY.
+   Normal public-before failure is RETURNED with actual indicator and possibly
+   D05 both owned: the real consumer must choose D05 first and settle the other.
+   Successful publication clears D05, transfers it only to an empty indicator,
+   then attempts exactly one real public call and reports 1 even on P22 failure. */
+PyAPI_FUNC(PyObject *) RenoOwnedResumeInvokeV1(
+    RenoOwnedResumeRecordV1 *record, uint32_t *public_attempted_out);
+
+/* P22 only; its distinct typed local outputs stay live.  Internal statuses:
+   0 has no request and preserves the entire ordinary path; 1 supplies the just
+   read actual slot and this enclosing Invoke's live record; -1 has revoked
+   this request and terminated before any unknown slot or MakeTpCall. */
+PyAPI_FUNC(int) _PyRenoOwnedResumeDispatchBeginV1(
+    PyThreadState *tstate, PyObject *callable, PyObject *const *args,
+    size_t nargsf, PyObject *kwnames, RenoOwnedResumeRecordV1 **record_out,
+    vectorcallfunc *slot_out);
+
+/* Same P22 live local record, before the original result check.  Uncommitted
+   normal states revoke/restore before callbacks.  COMMITTED reads phase only.
+   Other private phases are unchanged, outside normal cleanup guarantees. */
+PyAPI_FUNC(void) _PyRenoOwnedResumeDispatchEndV1(
+    PyThreadState *tstate, RenoOwnedResumeRecordV1 *record);
+
+/* Live typed record; distinct empty typed out; request already revoked and no
+   attachment. This moves actual debts without releasing them or calling out.
+   Invalid phases leave both objects unchanged; that is not cleanup success.
+   The real producer/caller must establish these preconditions and clear out's
+   debts afterwards. This declaration does not establish their integration. */
+PyAPI_FUNC(void) RenoOwnedResumeMoveUnconsumedV1(
+    RenoOwnedResumeRecordV1 *record, RenoOwnedResumeMoveOutV1 *out);
+
+/* Live ATTACHED_UNMOVED record, request already revoked, no initialized frame.
+   Restore the actual saved precommit state and retain the raw free debt.
+   Other phases leave the record and runtime unchanged, not restored. */
+PyAPI_FUNC(void) _PyRenoOwnedResumeAbortRawV1(
+    RenoOwnedResumeRecordV1 *record);
+
+/* Actual live/current tstate; claimed TAKEN record; request already revoked.
+   The normal caller has returned and cleared pending_owned, and free_debt is
+   empty. Bad phase or hidden pending/free debt returns unchanged NULL without
+   an exception/cleanup guarantee; it is outside the legal call contract. */
+PyAPI_FUNC(PyObject *) _PyRenoOwnedResumeConsumeV1(
+    PyThreadState *tstate, RenoOwnedResumeRecordV1 *record,
+    PyFunctionObject *func, PyObject *const *args, size_t nargsf,
+    PyObject *kwnames);
+
+/* DRAFT ONLY: append before the companion header's closing extern-C block.
+ * Independent native-entry ABI proposal. It is not described by V1's query,
+ * and may not be called until its own M/ABI/export/code-lifetime proof holds.
+ * No V1 record, public borrowed-argv contract or TState request is reused.
+ */
+enum {
+    RENO_NATIVE_OWNED_ABI_MAJOR_V2 = 2,
+    RENO_NATIVE_OWNED_ABI_MINOR_V2 = 0,
+    RENO_NATIVE_OWNED_ZERO_V2 = 0,
+    RENO_NATIVE_OWNED_PREPARING_V2 = 1,
+    RENO_NATIVE_OWNED_READY_V2 = 2,
+    RENO_NATIVE_OWNED_ARENA_NULL_V2 = 3,
+    RENO_NATIVE_OWNED_FAILED_V2 = 4,
+    RENO_NATIVE_OWNED_NOT_SELECTED_V2 = 5,
+    RENO_NATIVE_OWNED_INVOKING_V2 = 6,
+    RENO_NATIVE_OWNED_TAKEN_V2 = 7,
+    RENO_NATIVE_OWNED_ATTACHED_V2 = 8,
+    RENO_NATIVE_OWNED_DETACHED_V2 = 9,
+    RENO_NATIVE_OWNED_RETURNED_V2 = 10,
+    RENO_NATIVE_OWNED_COMMITTED_V2 = 11,
+    RENO_NATIVE_OWNED_CLOSED_V2 = 12
+};
+enum {
+    RENO_NATIVE_OWNED_PREPARE_READY_V2 = 0,
+    RENO_NATIVE_OWNED_PREPARE_ARENA_NULL_V2 = 1,
+    RENO_NATIVE_OWNED_PREPARE_ERROR_V2 = 2,
+    RENO_NATIVE_OWNED_PREPARE_NOT_SELECTED_V2 = 3
+};
+
+/* The reservation discriminator describes actual storage ownership only.
+ * It is not caller/source admission. CURRENT_STACK never owns an arena block.
+ */
+enum {
+    RENO_NATIVE_OWNED_RESERVATION_NONE_V2 = 0,
+    RENO_NATIVE_OWNED_RESERVATION_CURRENT_STACK_V2 = 1,
+    RENO_NATIVE_OWNED_RESERVATION_PRIVATE_CHUNK_V2 = 2
+};
+
+/* One actual inner caller, never copied. These are three separate owning
+ * occurrences even if pointers coincide. moved flags describe the existing
+ * producer's binding-to-packet moves, not runtime/frame admission.
+ */
+typedef struct {
+    PyObject *callee;
+    PyObject *self;
+    PyObject *first_name;
+    unsigned int callee_moved;
+    unsigned int self_moved;
+    unsigned int first_name_moved;
+} RenoNativeOwnedInputsV2;
+
+typedef struct {
+    uint32_t abi_major;
+    uint32_t abi_minor;
+    uint32_t phase;
+    uint32_t inputs_taken_mask;
+    uint32_t argument_owned_mask;
+    uint32_t function_site_executed;
+    uint32_t frame_site_executed;
+    uint32_t locals_mode;
+    uint32_t saved_old_top_valid;
+    uint32_t frame_handoff_started;
+    uint32_t reservation_kind;
+    size_t storage_bytes;
+    size_t raw_bytes;
+    size_t frame_slots;
+    size_t old_chunk_top;
+    PyThreadState *actual_tstate;
+    PyObject *function_owned;
+    PyObject *locals_owned;
+    PyObject *arguments_owned[2];
+    PyObject *check_callable_owned;
+    PyObject *pending_owned;
+    PyObject *frame_code; /* borrowed from caller's independent entry-code root */
+    void *raw_owned;
+    void *free_debt;
+    void *old_chunk;
+    PyObject **old_top;
+    PyObject **old_limit;
+    void *reserved_frame;
+    void *record_address;
+} RenoNativeOwnedCallV2;
+
+typedef struct {
+    PyObject *function_owned;
+    PyObject *locals_owned;
+    PyObject *arguments_owned[2];
+    uint32_t argument_owned_mask;
+    PyObject *check_callable_owned;
+    PyObject *pending_owned;
+    void *raw_to_free;
+    size_t raw_bytes;
+} RenoNativeOwnedMoveOutV2;
+
+/* Actual native caller owns independent function/code/module/Record/metadata
+ * roots under matching current interpreter/GIL, normal full-API reference,
+ * allocator, error and source premises. One zeroed call and one actual packet
+ * stay on that same C activation. Input shape/flags do not authenticate them.
+ * Before-effects NOT_SELECTED leaves all three owners in inputs. Selected
+ * preparation MOVES all three into call and acquires only locals (if needed)
+ * and a separate callee check guard; it never INCREFs self or first_name.
+ * A normal pre-arena ERROR keeps an actual existing indicator; private
+ * validation failure with an empty indicator creates its native SystemError.
+ * It retains actual partial owners. This NEW error contract does not amend
+ * V1 or repair the original PushAndInit failure branch. PRIVATE_CHUNK
+ * READY/ARENA_NULL transfer the actual after-arena pending to call.
+ * CURRENT_STACK READY does not allocate or sample the raised exception.
+ * Caller must not use old packet/argv object borrows after a selected MOVE.
+ * No public vectorcall borrow or original F4 opcode/frame is claimed.
+ */
+PyAPI_FUNC(uint32_t) RenoNativeOwnedPrepareV2(
+    RenoNativeOwnedCallV2 *call, RenoNativeOwnedInputsV2 *inputs,
+    PyObject *source_frame_code);
+
+/* Only that producer's same live PREPARING record and input packet. */
+PyAPI_FUNC(uint32_t) _PyRenoNativeOwnedPreparePrefixV2(
+    PyThreadState *tstate, RenoNativeOwnedCallV2 *call,
+    RenoNativeOwnedInputsV2 *inputs, PyFunctionObject *func,
+    PyObject *locals, PyObject *source_frame_code,
+    size_t expected_slots, int allocation_bytes, uint32_t reservation_kind);
+
+/* Same READY/current native activation. A native_attempted value of one means
+ * the new consume primitive was entered, not Python body/seed success. No
+ * TState publication or public borrowed-argv call occurs. The callee guard
+ * remains independently held through the whole actual result-check chain.
+ * If CURRENT_STACK capacity is no longer sufficient before consumption,
+ * NULL/out=0 with the SAME READY record and empty indicator defers to that
+ * same caller's prepared continuation: no late allocation or second Prepare.
+ * Current/phase private misuse is unchanged NULL/out=0, with no cleanup grant.
+ * Full legal unselected/changed/monitoring/eval_frame domains still belong to
+ * the existing complete loader continuation, never a duplicate F3 call.
+ */
+PyAPI_FUNC(PyObject *) RenoNativeOwnedInvokeV2(
+    RenoNativeOwnedCallV2 *call, uint32_t *native_attempted_out);
+
+/* Only same typed native producer/Invoke; not a V1 claimed public request. */
+PyAPI_FUNC(PyObject *) _PyRenoNativeOwnedConsumeV2(
+    PyThreadState *tstate, RenoNativeOwnedCallV2 *call);
+
+/* Distinct actual zeroed output. Move all remaining real owners, including
+ * the callee check guard on COMMITTED, without releasing or calling out.
+ * Inputs that never moved remain with the original packet/caller. No owning
+ * argv view is returned: output contains actual owning argument slots.
+ * Only legal private phases are consumable; misuse leaves both unchanged.
+ */
+PyAPI_FUNC(void) RenoNativeOwnedMoveUnconsumedV2(
+    RenoNativeOwnedCallV2 *call, RenoNativeOwnedMoveOutV2 *out);
+
+#ifdef __cplusplus
+}
+#endif
+#endif /* !Py_INTERNAL_RENO_OWNED_RESUME_H */

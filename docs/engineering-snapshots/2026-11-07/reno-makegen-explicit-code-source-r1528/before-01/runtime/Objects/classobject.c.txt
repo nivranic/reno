@@ -1,0 +1,913 @@
+/* Class object implementation (dead now except for methods) */
+
+#include "Python.h"
+#include "pycore_call.h"          // _PyObject_VectorcallTstate()
+#include "pycore_object.h"
+#include "pycore_pyerrors.h"
+#include "pycore_pystate.h"       // _PyThreadState_GET()
+#include "pycore_reno_owned_resume.h"
+#include "pycore_runtime.h"       // _PyRuntime.allocators.obj_arena
+#include "structmember.h"         // PyMemberDef
+
+#include "clinic/classobject.c.h"
+
+#define TP_DESCR_GET(t) ((t)->tp_descr_get)
+
+/*[clinic input]
+class method "PyMethodObject *" "&PyMethod_Type"
+[clinic start generated code]*/
+/*[clinic end generated code: output=da39a3ee5e6b4b0d input=b16e47edf6107c23]*/
+
+
+PyObject *
+PyMethod_Function(PyObject *im)
+{
+    if (!PyMethod_Check(im)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    return ((PyMethodObject *)im)->im_func;
+}
+
+PyObject *
+PyMethod_Self(PyObject *im)
+{
+    if (!PyMethod_Check(im)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    return ((PyMethodObject *)im)->im_self;
+}
+
+
+/* Method requests borrow only this CallMethod activation's original inputs.
+ * The caller independently holds method/function/self/code and source-context
+ * roots plus the source callback's exact C ABI and code lifetime. Capturing
+ * current method operands below transports them; it does not authenticate
+ * source. A fixed callback must check the whole original chain against its
+ * own actual roots, not merely accept a matching current code object.
+ */
+enum {
+    RENO_METHOD_RESUME_ARMED = 1,
+    RENO_METHOD_RESUME_CLAIMED = 2,
+    RENO_METHOD_RESUME_RETIRED = 3
+};
+
+struct RenoOwnedMethodResumeRequestV1 {
+    PyThreadState *actual_tstate;
+    PyObject *method;
+    PyObject *outer_function;
+    PyObject *outer_self;
+    PyObject *source_frame_code;
+    PyObject *const *outer_args;
+    size_t outer_nargsf;
+    PyObject *outer_kwnames;
+    RenoOwnedResumeMethodSourceV1 source_check;
+    void *source_context;
+    uint32_t phase;
+};
+
+static PyObject *method_vectorcall(PyObject *, PyObject *const *, size_t, PyObject *);
+
+static vectorcallfunc
+method_resume_actual_slot(PyObject *method)
+{
+    if (method == NULL || !Py_IS_TYPE(method, &PyMethod_Type)) {
+        return NULL;
+    }
+    return _PyVectorcall_FunctionInline(method);
+}
+
+static int
+method_resume_matches(RenoOwnedMethodResumeRequestV1 *request,
+                     PyThreadState *tstate, PyObject *method,
+                     PyObject *const *args, size_t nargsf, PyObject *kwnames,
+                     vectorcallfunc actual_slot)
+{
+    return request->phase == RENO_METHOD_RESUME_ARMED &&
+        request->actual_tstate == tstate && request->method == method &&
+        request->outer_args == args && request->outer_nargsf == nargsf &&
+        request->outer_kwnames == kwnames &&
+        Py_IS_TYPE(method, &PyMethod_Type) &&
+        actual_slot == method_vectorcall;
+}
+
+int
+_PyRenoOwnedResumeMethodDispatchBeginV1(
+    PyThreadState *tstate, PyObject *method, PyObject *const *args,
+    size_t nargsf, PyObject *kwnames,
+    RenoOwnedMethodResumeRequestV1 **request_out, vectorcallfunc *slot_out)
+{
+    *request_out = NULL;
+    *slot_out = NULL;
+    RenoOwnedMethodResumeRequestV1 *request =
+        (RenoOwnedMethodResumeRequestV1 *)tstate->reno_owned_method_resume_request;
+    if (request == NULL) {
+        return 0;
+    }
+    *request_out = request;
+    vectorcallfunc actual_slot = method_resume_actual_slot(method);
+    if (!method_resume_matches(request, tstate, method, args, nargsf, kwnames,
+                               actual_slot)) {
+        if (tstate->reno_owned_method_resume_request == (void *)request) {
+            tstate->reno_owned_method_resume_request = NULL;
+        }
+        request->phase = RENO_METHOD_RESUME_RETIRED;
+        if (_PyErr_Occurred(tstate) == NULL) {
+            _PyErr_SetString(tstate, PyExc_SystemError,
+                            "owned method dispatch association failed");
+        }
+        return -1;
+    }
+    *slot_out = actual_slot;
+    return 1;
+}
+
+void
+_PyRenoOwnedResumeMethodDispatchEndV1(
+    PyThreadState *tstate, RenoOwnedMethodResumeRequestV1 *request)
+{
+    if (request->phase == RENO_METHOD_RESUME_CLAIMED) {
+        /* No owning debt or adapted argv escapes the adapter helper.
+         * Preserve the indicator exactly as original PyMem_Free left it.
+         */
+        request->phase = RENO_METHOD_RESUME_RETIRED;
+        return;
+    }
+    if (request->phase == RENO_METHOD_RESUME_ARMED) {
+        if (tstate->reno_owned_method_resume_request == (void *)request) {
+            tstate->reno_owned_method_resume_request = NULL;
+        }
+        request->phase = RENO_METHOD_RESUME_RETIRED;
+        if (_PyErr_Occurred(tstate) == NULL) {
+            _PyErr_SetString(tstate, PyExc_SystemError,
+                            "owned method dispatch returned without claim");
+        }
+    }
+}
+
+static int
+method_resume_claim(PyThreadState *tstate, PyObject *method,
+                    PyObject *const *args, size_t nargsf, PyObject *kwnames,
+                    RenoOwnedMethodResumeRequestV1 **request_out)
+{
+    *request_out = NULL;
+    RenoOwnedMethodResumeRequestV1 *request =
+        (RenoOwnedMethodResumeRequestV1 *)tstate->reno_owned_method_resume_request;
+    if (request == NULL) {
+        return 0;
+    }
+    /* This real method entry claims before any adapter allocator/creator. */
+    tstate->reno_owned_method_resume_request = NULL;
+    if (!method_resume_matches(request, tstate, method, args, nargsf, kwnames,
+                               method_resume_actual_slot(method))) {
+        request->phase = RENO_METHOD_RESUME_RETIRED;
+        if (_PyErr_Occurred(tstate) == NULL) {
+            _PyErr_SetString(tstate, PyExc_SystemError,
+                            "owned method claim association failed");
+        }
+        return -1;
+    }
+    request->phase = RENO_METHOD_RESUME_CLAIMED;
+    *request_out = request;
+    return 1;
+}
+
+static int
+method_resume_source_gate(RenoOwnedMethodResumeRequestV1 *request,
+                          PyThreadState *tstate, PyObject *func, PyObject *self)
+{
+    if (_PyThreadState_UncheckedGet() != tstate ||
+        func != request->outer_function || self != request->outer_self ||
+        PyMethod_GET_FUNCTION(request->method) != func ||
+        PyMethod_GET_SELF(request->method) != self) {
+        return 0;
+    }
+    int selected = request->source_check(request->source_context);
+    return selected == 1 && _PyErr_Occurred(tstate) == NULL &&
+        _PyThreadState_UncheckedGet() == tstate &&
+        PyMethod_GET_FUNCTION(request->method) == func &&
+        PyMethod_GET_SELF(request->method) == self;
+}
+
+/* Conditional finite Set/Get gate, as in the existing consumer: it requires
+ * the matching full/nondebug reference envelope and independently established
+ * pending-deallocator contract. The returned duplicate must still be the same
+ * actual first. General callback mutation is not proven safe by this helper;
+ * that prerequisite is still open for the F0 closure, not waived for callbacks.
+ */
+static void
+method_resume_settle(PyThreadState *tstate, PyObject **first)
+{
+    if (_PyErr_Occurred(tstate) == NULL) {
+        return;
+    }
+    if (*first == NULL) {
+        *first = _PyErr_GetRaisedException(tstate);
+        return;
+    }
+    PyObject *duplicate = Py_NewRef(*first);
+    _PyErr_SetRaisedException(tstate, duplicate);
+    duplicate = _PyErr_GetRaisedException(tstate);
+    Py_DECREF(duplicate); /* nonlast only under the independent envelope above */
+}
+
+static void
+method_resume_release(PyThreadState *tstate, PyObject **owned, PyObject **first)
+{
+    method_resume_settle(tstate, first);
+    PyObject *detached = *owned;
+    *owned = NULL;
+    Py_XDECREF(detached);
+    method_resume_settle(tstate, first);
+}
+
+static PyObject *
+method_resume_inner_call(RenoOwnedMethodResumeRequestV1 *request,
+                         PyThreadState *tstate, PyObject *func, PyObject *self,
+                         PyObject *const *args, size_t nargsf, PyObject *kwnames)
+{
+    RenoOwnedResumeRecordV1 resume = {0};
+    RenoOwnedResumeMoveOutV1 moved = {0};
+    PyObject *entry_pending = _PyErr_GetRaisedException(tstate);
+    PyObject *first = NULL;
+    PyObject *result = NULL;
+    PyObject *value = NULL;
+    PyObject *pending = NULL;
+    void *raw = NULL;
+    size_t raw_bytes = 0;
+    uint32_t public_attempted = 0;
+    unsigned int preparation_failed = 0;
+    unsigned int no_memory_tail = 0;
+    const char *failure = "owned method function preparation unavailable";
+
+    /* Hide the SAME malloc E0 only across the independently raw source gate.
+     * Original prefix/arena must see it again before they can have effects.
+     */
+    if (!method_resume_source_gate(request, tstate, func, self)) {
+        first = entry_pending;
+        entry_pending = NULL;
+        method_resume_settle(tstate, &first);
+        if (first == NULL) {
+            _PyErr_SetString(tstate, PyExc_RuntimeError, "owned method source unavailable");
+            first = _PyErr_GetRaisedException(tstate);
+        }
+        goto cleanup;
+    }
+    pending = entry_pending;
+    entry_pending = NULL;
+    if (pending != NULL) {
+        _PyErr_SetRaisedException(tstate, pending);
+        pending = NULL;
+    }
+    uint32_t status = RenoOwnedResumePrepareV1(
+        &resume, func, request->source_frame_code, args, nargsf, kwnames);
+    if (status == RENO_OWNED_RESUME_PREPARE_NOT_SELECTED) {
+        RenoOwnedResumeMoveUnconsumedV1(&resume, &moved);
+        return _PyObject_VectorcallTstate(tstate, func, args, nargsf, kwnames);
+    }
+    if (status == RENO_OWNED_RESUME_PREPARE_ARENA_NULL) {
+        no_memory_tail = 1;
+    }
+    else if (status == RENO_OWNED_RESUME_PREPARE_READY) {
+        /* E0 was already restored; D05 is the actual AFTER-arena pending.
+         * No D05 read/Get/restore or callback outside the raw gate here.
+         */
+        if (!method_resume_source_gate(request, tstate, func, self)) {
+            preparation_failed = 1;
+            failure = "owned method source unavailable";
+        }
+        else {
+            result = RenoOwnedResumeInvokeV1(&resume, &public_attempted);
+        }
+    }
+    else {
+        preparation_failed = 1; /* matching fresh producer's normal ERROR */
+    }
+    /* Legal current/writer premises exclude unchanged READY/BUSY misuse.
+     * No attempted==0 fallback, foreign request cleanup or committed raw read.
+     */
+    RenoOwnedResumeMoveUnconsumedV1(&resume, &moved);
+    first = moved.pending_owned;
+    moved.pending_owned = NULL;
+    if (first != NULL) {
+        method_resume_settle(tstate, &first);
+    }
+    else {
+        first = _PyErr_GetRaisedException(tstate);
+    }
+    if (preparation_failed && first == NULL) {
+        _PyErr_SetString(tstate, PyExc_RuntimeError, failure);
+        first = _PyErr_GetRaisedException(tstate);
+    }
+    if (!no_memory_tail && !preparation_failed && result == NULL && first == NULL) {
+        _PyErr_SetString(tstate, PyExc_SystemError,
+                        "owned method inner call returned NULL without an exception");
+        first = _PyErr_GetRaisedException(tstate);
+    }
+
+cleanup:
+    if (first != NULL) {
+        method_resume_release(tstate, &result, &first);
+    }
+    if (moved.raw_to_free != NULL) {
+        method_resume_settle(tstate, &first);
+        raw = moved.raw_to_free;
+        raw_bytes = moved.raw_bytes;
+        moved.raw_to_free = NULL;
+        moved.raw_bytes = 0;
+        _PyRuntime.allocators.obj_arena.free(_PyRuntime.allocators.obj_arena.ctx,
+                                            raw, raw_bytes);
+        raw = NULL;
+        raw_bytes = 0;
+        method_resume_settle(tstate, &first);
+    }
+    while (moved.values_owned_count != 0) {
+        value = moved.argv[--moved.values_owned_count];
+        method_resume_release(tstate, &value, &first);
+    }
+    moved.argv = NULL;
+    method_resume_release(tstate, &moved.locals_owned, &first);
+    method_resume_release(tstate, &moved.function_owned, &first);
+    /* Adapted storage is STILL LIVE here, including inserted cls at argv[0].
+     * All prefix/out debts end before scratch restore or original heap Free.
+     */
+    if (no_memory_tail) {
+        method_resume_settle(tstate, &first);
+        if (first != NULL) {
+            pending = first;
+            first = NULL;
+            _PyErr_SetRaisedException(tstate, pending);
+        }
+        return PyErr_NoMemory();
+    }
+    if (first != NULL) {
+        method_resume_release(tstate, &result, &first);
+        pending = first;
+        first = NULL;
+        _PyErr_SetRaisedException(tstate, pending);
+        return NULL;
+    }
+    return result;
+}
+
+PyObject *
+RenoOwnedResumeCallMethodV1(
+    PyObject *method, PyObject *source_frame_code, PyObject *const *args,
+    size_t nargsf, PyObject *kwnames,
+    RenoOwnedResumeMethodSourceV1 source_check, void *source_context)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (_PyErr_Occurred(tstate) != NULL) {
+        return NULL;
+    }
+    if (tstate->reno_owned_resume_request != NULL ||
+        tstate->reno_owned_method_resume_request != NULL) {
+        return NULL; /* private BUSY misuse; no adoption or foreign clearing */
+    }
+    if (method == NULL || !Py_IS_TYPE(method, &PyMethod_Type) || source_check == NULL) {
+        _PyErr_SetString(tstate, PyExc_RuntimeError, "invalid private owned method inputs");
+        return NULL;
+    }
+    if (method_resume_actual_slot(method) != method_vectorcall) {
+        return PyObject_Vectorcall(method, args, nargsf, kwnames);
+    }
+    RenoOwnedMethodResumeRequestV1 request = {0};
+    request.actual_tstate = tstate;
+    request.method = method;
+    request.outer_function = PyMethod_GET_FUNCTION(method);
+    request.outer_self = PyMethod_GET_SELF(method);
+    request.source_frame_code = source_frame_code;
+    request.outer_args = args;
+    request.outer_nargsf = nargsf;
+    request.outer_kwnames = kwnames;
+    request.source_check = source_check;
+    request.source_context = source_context;
+    request.phase = RENO_METHOD_RESUME_ARMED;
+    tstate->reno_owned_method_resume_request = (void *)&request;
+    /* P22 End retires before the original outer result check. The request
+     * borrows live caller roots/context only during THIS enclosing C call.
+     */
+    return PyObject_Vectorcall(method, args, nargsf, kwnames);
+}
+
+
+static PyObject *
+method_vectorcall(PyObject *method, PyObject *const *args,
+                  size_t nargsf, PyObject *kwnames)
+{
+    assert(Py_IS_TYPE(method, &PyMethod_Type));
+
+    PyThreadState *tstate = _PyThreadState_GET();
+    RenoOwnedMethodResumeRequestV1 *method_request;
+    int method_claim = method_resume_claim(
+        tstate, method, args, nargsf, kwnames, &method_request);
+    if (method_claim < 0) {
+        return NULL;
+    }
+    PyObject *self = PyMethod_GET_SELF(method);
+    PyObject *func = PyMethod_GET_FUNCTION(method);
+    Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
+    assert(nargs == 0 || args[nargs-1]);
+
+    PyObject *result;
+    if (nargsf & PY_VECTORCALL_ARGUMENTS_OFFSET) {
+        /* PY_VECTORCALL_ARGUMENTS_OFFSET is set, so we are allowed to mutate the vector */
+        PyObject **newargs = (PyObject**)args - 1;
+        nargs += 1;
+        PyObject *tmp = newargs[0];
+        newargs[0] = self;
+        assert(newargs[nargs-1]);
+        if (method_claim > 0) {
+            result = method_resume_inner_call(method_request, tstate,
+                func, self, newargs, nargs, kwnames);
+        }
+        else {
+            result = _PyObject_VectorcallTstate(tstate, func, newargs,
+                                                nargs, kwnames);
+        }
+        newargs[0] = tmp;
+    }
+    else {
+        Py_ssize_t nkwargs = (kwnames == NULL) ? 0 : PyTuple_GET_SIZE(kwnames);
+        Py_ssize_t totalargs = nargs + nkwargs;
+        if (totalargs == 0) {
+            if (method_claim > 0) {
+                return method_resume_inner_call(method_request, tstate,
+                    func, self, &self, 1, NULL);
+            }
+            return _PyObject_VectorcallTstate(tstate, func, &self, 1, NULL);
+        }
+
+        PyObject *newargs_stack[_PY_FASTCALL_SMALL_STACK];
+        PyObject **newargs;
+        if (totalargs <= (Py_ssize_t)Py_ARRAY_LENGTH(newargs_stack) - 1) {
+            newargs = newargs_stack;
+        }
+        else {
+            newargs = PyMem_Malloc((totalargs+1) * sizeof(PyObject *));
+            if (newargs == NULL) {
+                _PyErr_NoMemory(tstate);
+                return NULL;
+            }
+        }
+        /* use borrowed references */
+        newargs[0] = self;
+        /* bpo-37138: since totalargs > 0, it's impossible that args is NULL.
+         * We need this, since calling memcpy() with a NULL pointer is
+         * undefined behaviour. */
+        assert(args != NULL);
+        memcpy(newargs + 1, args, totalargs * sizeof(PyObject *));
+        if (method_claim > 0) {
+            result = method_resume_inner_call(method_request, tstate,
+                func, self, newargs, nargs+1, kwnames);
+        }
+        else {
+            result = _PyObject_VectorcallTstate(tstate, func,
+                                                newargs, nargs+1, kwnames);
+        }
+        if (newargs != newargs_stack) {
+            PyMem_Free(newargs);
+        }
+    }
+    return result;
+}
+
+
+/* Method objects are used for bound instance methods returned by
+   instancename.methodname. ClassName.methodname returns an ordinary
+   function.
+*/
+
+PyObject *
+PyMethod_New(PyObject *func, PyObject *self)
+{
+    if (self == NULL) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    PyMethodObject *im = PyObject_GC_New(PyMethodObject, &PyMethod_Type);
+    if (im == NULL) {
+        return NULL;
+    }
+    im->im_weakreflist = NULL;
+    im->im_func = Py_NewRef(func);
+    im->im_self = Py_NewRef(self);
+    im->vectorcall = method_vectorcall;
+    _PyObject_GC_TRACK(im);
+    return (PyObject *)im;
+}
+
+/*[clinic input]
+method.__reduce__
+[clinic start generated code]*/
+
+static PyObject *
+method___reduce___impl(PyMethodObject *self)
+/*[clinic end generated code: output=6c04506d0fa6fdcb input=143a0bf5e96de6e8]*/
+{
+    PyObject *funcself = PyMethod_GET_SELF(self);
+    PyObject *func = PyMethod_GET_FUNCTION(self);
+    PyObject *funcname = PyObject_GetAttr(func, &_Py_ID(__name__));
+    if (funcname == NULL) {
+        return NULL;
+    }
+    return Py_BuildValue(
+            "N(ON)", _PyEval_GetBuiltin(&_Py_ID(getattr)), funcself, funcname);
+}
+
+static PyMethodDef method_methods[] = {
+    METHOD___REDUCE___METHODDEF
+    {NULL, NULL}
+};
+
+/* Descriptors for PyMethod attributes */
+
+/* im_func and im_self are stored in the PyMethod object */
+
+#define MO_OFF(x) offsetof(PyMethodObject, x)
+
+static PyMemberDef method_memberlist[] = {
+    {"__func__", T_OBJECT, MO_OFF(im_func), READONLY,
+     "the function (or other callable) implementing a method"},
+    {"__self__", T_OBJECT, MO_OFF(im_self), READONLY,
+     "the instance to which a method is bound"},
+    {NULL}      /* Sentinel */
+};
+
+/* Christian Tismer argued convincingly that method attributes should
+   (nearly) always override function attributes.
+   The one exception is __doc__; there's a default __doc__ which
+   should only be used for the class, not for instances */
+
+static PyObject *
+method_get_doc(PyMethodObject *im, void *context)
+{
+    return PyObject_GetAttr(im->im_func, &_Py_ID(__doc__));
+}
+
+static PyGetSetDef method_getset[] = {
+    {"__doc__", (getter)method_get_doc, NULL, NULL},
+    {0}
+};
+
+static PyObject *
+method_getattro(PyObject *obj, PyObject *name)
+{
+    PyMethodObject *im = (PyMethodObject *)obj;
+    PyTypeObject *tp = Py_TYPE(obj);
+    PyObject *descr = NULL;
+
+    {
+        if (!_PyType_IsReady(tp)) {
+            if (PyType_Ready(tp) < 0)
+                return NULL;
+        }
+        descr = _PyType_Lookup(tp, name);
+    }
+
+    if (descr != NULL) {
+        descrgetfunc f = TP_DESCR_GET(Py_TYPE(descr));
+        if (f != NULL)
+            return f(descr, obj, (PyObject *)Py_TYPE(obj));
+        else {
+            return Py_NewRef(descr);
+        }
+    }
+
+    return PyObject_GetAttr(im->im_func, name);
+}
+
+/*[clinic input]
+@classmethod
+method.__new__ as method_new
+    function: object
+    instance: object
+    /
+
+Create a bound instance method object.
+[clinic start generated code]*/
+
+static PyObject *
+method_new_impl(PyTypeObject *type, PyObject *function, PyObject *instance)
+/*[clinic end generated code: output=d33ef4ebf702e1f7 input=4e32facc3c3108ae]*/
+{
+    if (!PyCallable_Check(function)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "first argument must be callable");
+        return NULL;
+    }
+    if (instance == NULL || instance == Py_None) {
+        PyErr_SetString(PyExc_TypeError,
+            "instance must not be None");
+        return NULL;
+    }
+
+    return PyMethod_New(function, instance);
+}
+
+static void
+method_dealloc(PyMethodObject *im)
+{
+    _PyObject_GC_UNTRACK(im);
+    if (im->im_weakreflist != NULL)
+        PyObject_ClearWeakRefs((PyObject *)im);
+    Py_DECREF(im->im_func);
+    Py_XDECREF(im->im_self);
+    PyObject_GC_Del(im);
+}
+
+static PyObject *
+method_richcompare(PyObject *self, PyObject *other, int op)
+{
+    PyMethodObject *a, *b;
+    PyObject *res;
+    int eq;
+
+    if ((op != Py_EQ && op != Py_NE) ||
+        !PyMethod_Check(self) ||
+        !PyMethod_Check(other))
+    {
+        Py_RETURN_NOTIMPLEMENTED;
+    }
+    a = (PyMethodObject *)self;
+    b = (PyMethodObject *)other;
+    eq = PyObject_RichCompareBool(a->im_func, b->im_func, Py_EQ);
+    if (eq == 1) {
+        eq = (a->im_self == b->im_self);
+    }
+    else if (eq < 0)
+        return NULL;
+    if (op == Py_EQ)
+        res = eq ? Py_True : Py_False;
+    else
+        res = eq ? Py_False : Py_True;
+    return Py_NewRef(res);
+}
+
+static PyObject *
+method_repr(PyMethodObject *a)
+{
+    PyObject *self = a->im_self;
+    PyObject *func = a->im_func;
+    PyObject *funcname, *result;
+    const char *defname = "?";
+
+    if (_PyObject_LookupAttr(func, &_Py_ID(__qualname__), &funcname) < 0 ||
+        (funcname == NULL &&
+         _PyObject_LookupAttr(func, &_Py_ID(__name__), &funcname) < 0))
+    {
+        return NULL;
+    }
+
+    if (funcname != NULL && !PyUnicode_Check(funcname)) {
+        Py_SETREF(funcname, NULL);
+    }
+
+    /* XXX Shouldn't use repr()/%R here! */
+    result = PyUnicode_FromFormat("<bound method %V of %R>",
+                                  funcname, defname, self);
+
+    Py_XDECREF(funcname);
+    return result;
+}
+
+static Py_hash_t
+method_hash(PyMethodObject *a)
+{
+    Py_hash_t x, y;
+    x = _Py_HashPointer(a->im_self);
+    y = PyObject_Hash(a->im_func);
+    if (y == -1)
+        return -1;
+    x = x ^ y;
+    if (x == -1)
+        x = -2;
+    return x;
+}
+
+static int
+method_traverse(PyMethodObject *im, visitproc visit, void *arg)
+{
+    Py_VISIT(im->im_func);
+    Py_VISIT(im->im_self);
+    return 0;
+}
+
+PyTypeObject PyMethod_Type = {
+    PyVarObject_HEAD_INIT(&PyType_Type, 0)
+    .tp_name = "method",
+    .tp_basicsize = sizeof(PyMethodObject),
+    .tp_dealloc = (destructor)method_dealloc,
+    .tp_vectorcall_offset = offsetof(PyMethodObject, vectorcall),
+    .tp_repr = (reprfunc)method_repr,
+    .tp_hash = (hashfunc)method_hash,
+    .tp_call = PyVectorcall_Call,
+    .tp_getattro = method_getattro,
+    .tp_setattro = PyObject_GenericSetAttr,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
+                Py_TPFLAGS_HAVE_VECTORCALL,
+    .tp_doc = method_new__doc__,
+    .tp_traverse = (traverseproc)method_traverse,
+    .tp_richcompare = method_richcompare,
+    .tp_weaklistoffset = offsetof(PyMethodObject, im_weakreflist),
+    .tp_methods = method_methods,
+    .tp_members = method_memberlist,
+    .tp_getset = method_getset,
+    .tp_new = method_new,
+};
+
+/* ------------------------------------------------------------------------
+ * instance method
+ */
+
+/*[clinic input]
+class instancemethod "PyInstanceMethodObject *" "&PyInstanceMethod_Type"
+[clinic start generated code]*/
+/*[clinic end generated code: output=da39a3ee5e6b4b0d input=28c9762a9016f4d2]*/
+
+PyObject *
+PyInstanceMethod_New(PyObject *func) {
+    PyInstanceMethodObject *method;
+    method = PyObject_GC_New(PyInstanceMethodObject,
+                             &PyInstanceMethod_Type);
+    if (method == NULL) return NULL;
+    method->func = Py_NewRef(func);
+    _PyObject_GC_TRACK(method);
+    return (PyObject *)method;
+}
+
+PyObject *
+PyInstanceMethod_Function(PyObject *im)
+{
+    if (!PyInstanceMethod_Check(im)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    return PyInstanceMethod_GET_FUNCTION(im);
+}
+
+#define IMO_OFF(x) offsetof(PyInstanceMethodObject, x)
+
+static PyMemberDef instancemethod_memberlist[] = {
+    {"__func__", T_OBJECT, IMO_OFF(func), READONLY,
+     "the function (or other callable) implementing a method"},
+    {NULL}      /* Sentinel */
+};
+
+static PyObject *
+instancemethod_get_doc(PyObject *self, void *context)
+{
+    return PyObject_GetAttr(PyInstanceMethod_GET_FUNCTION(self),
+                            &_Py_ID(__doc__));
+}
+
+static PyGetSetDef instancemethod_getset[] = {
+    {"__doc__", (getter)instancemethod_get_doc, NULL, NULL},
+    {0}
+};
+
+static PyObject *
+instancemethod_getattro(PyObject *self, PyObject *name)
+{
+    PyTypeObject *tp = Py_TYPE(self);
+    PyObject *descr = NULL;
+
+    if (!_PyType_IsReady(tp)) {
+        if (PyType_Ready(tp) < 0)
+            return NULL;
+    }
+    descr = _PyType_Lookup(tp, name);
+
+    if (descr != NULL) {
+        descrgetfunc f = TP_DESCR_GET(Py_TYPE(descr));
+        if (f != NULL)
+            return f(descr, self, (PyObject *)Py_TYPE(self));
+        else {
+            return Py_NewRef(descr);
+        }
+    }
+
+    return PyObject_GetAttr(PyInstanceMethod_GET_FUNCTION(self), name);
+}
+
+static void
+instancemethod_dealloc(PyObject *self) {
+    _PyObject_GC_UNTRACK(self);
+    Py_DECREF(PyInstanceMethod_GET_FUNCTION(self));
+    PyObject_GC_Del(self);
+}
+
+static int
+instancemethod_traverse(PyObject *self, visitproc visit, void *arg) {
+    Py_VISIT(PyInstanceMethod_GET_FUNCTION(self));
+    return 0;
+}
+
+static PyObject *
+instancemethod_call(PyObject *self, PyObject *arg, PyObject *kw)
+{
+    return PyObject_Call(PyInstanceMethod_GET_FUNCTION(self), arg, kw);
+}
+
+static PyObject *
+instancemethod_descr_get(PyObject *descr, PyObject *obj, PyObject *type) {
+    PyObject *func = PyInstanceMethod_GET_FUNCTION(descr);
+    if (obj == NULL) {
+        return Py_NewRef(func);
+    }
+    else
+        return PyMethod_New(func, obj);
+}
+
+static PyObject *
+instancemethod_richcompare(PyObject *self, PyObject *other, int op)
+{
+    PyInstanceMethodObject *a, *b;
+    PyObject *res;
+    int eq;
+
+    if ((op != Py_EQ && op != Py_NE) ||
+        !PyInstanceMethod_Check(self) ||
+        !PyInstanceMethod_Check(other))
+    {
+        Py_RETURN_NOTIMPLEMENTED;
+    }
+    a = (PyInstanceMethodObject *)self;
+    b = (PyInstanceMethodObject *)other;
+    eq = PyObject_RichCompareBool(a->func, b->func, Py_EQ);
+    if (eq < 0)
+        return NULL;
+    if (op == Py_EQ)
+        res = eq ? Py_True : Py_False;
+    else
+        res = eq ? Py_False : Py_True;
+    return Py_NewRef(res);
+}
+
+static PyObject *
+instancemethod_repr(PyObject *self)
+{
+    PyObject *func = PyInstanceMethod_Function(self);
+    PyObject *funcname, *result;
+    const char *defname = "?";
+
+    if (func == NULL) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+
+    if (_PyObject_LookupAttr(func, &_Py_ID(__name__), &funcname) < 0) {
+        return NULL;
+    }
+    if (funcname != NULL && !PyUnicode_Check(funcname)) {
+        Py_SETREF(funcname, NULL);
+    }
+
+    result = PyUnicode_FromFormat("<instancemethod %V at %p>",
+                                  funcname, defname, self);
+
+    Py_XDECREF(funcname);
+    return result;
+}
+
+/*[clinic input]
+@classmethod
+instancemethod.__new__ as instancemethod_new
+    function: object
+    /
+
+Bind a function to a class.
+[clinic start generated code]*/
+
+static PyObject *
+instancemethod_new_impl(PyTypeObject *type, PyObject *function)
+/*[clinic end generated code: output=5e0397b2bdb750be input=cfc54e8b973664a8]*/
+{
+    if (!PyCallable_Check(function)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "first argument must be callable");
+        return NULL;
+    }
+
+    return PyInstanceMethod_New(function);
+}
+
+PyTypeObject PyInstanceMethod_Type = {
+    PyVarObject_HEAD_INIT(&PyType_Type, 0)
+    .tp_name = "instancemethod",
+    .tp_basicsize = sizeof(PyInstanceMethodObject),
+    .tp_dealloc = instancemethod_dealloc,
+    .tp_repr = (reprfunc)instancemethod_repr,
+    .tp_call = instancemethod_call,
+    .tp_getattro = instancemethod_getattro,
+    .tp_setattro = PyObject_GenericSetAttr,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
+    .tp_doc = instancemethod_new__doc__,
+    .tp_traverse = instancemethod_traverse,
+    .tp_richcompare = instancemethod_richcompare,
+    .tp_members = instancemethod_memberlist,
+    .tp_getset = instancemethod_getset,
+    .tp_descr_get = instancemethod_descr_get,
+    .tp_new = instancemethod_new,
+};

@@ -1,0 +1,385 @@
+#include "reno_windows_serialized_slot.h"
+
+#if defined(_WIN32)
+
+void
+reno_windows_serial_initialize_fresh(RenoWindowsSerializedSlot *session)
+{
+    const RenoOwnedNativeSlot fresh = RENO_OWNED_NATIVE_SLOT_INITIALIZER;
+    const RenoWindowsFdTransferFact fresh_transfer = RENO_WINDOWS_FD_TRANSFER_FACT_INITIALIZER;
+    /* A valid fresh allocation is supplied by the actual owner. No read of
+     * its prior bytes, concurrent admission, or success token is involved.
+     */
+    InitializeSRWLock(&session->gate);
+    session->native = fresh;
+    session->transferred_handle_view = (intptr_t)0;
+    session->transferred_handle_view_available = 0;
+    session->transfer_identity_state = RENO_TRANSFER_IDENTITY_NOT_READY;
+    session->failed_fd_transfer_handle_observation = (intptr_t)0;
+    session->failed_fd_transfer_handle_observation_available = 0;
+    session->fd_transfer_fact = fresh_transfer;
+}
+
+static RenoWindowsAdmission
+try_enter(RenoWindowsSerializedSlot *session)
+{
+    if (session == NULL) {
+        return RENO_WINDOWS_INVALID_ARGUMENT;
+    }
+    if (!TryAcquireSRWLockExclusive(&session->gate)) {
+        return RENO_WINDOWS_BUSY;
+    }
+    return RENO_WINDOWS_ADMITTED;
+}
+
+static RenoWindowsSerializedResult
+empty_result(RenoWindowsAdmission admission)
+{
+    RenoWindowsSerializedResult value = {0};
+    value.admission = admission;
+    value.close_failure.observed.fd = -1;
+    value.close_failure.observed.failure.outcome = RENO_NATIVE_INVALID_STATE;
+    /* native is invalid unless core_called is set by the actual call site. */
+    return value;
+}
+
+/* Called only under this live session's actual gate. Consistency does not
+ * grant ownership/retirement. In particular close must not require MATCHED
+ * or READY: an unvalidated or unboxed fd still needs its unique closer.
+ */
+static int
+fd_transfer_matches_locked(const RenoWindowsSerializedSlot *session)
+{
+    const RenoWindowsFdTransferFact *fact = &session->fd_transfer_fact;
+    return (fact->origin == RENO_FD_TRANSFER_C_ONLY
+            || fact->origin == RENO_FD_TRANSFER_AUDITED_C_ONLY
+            || fact->origin == RENO_FD_TRANSFER_AUDITED_PYTHON_RESULT)
+        && fact->actual_core.outcome == RENO_NATIVE_OK
+        && !fact->close_result_available
+        && session->native.fd_state == RENO_NATIVE_OWNED
+        && session->native.handle_state == RENO_NATIVE_TRANSFERRED
+        && session->transferred_handle_view_available
+        && fact->actual_fd == session->native.fd
+        && fact->original_handle == session->transferred_handle_view;
+}
+
+RenoWindowsSerializedResult
+reno_windows_serial_create_file_once(
+    RenoWindowsSerializedSlot *session, const wchar_t *path,
+    DWORD access, DWORD share, const SECURITY_ATTRIBUTES *security,
+    DWORD disposition, DWORD flags)
+{
+    RenoWindowsSerializedResult value = empty_result(try_enter(session));
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        return value;
+    }
+    value.core_called = 1;
+    value.native = reno_native_create_file_once(
+        &session->native, path, access, share, security, disposition, flags);
+    ReleaseSRWLockExclusive(&session->gate);
+    return value;
+}
+
+RenoWindowsDuplicateResult
+reno_windows_serial_duplicate_handle_once(
+    RenoWindowsSerializedSlot *source, RenoWindowsSerializedSlot *destination)
+{
+    RenoWindowsDuplicateResult value = {0};
+    if (source == NULL || destination == NULL || source == destination) {
+        value.admission = RENO_WINDOWS_INVALID_ARGUMENT;
+        return value;
+    }
+    value.admission = try_enter(source);
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        return value;
+    }
+    value.admission = try_enter(destination);
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        ReleaseSRWLockExclusive(&source->gate);
+        return value;
+    }
+    value.source_stage_eligible = source->native.handle_state == RENO_NATIVE_OWNED
+        && source->native.fd_state == RENO_NATIVE_EMPTY
+        && !source->native.stopped && source->native.registered_borrowers == 0;
+    value.destination_stage_eligible = destination->native.handle_state == RENO_NATIVE_EMPTY
+        && destination->native.fd_state == RENO_NATIVE_EMPTY
+        && !destination->native.stopped && destination->native.registered_borrowers == 0;
+    if (!value.source_stage_eligible || !value.destination_stage_eligible) {
+        ReleaseSRWLockExclusive(&destination->gate);
+        ReleaseSRWLockExclusive(&source->gate);
+        return value;
+    }
+    value.begin_called = 1;
+    value.begin = reno_native_begin_borrow(&source->native);
+    if (value.begin.outcome != RENO_NATIVE_OK) {
+        ReleaseSRWLockExclusive(&destination->gate);
+        ReleaseSRWLockExclusive(&source->gate);
+        return value;
+    }
+    value.core_called = 1;
+    value.duplicate = reno_native_duplicate_handle_once(
+        &source->native, &destination->native);
+    value.end_called = 1;
+    value.end = reno_native_end_borrow(&source->native);
+    ReleaseSRWLockExclusive(&destination->gate);
+    ReleaseSRWLockExclusive(&source->gate);
+    return value;
+}
+
+RenoWindowsSerializedResult
+reno_windows_serial_handle_to_fd_once(
+    RenoWindowsSerializedSlot *session, int crt_flags)
+{
+    RenoWindowsSerializedResult value = empty_result(try_enter(session));
+    intptr_t actual_handle;
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        return value;
+    }
+    actual_handle = session->native.handle;
+    value.core_called = 1;
+    value.native = reno_native_handle_to_fd_once(&session->native, crt_flags);
+    if (value.native.outcome == RENO_NATIVE_OK) {
+        RenoWindowsFdTransferFact fact = RENO_WINDOWS_FD_TRANSFER_FACT_INITIALIZER;
+        fact.original_handle = actual_handle;
+        fact.actual_fd = session->native.fd;
+        fact.crt_flags = crt_flags;
+        fact.actual_core = value.native;
+        fact.origin = RENO_FD_TRANSFER_C_ONLY;
+        session->fd_transfer_fact = fact;
+        /* Same actual HANDLE, now borrowed from the owning fd. No callback,
+         * allocation, external integer input, or second owning edge is added.
+         * Failure leaves any previously live view unchanged.
+         */
+        session->transferred_handle_view = actual_handle;
+        session->transferred_handle_view_available = 1;
+        session->transfer_identity_state = RENO_TRANSFER_IDENTITY_UNCHECKED;
+    }
+    ReleaseSRWLockExclusive(&session->gate);
+    return value;
+}
+
+RenoWindowsHandleQueryResult
+reno_windows_serial_query_handle_once(RenoWindowsSerializedSlot *session)
+{
+    RenoWindowsHandleQueryResult value = {0};
+    BY_HANDLE_FILE_INFORMATION information = {0};
+    BOOL queried;
+
+    value.admission = try_enter(session);
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        return value;
+    }
+    /* The transferred core handle is zero and no longer an owning slot.
+     * Do not query it, revive it, or turn an observation into ownership.
+     */
+    if (session->native.handle_state != RENO_NATIVE_OWNED
+            || session->native.fd_state != RENO_NATIVE_EMPTY) {
+        ReleaseSRWLockExclusive(&session->gate);
+        return value;
+    }
+    value.handle_stage_eligible = 1;
+    value.begin_called = 1;
+    value.begin = reno_native_begin_borrow(&session->native);
+    if (value.begin.outcome != RENO_NATIVE_OK) {
+        ReleaseSRWLockExclusive(&session->gate);
+        return value;
+    }
+
+    value.query_attempted = 1;
+    queried = GetFileInformationByHandle(
+        (HANDLE)session->native.handle, &information);
+    if (!queried) {
+        value.saved_query_winerror = (unsigned long)GetLastError();
+    }
+    else {
+        value.query_succeeded = 1;
+        value.information = information;
+    }
+    /* No Python allocation, callback, or early return is introduced between
+     * the native result/error capture and the matching borrow end.
+     */
+    value.end_called = 1;
+    value.end = reno_native_end_borrow(&session->native);
+    ReleaseSRWLockExclusive(&session->gate);
+    return value;
+}
+
+RenoWindowsHandleQueryResult
+reno_windows_serial_query_transferred_handle_once(
+    RenoWindowsSerializedSlot *session)
+{
+    RenoWindowsHandleQueryResult value = {0};
+    BY_HANDLE_FILE_INFORMATION information = {0};
+    BOOL queried;
+
+    value.admission = try_enter(session);
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        return value;
+    }
+    if (session->native.fd_state != RENO_NATIVE_OWNED
+            || session->native.handle_state != RENO_NATIVE_TRANSFERRED
+            || !session->transferred_handle_view_available
+            || session->transfer_identity_state != RENO_TRANSFER_IDENTITY_MATCHED
+            || !fd_transfer_matches_locked(session)) {
+        ReleaseSRWLockExclusive(&session->gate);
+        return value;
+    }
+    value.fd_stage_eligible = 1;
+    value.begin_called = 1;
+    value.begin = reno_native_begin_borrow(&session->native);
+    if (value.begin.outcome != RENO_NATIVE_OK) {
+        ReleaseSRWLockExclusive(&session->gate);
+        return value;
+    }
+
+    value.query_attempted = 1;
+    queried = GetFileInformationByHandle(
+        (HANDLE)session->transferred_handle_view, &information);
+    if (!queried) {
+        value.saved_query_winerror = (unsigned long)GetLastError();
+    }
+    else {
+        value.query_succeeded = 1;
+        value.information = information;
+    }
+    value.end_called = 1;
+    value.end = reno_native_end_borrow(&session->native);
+    ReleaseSRWLockExclusive(&session->gate);
+    return value;
+}
+
+RenoWindowsSerializedResult
+reno_windows_serial_stop_borrows(RenoWindowsSerializedSlot *session)
+{
+    RenoWindowsSerializedResult value = empty_result(try_enter(session));
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        return value;
+    }
+    value.core_called = 1;
+    value.native = reno_native_stop_borrows(&session->native);
+    ReleaseSRWLockExclusive(&session->gate);
+    return value;
+}
+
+RenoWindowsSerializedResult
+reno_windows_serial_close_handle_after_retirement(
+    RenoWindowsSerializedSlot *session)
+{
+    RenoWindowsSerializedResult value = empty_result(try_enter(session));
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        return value;
+    }
+    value.core_called = 1;
+    value.native = reno_native_close_handle_after_retirement(&session->native);
+    if (value.native.outcome == RENO_NATIVE_WINERROR
+            && session->native.handle_state == RENO_NATIVE_UNKNOWN
+            && session->native.failed_close.kind == RENO_NATIVE_FAILED_HANDLE_CLOSE) {
+        /* This exact core outcome is produced only after its actual closer
+         * saved the failing result. Copy before releasing THIS call's gate;
+         * a previous UNKNOWN record cannot reach this branch on rejection.
+         */
+        value.close_failure.observed = session->native.failed_close;
+        value.close_failure.available = 1;
+    }
+    ReleaseSRWLockExclusive(&session->gate);
+    return value;
+}
+
+RenoWindowsSerializedResult
+reno_windows_serial_close_fd_after_retirement(
+    RenoWindowsSerializedSlot *session)
+{
+    RenoWindowsSerializedResult value = empty_result(try_enter(session));
+    intptr_t actual_transfer_view;
+    unsigned int actual_transfer_view_available;
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        return value;
+    }
+    value.transfer_history_checked = 1;
+    value.transfer_history_matches = fd_transfer_matches_locked(session);
+    actual_transfer_view = session->transferred_handle_view;
+    actual_transfer_view_available = session->transferred_handle_view_available
+        && session->native.fd_state == RENO_NATIVE_OWNED
+        && session->native.handle_state == RENO_NATIVE_TRANSFERRED;
+    value.core_called = 1;
+    value.native = reno_native_close_fd_after_retirement(&session->native);
+    if (value.transfer_history_matches
+            && (value.native.outcome == RENO_NATIVE_OK
+                || value.native.outcome == RENO_NATIVE_ERRNO)) {
+        /* Only these actual _close normal-return branches append history.
+         * A pre-rejection/BUSY/repeated close cannot replace the old facts.
+         * The physical closer above always consumes the original native
+         * slot, even if the history check failed.
+         */
+        session->fd_transfer_fact.actual_close = value.native;
+        session->fd_transfer_fact.close_result_available = 1;
+    }
+    if (value.native.outcome == RENO_NATIVE_ERRNO
+            && session->native.fd_state == RENO_NATIVE_UNKNOWN
+            && session->native.failed_close.kind == RENO_NATIVE_FAILED_FD_CLOSE) {
+        /* Preserve THIS failed call's real transfer history before retiring
+         * the active query view. No identity/grant is inferred from it.
+         */
+        session->failed_fd_transfer_handle_observation = actual_transfer_view_available
+            ? actual_transfer_view : (intptr_t)0;
+        session->failed_fd_transfer_handle_observation_available = actual_transfer_view_available;
+        value.close_failure.observed = session->native.failed_close;
+        value.close_failure.transferred_handle = actual_transfer_view_available
+            ? actual_transfer_view : (intptr_t)0;
+        value.close_failure.transferred_handle_present = actual_transfer_view_available;
+        value.close_failure.available = 1;
+    }
+    if (session->native.fd_state != RENO_NATIVE_OWNED) {
+        /* The slot was consumed or is not a live fd owner. An unsuccessful
+         * close with UNKNOWN must not leave a reusable HANDLE view. BUSY or
+         * other pre-attempt rejections of a still-owned fd preserve the view.
+         */
+        session->transferred_handle_view = (intptr_t)0;
+        session->transferred_handle_view_available = 0;
+        session->transfer_identity_state = RENO_TRANSFER_IDENTITY_NOT_READY;
+    }
+    ReleaseSRWLockExclusive(&session->gate);
+    return value;
+}
+
+RenoWindowsFailedCloseObservation
+reno_windows_serial_observe_failed_close(RenoWindowsSerializedSlot *session)
+{
+    RenoWindowsFailedCloseObservation value = {0};
+    RenoNativeFailedCloseObservation *observed;
+    value.fd = -1;
+    value.admission = try_enter(session);
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        return value;
+    }
+    observed = &session->native.failed_close;
+    if (session->native.stopped && session->native.registered_borrowers == 0) {
+        if (observed->kind == RENO_NATIVE_FAILED_HANDLE_CLOSE
+                && session->native.handle_state == RENO_NATIVE_UNKNOWN
+                && session->native.fd_state == RENO_NATIVE_EMPTY) {
+            value.available = 1;
+            value.kind = observed->kind;
+            value.failure = observed->failure;
+            value.raw_present = 1;
+            value.raw = observed->handle;
+        }
+        else if (observed->kind == RENO_NATIVE_FAILED_FD_CLOSE
+                && session->native.fd_state == RENO_NATIVE_UNKNOWN
+                && (session->native.handle_state == RENO_NATIVE_EMPTY
+                    || session->native.handle_state == RENO_NATIVE_TRANSFERRED)) {
+            value.available = 1;
+            value.kind = observed->kind;
+            value.failure = observed->failure;
+            value.fd_present = 1;
+            value.fd = observed->fd;
+            if (session->failed_fd_transfer_handle_observation_available) {
+                value.raw_present = 1;
+                value.raw = session->failed_fd_transfer_handle_observation;
+            }
+        }
+    }
+    ReleaseSRWLockExclusive(&session->gate);
+    return value;
+}
+
+#endif

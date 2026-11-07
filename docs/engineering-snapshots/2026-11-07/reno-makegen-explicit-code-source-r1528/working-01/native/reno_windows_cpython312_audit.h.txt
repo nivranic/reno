@@ -1,0 +1,82 @@
+#ifndef RENO_WINDOWS_CPYTHON312_AUDIT_H
+#define RENO_WINDOWS_CPYTHON312_AUDIT_H
+
+#include "reno_windows_serialized_slot.h"
+
+#if defined(_WIN32)
+/* Internal, uninstalled CPython 3.12.10 Windows x64, MSVC-compatible
+ * _MSC_VER >= 1900 CRT IPH variant only. Not PyInit
+ * or a public builtin clone. Requires the actual owner/storage to remain
+ * alive, an attached thread state with the GIL held, and no entry exception.
+ * No flag or pointer check in this API establishes those caller conditions.
+ * The actual runtime/helper export, full API and same CRT/errno table must
+ * be established by the eventual build/loader. No direct-CRT GET fallback.
+ *
+ * Each operation holds the session's gate THROUGH PySys_Audit. Errno error
+ * construction follows native/borrow settlement and unlock, using saved
+ * errno and no further session access. These APIs allocate/call Python; nested session calls
+ * can receive BUSY, and callback effects elsewhere are not rolled back.
+ * Normal native returns only: no SEH/longjmp unwind guarantee is provided.
+ * There are no newly allocated Python result objects. The existing audit
+ * tuples/integers and OSError construction are still real Python work.
+ */
+typedef struct {
+    RenoWindowsAdmission admission;
+    unsigned int transfer_stage_eligible;
+    unsigned int audit_attempted;
+    unsigned int audit_succeeded;
+    unsigned int core_called;
+    RenoNativeResult core; /* valid only when core_called */
+    int saved_post_iph_errno; /* only for core ERRNO, after handler restore */
+    unsigned int python_exception_pending;
+} RenoWindowsAuditedTransferResult;
+
+typedef struct {
+    RenoWindowsAdmission admission;
+    unsigned int validation_stage_eligible;
+    unsigned int begin_called;
+    RenoNativeResult begin;
+    unsigned int audit_attempted;
+    unsigned int audit_succeeded;
+    unsigned int helper_called;
+    unsigned int helper_succeeded;
+    int saved_errno; /* only relevant when a called helper returned INVALID */
+    intptr_t observed_handle; /* borrowed scalar, valid only helper_succeeded */
+    unsigned int comparison_performed;
+    unsigned int identity_matches;
+    unsigned int end_called;
+    RenoNativeResult end;
+    unsigned int python_exception_pending;
+} RenoWindowsAuditedIdentityResult;
+
+/* Open audit then the original direct-slot core. A failed audit is returned
+ * with its actual exception still pending and no core call. A core errno
+ * failure creates OSError using errno saved after the original handler is
+ * restored, separately from the core's earlier errno. Other core rejections
+ * have no new Python exception. A local empty IPH callback surrounds the
+ * direct-slot core, with any successful fd committed before restore. Its
+ * function pointer differs from the runtime callback, and actual CRT binding,
+ * normal setter-return behavior and full compatibility remain unproven.
+ */
+RenoWindowsAuditedTransferResult reno_windows_cpython312_transfer_audited_once(
+    RenoWindowsSerializedSlot *session, int crt_flags);
+
+/* A SEPARATE entry, after the actual caller's original fd commit/sync hooks.
+ * It is not folded into transfer or silently invoked by a later query.
+ * Only UNCHECKED may enter: actual get audit, actual runtime noraise helper,
+ * sentinel handling, original-view comparison, and borrow end must all succeed
+ * before this C body sets MATCHED. Audit/helper/mismatch/end failures set
+ * FAILED and preserve the sole fd cleanup root. A repeated entry is rejected
+ * without replaying the audit. No public verified setter exists.
+ *
+ * Audit/errno exceptions remain pending for the original caller handlers.
+ * An identity mismatch has no new Python exception here; the real source
+ * adapter must raise its original domain error at the original location.
+ * MATCHED is only this completed point-in-time operation, not source/caller
+ * authentication, retirement or proof against later external fd rebinding.
+ */
+RenoWindowsAuditedIdentityResult reno_windows_cpython312_validate_transfer_audited_once(
+    RenoWindowsSerializedSlot *session);
+
+#endif
+#endif

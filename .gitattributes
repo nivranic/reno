@@ -1,0 +1,4 @@
+# Deployment scripts must remain executable by Bash after a Windows checkout.
+deploy/*.sh text eol=lf
+# Sealed source text and evidence must retain their exact bytes.
+docs/engineering-snapshots/** -text -whitespace

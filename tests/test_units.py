@@ -83,21 +83,26 @@ def test_extract_json_variants():
 
 def test_db_roundtrip_and_clamp(tmp_path):
     from reno import db as rdb
-    con = rdb.connect(tmp_path / "t.db")
-    rdb.upsert_asset(con, {"video_id": "v1", "content_sha256": "s1",
-                           "duration_ms": 10000, "files": {"video": "x.mp4"}})
-    rdb.replace_segments(con, "v1", [{"id": "asr_0000", "start_ms": 9500,
-                                      "end_ms": 10100, "text": "尾段"}])
-    # clamp happens in atomize; here verify index bounds enforcement input
-    idx = rdb.timeline_index(con, "v1")
-    assert idx["asr_0000"]["end_ms"] == 10100
-    rdb.replace_atoms(con, "v1", [{
-        "id": "a1", "claim": "测试原子主张", "polarity": "recommend",
-        "category": "防水", "conditions": {}, "parameters": [],
-        "evidence_refs": [{"video_id": "v1", "modality": "asr",
-                           "source_item_id": "asr_0000", "start_ms": 9500,
-                           "end_ms": 10000, "evidence_text": "尾段", "weight": 0.7}],
-        "confidence": 0.7}])
-    atoms = rdb.all_atoms(con)
-    assert len(atoms) == 1 and atoms[0]["evidence_refs"][0]["source_item_id"] == "asr_0000"
-    con.close()
+    rdb.initialize(tmp_path / "t.db")
+    from reno import storage_lifecycle
+    profile = storage_lifecycle.StorageProfile(tmp_path / "t.db", tmp_path / "media", tmp_path / "reports", tmp_path / "checkpoints")
+    storage_lifecycle.initialize(profile)
+    with storage_lifecycle.shared(profile):
+        con = rdb.connect(tmp_path / "t.db")
+        rdb.upsert_asset(con, {"video_id": "v1", "content_sha256": "s1",
+                               "duration_ms": 10000, "files": {"video": "x.mp4"}})
+        rdb.replace_segments(con, "v1", [{"id": "asr_0000", "start_ms": 9500,
+                                          "end_ms": 10100, "text": "尾段"}])
+        # clamp happens in atomize; here verify index bounds enforcement input
+        idx = rdb.timeline_index(con, "v1")
+        assert idx["asr_0000"]["end_ms"] == 10100
+        rdb.replace_atoms(con, "v1", [{
+            "id": "a1", "claim": "测试原子主张", "polarity": "recommend",
+            "category": "防水", "conditions": {}, "parameters": [],
+            "evidence_refs": [{"video_id": "v1", "modality": "asr",
+                               "source_item_id": "asr_0000", "start_ms": 9500,
+                               "end_ms": 10000, "evidence_text": "尾段", "weight": 0.7}],
+            "confidence": 0.7}])
+        atoms = rdb.all_atoms(con)
+        assert len(atoms) == 1 and atoms[0]["evidence_refs"][0]["source_item_id"] == "asr_0000"
+        con.close()

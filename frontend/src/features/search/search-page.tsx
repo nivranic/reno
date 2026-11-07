@@ -2,11 +2,11 @@
  * filters, token highlighting via <mark> (no raw HTML), ms-precise deep links.
  * v2: multi-axis filters (工种/空间/阶段/知识维度) + dimension/nature tags. */
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search as SearchIcon } from "lucide-react";
-import { facetsQuery, searchQuery } from "@/lib/queries";
-import type { SearchRow } from "@/lib/api-types";
+import { facetsQuery, qk, searchQuery } from "@/lib/queries";
+import type { SearchResponse, SearchRow } from "@/lib/api-types";
 import { fmtMs } from "@/lib/time";
 import { useScrollRestore } from "@/lib/url-state";
 import { PageHeader, EmptyState, ErrorState, ListSkeleton, InlineSpinner } from "@/components/shared/states";
@@ -14,17 +14,23 @@ import { PolarityBadge } from "@/components/shared/status-badge";
 import { DimensionBadge, NatureBadge } from "@/components/shared/knowledge-tags";
 import { ModalityTag } from "@/components/shared/modality-tag";
 import { Input, Select } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { EvidenceLink } from "@/components/shared/evidence-link";
+import { KnowledgeDetails } from "@/components/shared/knowledge-details";
 
 export default function SearchPage() {
+  const client = useQueryClient();
   const [params, setParams] = useSearchParams();
   const q = params.get("q") ?? "";
   const category = params.get("category") ?? "";
   const space = params.get("space") ?? "";
   const stage = params.get("stage") ?? "";
   const dimension = params.get("dimension") ?? "";
+  const page = Math.max(1, Number(params.get("page")) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(params.get("page_size")) || 30));
   const filters = useMemo(
-    () => ({ category, space, stage, dimension }),
-    [category, space, stage, dimension],
+    () => ({ category, space, stage, dimension, page: String(page), page_size: String(pageSize) }),
+    [category, space, stage, dimension, page, pageSize],
   );
 
   // local input state; committed to URL (which drives the query) debounced or on submit
@@ -41,6 +47,7 @@ export default function SearchPage() {
           const next = new URLSearchParams(prev);
           if (deferredInput.trim()) next.set("q", deferredInput.trim());
           else next.delete("q");
+          next.delete("page");
           return next;
         },
         { replace: true },
@@ -53,17 +60,20 @@ export default function SearchPage() {
 
   const facets = useQuery(facetsQuery);
   const results = useQuery(searchQuery(q, filters));
+  const firstPage = client.getQueryData<SearchResponse>(qk.search(q, { ...filters, page: "1" }));
+  const changedDuringPaging = page > 1 && firstPage?.kb_revision != null && results.data?.kb_revision != null
+    && firstPage.kb_revision !== results.data.kb_revision;
   // §4.2: a list page must not pop the soft keyboard on arrival — autofocus
   // is a desktop-only affordance; phones enter via explicit tap
   const [autoFocus] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches,
   );
-  const scroll = useScrollRestore(`search:${q}:${category}:${space}:${stage}:${dimension}`);
+  const scroll = useScrollRestore(`search:${q}:${category}:${space}:${stage}:${dimension}:${page}:${pageSize}`);
   useEffect(() => {
     scroll.restore();
     return scroll.save;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, category, space, stage, dimension]);
+  }, [q, category, space, stage, dimension, page, pageSize]);
 
   const setParam = (key: string, v: string) =>
     setParams(
@@ -71,6 +81,7 @@ export default function SearchPage() {
         const next = new URLSearchParams(prev);
         if (v) next.set(key, v);
         else next.delete(key);
+        if (key !== "page") next.delete("page");
         return next;
       },
       { replace: true },
@@ -92,6 +103,7 @@ export default function SearchPage() {
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
+          if (composing) return;
           setParam("q", input.trim());
         }}
         className="mb-3 flex flex-wrap gap-2"
@@ -168,34 +180,37 @@ export default function SearchPage() {
         </Select>
       </form>
 
-      {!q.trim() ? (
-        <EmptyState
-          icon={<SearchIcon size={30} />}
-          title="输入关键词开始搜索"
-          desc="支持中文组合词与同义词;可按工种/空间/阶段/维度交叉筛选,结果一键跳到视频证据时间点。"
-        />
-      ) : results.isError ? (
+      {results.isError ? (
         <ErrorState error={results.error} onRetry={() => void results.refetch()} context="搜索" />
       ) : results.isPending ? (
         <ListSkeleton rows={6} />
       ) : results.isFetching ? (
         <InlineSpinner label="搜索中…" />
-      ) : results.data!.results.length === 0 ? (
+      ) : results.data!.results.length === 0 && page === 1 ? (
         <EmptyState
           icon={<SearchIcon size={30} />}
-          title={`没有 "${q}" 的匹配结果`}
+          title={q ? `没有 "${q}" 的匹配结果` : "当前筛选下暂无知识"}
           desc="尝试更短的词,或清空筛选条件。"
         />
       ) : (
         <>
+          {changedDuringPaging && <div role="status" className="mb-3 rounded-ctl border border-st-wait/30 bg-st-wait/5 p-3 text-sm">
+            <p>知识库在翻页期间发生变化，结果位置可能已调整。</p>
+            <Button size="sm" variant="outline" className="mt-2" onClick={() => { void client.invalidateQueries({ queryKey: ["search"] }); setParam("page", "1"); }}>刷新并返回第一页</Button>
+          </div>}
           <p className="mb-2.5 text-[12.5px] text-muted">
-            {results.data!.results.length} 条结果(最多展示 80)
+            共 {results.data!.total ?? results.data!.results.length} 条结果 · 本页 {results.data!.results.length} 条{!q.trim() ? " · 筛选浏览" : ""}
           </p>
           <div className="space-y-2">
             {results.data!.results.map((r) => (
               <ResultCard key={r.id} row={r} tokens={tokens} />
             ))}
           </div>
+          <nav aria-label="搜索结果分页" className="mt-4 flex flex-wrap items-center justify-between gap-2">
+            <Button variant="outline" disabled={page <= 1} onClick={() => setParam("page", String(page - 1))}>上一页</Button>
+            <span className="text-sm text-muted">第 {page} 页</span>
+            <Button variant="outline" disabled={!results.data!.has_more} onClick={() => setParam("page", String(page + 1))}>下一页</Button>
+          </nav>
         </>
       )}
     </div>
@@ -207,7 +222,7 @@ function ResultCard({ row, tokens }: { row: SearchRow; tokens: string[] }) {
     ([k, v]) => k !== "_notes" && v !== "" && v != null,
   );
   const card = (
-    <div className="rounded-panel border border-line bg-surface p-3.5 transition-colors hover:border-acc-line hover:bg-acc-soft/20">
+    <article data-search-result={row.id} className="rounded-panel border border-line bg-surface p-3.5 transition-colors hover:border-acc-line">
         <div className="flex items-start gap-2">
           <PolarityBadge polarity={row.polarity} className="mt-0.5 shrink-0" />
           <p className="min-w-0 flex-1 text-[13.5px] font-medium leading-relaxed text-ink">
@@ -257,19 +272,16 @@ function ResultCard({ row, tokens }: { row: SearchRow; tokens: string[] }) {
             {row.video_title || row.video || "无来源"}
           </span>
         </div>
-      </div>
+        <details className="mt-2 text-[12.5px] text-ink-2">
+          <summary className="cursor-pointer py-1">条件、例外与价格口径</summary>
+          <KnowledgeDetails knowledge={row} />
+        </details>
+        {row.video ? <EvidenceLink className="mt-2 inline-flex min-h-9 items-center text-[12.5px] text-acc underline" to={`/videos/${row.video}?t=${row.ms}`} aria-label={`跳转到视频 ${row.video_title || row.video},时间 ${fmtMs(row.ms)}`}>查看视频证据 · {fmtMs(row.ms)}</EvidenceLink> : <p className="mt-2 text-[12px] text-muted">来源视频不可用</p>}
+      </article>
   );
   // rows without a video render as a static card, not a dead "#" link that
   // stays keyboard-focusable (pointer-events-none only blocks the mouse)
-  if (!row.video) return card;
-  return (
-    <Link
-      to={`/videos/${row.video}?t=${row.ms}`}
-      aria-label={`跳转到视频 ${row.video_title || row.video},时间 ${fmtMs(row.ms)}`}
-    >
-      {card}
-    </Link>
-  );
+  return card;
 }
 
 function Highlight({ text, tokens }: { text: string; tokens: string[] }) {

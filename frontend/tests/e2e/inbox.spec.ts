@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./qa-fixtures";
 
 test.describe("inbox (real backend)", () => {
   test("lists real videos and stats", async ({ page }) => {

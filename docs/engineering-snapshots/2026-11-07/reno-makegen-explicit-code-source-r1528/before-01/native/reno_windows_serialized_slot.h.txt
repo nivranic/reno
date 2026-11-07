@@ -1,0 +1,281 @@
+#ifndef RENO_WINDOWS_SERIALIZED_SLOT_H
+#define RENO_WINDOWS_SERIALIZED_SLOT_H
+
+#include "reno_owned_native_slot.h"
+
+#if defined(_WIN32)
+
+/* Internal embedded storage, not a Python object or an authority interface.
+ * Initialize only fresh, unpublished, uncontended storage with the initializer
+ * below or initialize_fresh. The real owner
+ * must keep storage and arguments alive through every call and native
+ * callback; do not copy, reset, move, or free a live session. No field is a
+ * Python-visible property. After initialization, all accesses to `native`
+ * or the active/debt transferred-view fields must use this module's gate;
+ * callers must
+ * not bypass it via the old core.
+ *
+ * Try-lock admission never waits. BUSY means this invocation made no call to
+ * the core or resource OS/CRT operation (the try-lock itself was called).
+ * It is a new rejection, not a compatibility guarantee,
+ * a retry instruction, or permission to discard an owning session. A native
+ * callback may reenter and receive BUSY. No Python callback is called by this
+ * module, but that does not prove CRT/native callbacks cannot occur.
+ * Lock/borrow cleanup here covers normal native returns only; no SEH or
+ * longjmp unwinding guarantee is provided for nonlocal native escapes.
+ *
+ * This module covers only the listed native operations. In particular it
+ * neither registers raw/buffer I/O nor establishes their retirement. Source,
+ * original audit/argument/error contracts and actual Python lifetime/GC
+ * integration remain obligations of the real caller adapter.
+ */
+/* Internal result of this session's actual transfer-time identity step.
+ * MATCHED is not a source grant or a permanent CRT-mapping guarantee.
+ */
+typedef enum {
+    RENO_TRANSFER_IDENTITY_NOT_READY = 0,
+    RENO_TRANSFER_IDENTITY_UNCHECKED,
+    RENO_TRANSFER_IDENTITY_MATCHED,
+    RENO_TRANSFER_IDENTITY_FAILED
+} RenoTransferIdentityState;
+
+typedef enum {
+    RENO_FD_TRANSFER_NONE = 0,
+    RENO_FD_TRANSFER_C_ONLY,
+    RENO_FD_TRANSFER_AUDITED_C_ONLY,
+    RENO_FD_TRANSFER_AUDITED_PYTHON_RESULT
+} RenoWindowsFdTransferOrigin;
+
+typedef enum {
+    RENO_FD_RESULT_NOT_REQUESTED = 0,
+    RENO_FD_RESULT_CONVERTING,
+    RENO_FD_RESULT_FAILED,
+    RENO_FD_RESULT_READY
+} RenoWindowsFdResultState;
+
+/* Persistent facts of the actual successful transition into this session's
+ * sole fd slot, not the last attempted call. NONE makes every payload field
+ * unavailable. Failed attempts and BUSY never overwrite it or forbid the
+ * existing low-level re-entry domain. Every read/write requires the gate.
+ * Numbers here are nonowning history, never a closer, borrow, source grant,
+ * refund or permission to retry. No Python object/first/NEW result is held.
+ * READY means only that the original PyLong call returned a NEW reference;
+ * it does not certify delivery to the Python caller or authorize GET.
+ */
+typedef struct {
+    RenoWindowsFdTransferOrigin origin;
+    intptr_t original_handle;
+    int actual_fd;
+    int crt_flags;
+    RenoNativeResult actual_core;
+    RenoWindowsFdResultState result_state;
+    unsigned int close_result_available;
+    RenoNativeResult actual_close; /* only close_result_available */
+} RenoWindowsFdTransferFact;
+
+#define RENO_WINDOWS_FD_TRANSFER_FACT_INITIALIZER \
+    { RENO_FD_TRANSFER_NONE, (intptr_t)0, -1, 0, \
+      { RENO_NATIVE_INVALID_STATE, 0, 0 }, RENO_FD_RESULT_NOT_REQUESTED, 0, \
+      { RENO_NATIVE_INVALID_STATE, 0, 0 } }
+
+typedef struct {
+    SRWLOCK gate;
+    RenoOwnedNativeSlot native;
+    /* Borrowed scalar view of the actual HANDLE moved into this session's
+     * fd by a successful transfer. This field has no closer/ownership and
+     * is not identity validation, an external grant, or a general cache.
+     */
+    intptr_t transferred_handle_view;
+    unsigned int transferred_handle_view_available;
+    RenoTransferIdentityState transfer_identity_state;
+    /* Debt-only copy after THIS session's actual fd closer fails. This is
+     * separate from the retired active query view and never used for I/O.
+     */
+    intptr_t failed_fd_transfer_handle_observation;
+    unsigned int failed_fd_transfer_handle_observation_available;
+    /* Retained after active query-view retirement, until session destruction.
+     * Only the two actual successful transfer producers publish origin;
+     * fd close may append its matching actual normal-return result.
+     */
+    RenoWindowsFdTransferFact fd_transfer_fact;
+} RenoWindowsSerializedSlot;
+
+#define RENO_WINDOWS_SERIALIZED_SLOT_INITIALIZER \
+    { SRWLOCK_INIT, RENO_OWNED_NATIVE_SLOT_INITIALIZER, (intptr_t)0, 0, \
+      RENO_TRANSFER_IDENTITY_NOT_READY, (intptr_t)0, 0, \
+      RENO_WINDOWS_FD_TRANSFER_FACT_INITIALIZER }
+
+/* For fresh dynamically embedded storage. Does not read uninitialized bytes
+ * or test a magic value; validity/freshness are actual caller preconditions.
+ * Never initialize by copying an already initialized session or SRW lock.
+ */
+void reno_windows_serial_initialize_fresh(RenoWindowsSerializedSlot *session);
+
+typedef enum {
+    RENO_WINDOWS_ADMITTED = 0,
+    RENO_WINDOWS_BUSY,
+    RENO_WINDOWS_INVALID_ARGUMENT
+} RenoWindowsAdmission;
+
+/* Facts from THIS close invocation, copied under its actual gate before
+ * unlock. available is set only after an actual failing OS/CRT closer;
+ * a rejecting core, BUSY, normal close or old terminal history leaves it 0.
+ * Fresh results initialize available=0, observed.fd=-1 and no failed kind;
+ * every payload field is unavailable unless available == 1. observed keeps
+ * its original kind-specific validity rules. transferred_handle is valid
+ * only when transferred_handle_present == 1, and only for an actual fd
+ * failure with this session's pre-close transfer view. No MATCHED claim.
+ * These nonowning facts give no borrow, close, retry, refund or authority.
+ * They do not establish original caller provenance or retain a resource.
+ */
+typedef struct {
+    unsigned int available;
+    RenoNativeFailedCloseObservation observed;
+    unsigned int transferred_handle_present;
+    intptr_t transferred_handle;
+} RenoWindowsCloseAttemptFailure;
+
+typedef struct {
+    RenoWindowsAdmission admission;
+    unsigned int core_called;
+    /* Valid only if core_called == 1. Reaching a rejecting core function is
+     * not evidence that its underlying OS/CRT call was attempted.
+     */
+    RenoNativeResult native;
+    /* Only the two close entries can produce this invocation's failure.
+     * Other operations and every pre-attempt rejection leave available=0.
+     */
+    RenoWindowsCloseAttemptFailure close_failure;
+    /* fd-close-only check of the successful transfer history before the
+     * actual core call. An inconsistent history does NOT prevent the known
+     * fd's original physical closer. Neither field establishes retirement,
+     * caller provenance or successful lease/event settlement.
+     */
+    unsigned int transfer_history_checked;
+    unsigned int transfer_history_matches;
+} RenoWindowsSerializedResult;
+
+typedef struct {
+    RenoWindowsAdmission admission;
+    unsigned int source_stage_eligible;
+    unsigned int destination_stage_eligible;
+    unsigned int begin_called;
+    RenoNativeResult begin; /* only begin_called */
+    unsigned int core_called;
+    RenoNativeDuplicateResult duplicate; /* only core_called */
+    unsigned int end_called;
+    RenoNativeResult end; /* only end_called; never hides target acquisition */
+} RenoWindowsDuplicateResult;
+
+/* Try source then destination, never wait; failure releases only gates
+ * acquired by this call. Both distinct actual owners must remain alive.
+ * The entire source begin/native duplicate/end runs under both gates.
+ * End failure does not cancel a committed destination or authorize closing
+ * the source. No numeric HANDLE/session address is returned.
+ */
+RenoWindowsDuplicateResult reno_windows_serial_duplicate_handle_once(
+    RenoWindowsSerializedSlot *source, RenoWindowsSerializedSlot *destination);
+
+typedef struct {
+    RenoWindowsAdmission admission;
+    unsigned int handle_stage_eligible;
+    unsigned int fd_stage_eligible;
+    unsigned int begin_called;
+    /* begin/end are valid only when their respective _called flag is set.
+     * Zero-initialized unused result fields do not represent actual OK calls.
+     */
+    RenoNativeResult begin;
+    unsigned int query_attempted;
+    unsigned int query_succeeded;
+    unsigned long saved_query_winerror;
+    /* Only query_succeeded makes information valid. Query success does not
+     * validate attributes/links/identity or establish a source grant.
+     */
+    BY_HANDLE_FILE_INFORMATION information;
+    unsigned int end_called;
+    RenoNativeResult end;
+} RenoWindowsHandleQueryResult;
+
+RenoWindowsSerializedResult reno_windows_serial_create_file_once(
+    RenoWindowsSerializedSlot *session, const wchar_t *path,
+    DWORD access, DWORD share, const SECURITY_ATTRIBUTES *security,
+    DWORD disposition, DWORD flags);
+
+/* Same-CRT and failure/transfer obligations of the original core apply. */
+RenoWindowsSerializedResult reno_windows_serial_handle_to_fd_once(
+    RenoWindowsSerializedSlot *session, int crt_flags);
+
+/* HANDLE_OWNED/fd_EMPTY only. This is a real pre-transfer query of the
+ * currently owning slot, not a query of an old HANDLE after CRT transfer.
+ * The begin/query/end all run in this C body under one gate. End is called
+ * only after the actual query has returned. Both query and end outcomes
+ * survive independently; an end failure cannot be hidden as query success.
+ * No ownership of the queried HANDLE is transferred or published.
+ */
+RenoWindowsHandleQueryResult reno_windows_serial_query_handle_once(
+    RenoWindowsSerializedSlot *session);
+
+/* Post-transfer counterpart, only for FD_OWNED/HANDLE_TRANSFERRED with the
+ * view installed by this session's actual successful native transfer.
+ * Holds the same gate and the fd borrow through the actual HANDLE query.
+ * It does not call _get_osfhandle per query or re-run/replace the original
+ * transfer-time audited identity comparison. That original validation and
+ * all source/caller obligations must still be connected by the real adapter.
+ * Availability is only initialized transport, not proof of that validation.
+ * This entry additionally requires MATCHED from the actual internal audited
+ * identity operation. There is no external validation setter.
+ * If the original validation fails, its control flow must preserve the sole
+ * fd cleanup root and leave the normal consumer path; this primitive must
+ * not be used to convert that failure into normal continuation.
+ * The borrowed HANDLE is never passed to CloseHandle or published as owning.
+ */
+RenoWindowsHandleQueryResult reno_windows_serial_query_transferred_handle_once(
+    RenoWindowsSerializedSlot *session);
+
+/* Stop only rejects new borrows. It does not wait or prove retirement. */
+RenoWindowsSerializedResult reno_windows_serial_stop_borrows(
+    RenoWindowsSerializedSlot *session);
+
+/* Both closers retain ALL external retirement preconditions of the core,
+ * including unregistered raw/buffer/native work. Successful try-lock and
+ * count zero cannot discharge those conditions. BUSY keeps all ownership.
+ * UNKNOWN after an actual close attempt is never retried with the old value.
+ * A real failure is also transported in this return's close_failure while
+ * still under the same gate; no later snapshot/reacquire is required for
+ * those facts. It is distinct from the historical snapshot below. This
+ * scalar transport does not implement the original caller's first, lease,
+ * permanent gate, Python representation or debt publication.
+ */
+RenoWindowsSerializedResult reno_windows_serial_close_handle_after_retirement(
+    RenoWindowsSerializedSlot *session);
+RenoWindowsSerializedResult reno_windows_serial_close_fd_after_retirement(
+    RenoWindowsSerializedSlot *session);
+
+typedef struct {
+    RenoWindowsAdmission admission;
+    unsigned int available;
+    RenoNativeFailedCloseKind kind; /* only available */
+    RenoNativeResult failure;       /* only available */
+    unsigned int raw_present;
+    intptr_t raw; /* nonowning historical observation, only raw_present */
+    unsigned int fd_present;
+    int fd;      /* nonowning historical observation, only fd_present */
+} RenoWindowsFailedCloseObservation;
+
+/* Gate-protected snapshot of the slot's unique stored failed-close history,
+ * not proof that the most recent close invocation reached the OS. A later
+ * rejection does not clear the old record, which can still be returned.
+ * A real failed closer record is required in terminal
+ * UNKNOWN/stopped storage. No current OWNED resource number is returned.
+ * A transferred HANDLE is included only from this session's actual saved
+ * transfer view, preserved at its actual fd-close failure. This is not the
+ * still-usable query view or identity verification. All numbers are debt
+ * facts, never borrow/closer/retry grants. Rejected/normal close creates no
+ * record; reading again does not execute any closer or budget callback.
+ * Real owner lifetime and actual caller/source provenance remain required.
+ */
+RenoWindowsFailedCloseObservation reno_windows_serial_observe_failed_close(
+    RenoWindowsSerializedSlot *session);
+
+#endif /* _WIN32: no POSIX implementation is claimed or substituted. */
+#endif

@@ -1,11 +1,14 @@
-import { describe, expect, it } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AskPage from "./ask-page";
 import { renderWithApp } from "@/test/utils";
 import { http } from "msw";
 import { server } from "@/test/server";
 import { makeAsk } from "@/mocks/fixtures";
+import { resetReadingSessions } from "@/lib/reading-session";
+
+beforeEach(() => resetReadingSessions());
 
 describe("AskPage", () => {
   it("sends a question and renders the cited answer with evidence links", async () => {
@@ -84,5 +87,58 @@ describe("AskPage", () => {
     });
     // user turn preserved in the thread
     expect(screen.getByText("水电验收注意什么？")).toBeInTheDocument();
+  });
+
+  it("keeps completed answers and an unsent draft when the route remounts", async () => {
+    const user = userEvent.setup();
+    let calls = 0;
+    server.use(http.post("/api/ask", () => { calls++; return Response.json(makeAsk("防水")); }));
+    const first = renderWithApp(<AskPage />);
+    await user.type(screen.getByLabelText("问题输入框"), "防水{Enter}");
+    await screen.findByText(/主流做法如下/);
+    await user.type(screen.getByLabelText("问题输入框"), "尚未发送的补充条件");
+    first.unmount();
+    renderWithApp(<AskPage />);
+    expect(screen.getByText(/主流做法如下/)).toBeInTheDocument();
+    expect(screen.getByLabelText("问题输入框")).toHaveValue("尚未发送的补充条件");
+    expect(calls).toBe(1);
+  });
+
+  it("clears a pending request and ignores its late response", async () => {
+    const user = userEvent.setup();
+    let resolve!: () => void;
+    const pending = new Promise<void>((done) => { resolve = done; });
+    server.use(http.post("/api/ask", async () => { await pending; return Response.json(makeAsk("防水")); }));
+    renderWithApp(<AskPage />);
+    await user.type(screen.getByLabelText("问题输入框"), "防水{Enter}");
+    await screen.findByText(/正在检索知识库/);
+    await user.click(screen.getByRole("button", { name: "清空会话" }));
+    resolve();
+    await waitFor(() => expect(screen.getByText("向装修知识库提问")).toBeInTheDocument());
+    expect(screen.queryByText(/主流做法如下/)).not.toBeInTheDocument();
+  });
+
+  it("separates matching and old unbound relations while preserving saved answer text", async () => {
+    let calls = 0;
+    server.use(http.post("/api/ask", () => {
+      calls++;
+      const result = makeAsk("防水");
+      result.conflicts.push({ cluster_id: "legacy", topic: "旧关联", conflict_id: null });
+      return Response.json(result);
+    }));
+    const user = userEvent.setup();
+    const first = renderWithApp(<AskPage />);
+    await user.type(screen.getByLabelText("问题输入框"), "防水{Enter}");
+    const matching = await screen.findByRole("region", { name: "依据匹配的分歧" });
+    expect(matching).toHaveTextContent("回答生成时：1 个有分歧的主题");
+    expect(matching).not.toHaveTextContent("旧关联");
+    const history = screen.getByRole("region", { name: "历史关联待核对" });
+    expect(within(history).getByText(/旧关联/)).toBeInTheDocument();
+    expect(history).toHaveTextContent("判定依据未知");
+    expect(screen.getByText(/主流做法如下/)).toBeInTheDocument();
+    first.unmount();
+    renderWithApp(<AskPage />);
+    expect(screen.getByRole("region", { name: "历史关联待核对" })).toHaveTextContent("判定依据未知");
+    expect(calls).toBe(1);
   });
 });

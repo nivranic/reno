@@ -1,0 +1,1708 @@
+/* r1517 INTEGRATION MATERIAL ONLY. This is not a translation unit, helper,
+ * complete child definition or installed product source. Shared child-entry
+ * locals/MOVE followed by ONE inline branch. All unhandled lawful histories
+ * still require the rest of the SAME complete child before any source install.
+ * The parent owns all selection-history and old-Owner/query loans throughout.
+ */
+RenoLoaderRecordSetup owned = {0};
+/* Shared complete-child scope: normal unmatched paths keep these FOUR extra
+ * owning positions/history and the optional compatibility query owning below.
+ * Never put these debts in a do scope then break. Native child queries borrow
+ * the actual native parent's independent factory-key root; compatibility
+ * publication borrows its own independent occurrence of that same key object.
+ */
+RenoLoaderSelectionOwner publication_child_selection = {0};
+RenoLoaderSelectionView publication_child_view = {0};
+
+/* r1510: distinct actual stage histories, never reset/reprojected as fresh.
+ * Native and r1509 early-handled routes leave these owning arrays all zero.
+ * Every entered compatibility stage drains its FOUR before advancing.
+ */
+RenoLoaderSelectionOwner compat_resume_owner[4] = {0};
+RenoLoaderSelectionView compat_resume_view[4] = {0};
+unsigned char compat_resume_drained[4] = {0};
+
+/* r1511: automatic compatibility history, never freshness or publication authority.
+ * Only compat publication acquires this independent factory-key occurrence.
+ * Keep the optional FIFTH extra alongside publication_child_selection's FOUR.
+ */
+PyObject *compat_publication_query_owned = NULL;
+/* r1514: helper settles all local owning; this View carries SCALARS only. */
+RenoLoaderSelectionView compat_bound_finish_protocol = {0};
+/* r1515: distinct actual stage SCALARS and separate aggregate protocol. */
+RenoLoaderEnteredBoundContinuationResult compat_entered_bound_result = {0};
+RenoLoaderSelectionView compat_entered_bound_protocol = {0};
+/* r1516: new automatic SCALARS, aggregate protocol and C-only history loan. */
+RenoLoaderEnteredBoundRegistrationResumeResult compat_entered_registration_result = {0};
+RenoLoaderSelectionView compat_entered_registration_protocol = {0};
+RenoLoaderPublicationSourceProfile publication_source = {0};
+unsigned char compat_publication_history_ok = 0;
+unsigned char compat_publication_extra_unadmitted = 0;
+unsigned char compat_publication_resume_outputs_clear = 1;
+
+PyObject *first = *first_owned;
+int cleanup_failed = 0;
+unsigned char publication_child_observation_called = 0;
+unsigned char publication_child_association_called = 0;
+unsigned char publication_child_current_matched = 0;
+unsigned char publication_child_outputs_drained = 0;
+unsigned char publication_parent_view_fresh = 0;
+unsigned char selected_publication_linked_here = 0;
+unsigned char selected_publication_postquery_called = 0;
+unsigned char selected_publication_postquery_returned = 0;
+unsigned char selected_publication_postquery_completed = 0;
+unsigned char selected_publication_unadmitted = 0;
+int selected_publication_query_status = 0;
+
+/* Shared complete-child entry, before ANY callback on every real route.
+ * Each alias denotes a separate owning occurrence, never a shallow copy.
+ */
+*first_owned = NULL;
+reno_loader_record_setup_take_raw(setup, &owned);
+
+/* r1509 INTEGRATION MATERIAL ONLY. Insert immediately after the shared entry
+ * MOVE, before either existing publication scope. The FOUR child output slots
+ * are still zero and remain untouched here. Parent View/key/previous and its
+ * owning occurrences stay at the actual compatibility caller on every exit.
+ */
+do {
+    int compat_prepare_status;
+    int compat_stored;
+    int compat_handled = 0;
+
+    /* These are consistency checks on the SAME actual compatibility entry,
+     * not source/root certificates. Completed original lookup and later
+     * Current remain distinct histories; never obtain expected from Current.
+     */
+    if (compat_history == NULL
+            || selection_entry != RENO_LOADER_COMPLETE_HISTORY
+            || native_preparation_query != NULL || entry_record != NULL
+            || entry_observation != NULL || source == NULL || source->state == NULL
+            || source->module == NULL || source->owner == NULL
+            || actual_spec == NULL || actual_spec == Py_None
+            || actual_loader == NULL || actual_loader == Py_None
+            || dictionary == NULL || !PyDict_Check(dictionary)
+            || selection_history == NULL || selection_history->history.unadmitted_return
+            || first != NULL || PyErr_Occurred() != NULL
+            || compat_history->prepared_dictionary_received != 1
+            || compat_history->dictionary_is_dict != 1
+            || compat_history->lookup_entered != 1 || compat_history->lookup_returned != 1
+            || compat_history->lookup_value_observed != 1
+            || compat_history->lookup_key == NULL
+            || !PyUnicode_CheckExact(compat_history->lookup_key)
+            || !exact_ascii_name(compat_history->lookup_key, "exec_module", 11)
+            || previous_present > 1 || (previous_present && previous == NULL)
+            || (!previous_present && previous != NULL)
+            || !reno_loader_setup_pristine_raw(&owned) || owned.related_owned != NULL
+            || !reno_loader_binding_source_fresh_install_raw(source, actual_loader)) {
+        break; /* same full child retains all ELEVEN slots and actual history */
+    }
+
+    /* Both producers own their NEWs directly in this child's moved setup.
+     * They perform fresh preparation observations, never replay the parent's
+     * original getter/GetDict/lookup/finder or reconstruct historical previous.
+     * Parent outputs may become stale history during these actual callbacks.
+     */
+    if (previous_present) {
+        compat_prepare_status = reno_loader_existing_prepare_install(source,
+            actual_loader, dictionary, previous, compat_history->lookup_key,
+            &owned, &first, &owned.present_install);
+        reno_cleanup_settle_indicator(&first, &cleanup_failed);
+        if (compat_prepare_status < 0 && first == NULL && PyErr_Occurred() == NULL) {
+            owned.present_install.unadmitted_return = 1;
+        }
+    } else {
+        compat_prepare_status = reno_loader_absent_prepare(source,
+            actual_loader, dictionary, compat_history->lookup_key,
+            &owned, &first, &owned.absent_prepare);
+        reno_cleanup_settle_indicator(&first, &cleanup_failed);
+        if (compat_prepare_status < 0 && first == NULL && PyErr_Occurred() == NULL) {
+            owned.absent_prepare.unadmitted_return = 1;
+        }
+        if (first == NULL && !owned.absent_prepare.unadmitted_return
+                && owned.absent_prepare.claim_completed == 1
+                && owned.stage == RENO_LOADER_SETUP_CLAIMED) {
+            owned.absent_prepare.unwatched_called = 1;
+            compat_stored = reno_loader_record_store_unwatched(source,
+                actual_loader, dictionary, owned.mutation.bound_owned, &owned);
+            owned.absent_prepare.unwatched_returned = 1;
+            owned.absent_prepare.unwatched_status = compat_stored;
+            reno_cleanup_settle_indicator(&first, &cleanup_failed);
+            if (compat_stored < 0 && first == NULL && PyErr_Occurred() == NULL) {
+                owned.absent_prepare.unadmitted_return = 1;
+            }
+            if (compat_stored == 0 && first == NULL
+                    && !owned.absent_prepare.unadmitted_return) {
+                /* Original order and never-attempted gate; status0 alone is
+                 * not permission to repeat a STORE or any completed effect.
+                 */
+                owned.absent_prepare.conditional_called = 1;
+                compat_prepare_status = reno_loader_try_install_claimed_absent(source,
+                    &owned, &first);
+                reno_cleanup_settle_indicator(&first, &cleanup_failed);
+                if (compat_prepare_status < 0 && first == NULL && PyErr_Occurred() == NULL) {
+                    owned.absent_prepare.unadmitted_return = 1;
+                }
+            }
+        }
+    }
+
+    /* Actual normal postquery -> same success consumer remains continuous.
+     * Empty-indicator settlement above adds no callout under the original
+     * primitive contract. No extra Observe/NEW/release precedes this gate.
+     * Parent historical View never supplies publication or success authority.
+     */
+    compat_prepare_status = reno_loader_try_finish_native_success(source,
+        &owned, &first, &compat_handled);
+    if (compat_handled) {
+        /* ELEVEN moved/settled; FOUR still zero; parent debts remain separate.
+         * Only first/scalar transport follows, with no payload or source read.
+         */
+        *first_owned = first;
+        first = NULL;
+        return compat_prepare_status;
+    }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+
+    compat_prepare_status = reno_loader_try_finish_setup_abort(&owned,
+        &first, &compat_handled);
+    if (compat_handled) {
+        *first_owned = first;
+        first = NULL;
+        return compat_prepare_status;
+    }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+
+    /* Only immutable unadmitted scalar history is borrowed from the old
+     * parent View here; neither consumer uses its old current/query as fresh.
+     */
+    compat_prepare_status = reno_loader_try_finish_unadmitted_setup(&owned,
+        selection_history, &first, &compat_handled);
+    if (compat_handled) {
+        *first_owned = first;
+        first = NULL;
+        return compat_prepare_status;
+    }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+
+    compat_prepare_status = reno_loader_try_finish_cancelled_setup(&owned,
+        selection_history, &first, &compat_handled);
+    if (compat_handled) {
+        *first_owned = first;
+        first = NULL;
+        return compat_prepare_status;
+    }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+
+    /* All normal unmatched/partial/COMPAT/UNCHANGED histories and ELEVEN debts
+     * remain with this SAME complete child. Never reset these once-results,
+     * label present_install as claimed_registration_resume, or mint an origin
+     * from the old View. The existing publication scopes remain unchanged;
+     * they do not resolve this compatibility continuation by default.
+     */
+} while (0);
+
+/* r1510 INTEGRATION MATERIAL ONLY. Same complete child, after the original
+ * compatibility preparation scope and before the unchanged publication code.
+ */
+do {
+    const RenoLoaderSelectionView *compat_resume_protocol = selection_history;
+    PyObject *compat_resume_query = NULL;
+    PyObject *compat_resume_candidate = NULL;
+    RenoLoaderObservedBoundOrigin compat_resume_bound_origin = RENO_LOADER_BOUND_ORIGIN_NONE;
+    unsigned int compat_resume_station = 0;
+    unsigned int compat_resume_i;
+    int compat_resume_phase;
+    int compat_resume_slot = -1;
+    int compat_resume_status = 0;
+    int compat_resume_handled = 0;
+    int compat_resume_called;
+    int compat_resume_entered;
+    int compat_resume_registration_dispatched;
+    int compat_resume_pass;
+
+    if (compat_history == NULL || selection_history == NULL
+            || native_preparation_query != NULL || entry_record != NULL || entry_observation != NULL
+            || source == NULL || source->state == NULL || source->module == NULL || source->owner == NULL
+            || actual_spec == NULL || actual_spec == Py_None
+            || actual_loader == NULL || actual_loader == Py_None
+            || dictionary == NULL || !PyDict_Check(dictionary)
+            || compat_history->prepared_dictionary_received != 1 || compat_history->dictionary_is_dict != 1
+            || compat_history->lookup_entered != 1 || compat_history->lookup_returned != 1
+            || compat_history->lookup_value_observed != 1 || compat_history->lookup_key == NULL
+            || !exact_ascii_name(compat_history->lookup_key, "exec_module", 11)
+            || previous_present > 1 || (previous_present && previous == NULL)
+            || (!previous_present && previous != NULL)) { break; }
+
+    for (compat_resume_phase = 0; compat_resume_phase < 6; ++compat_resume_phase) {
+        /* Preserved real protocol failures are not normal unmatched states.
+         * If an existing consumer could not settle one, keep it for the full
+         * body without starting another business observation or producer.
+         */
+        if (first != NULL || PyErr_Occurred() != NULL
+                || compat_resume_protocol->history.unadmitted_return
+                || owned.absent_prepare.unadmitted_return
+                || owned.absent_install.unadmitted_return || owned.absent_install.registration.unadmitted_return
+                || owned.present_install.unadmitted_return || owned.present_install.installation.unadmitted_return
+                || owned.present_install.registration.unadmitted_return
+                || owned.retained_inner_resume.unadmitted_return
+                || owned.retained_inner_resume.installation.unadmitted_return
+                || owned.retained_inner_resume.registration.unadmitted_return
+                || owned.observed_partial_resume.unadmitted_return
+                || owned.observed_partial_resume.installation.unadmitted_return
+                || owned.observed_partial_resume.registration.unadmitted_return
+                || owned.observed_inner_resume.unadmitted_return
+                || owned.observed_inner_resume.installation.unadmitted_return
+                || owned.observed_inner_resume.registration.unadmitted_return
+                || owned.observed_bound_resume.unadmitted_return
+                || owned.observed_bound_resume.installation.unadmitted_return
+                || owned.observed_bound_resume.registration.unadmitted_return
+                || owned.claimed_registration_resume.unadmitted_return
+                || owned.claimed_registration_resume.registration.unadmitted_return) { break; }
+
+        compat_resume_slot = -1;
+        compat_resume_query = NULL;
+        compat_resume_candidate = NULL;
+        compat_resume_called = 0;
+        compat_resume_entered = 0;
+        compat_resume_registration_dispatched = 0;
+
+        switch (compat_resume_phase) {
+        case 0:
+            if (owned.stage != RENO_LOADER_SETUP_TRACKED || owned.inner_owned == NULL
+                    || owned.retained_inner_resume.consumer_entered) { continue; }
+            break;
+        case 1:
+            if ((owned.stage != RENO_LOADER_SETUP_NONE && owned.stage != RENO_LOADER_SETUP_INIT
+                        && owned.stage != RENO_LOADER_SETUP_TRACKED)
+                    || owned.inner_owned != NULL || owned.observed_partial_resume.consumer_entered
+                    || !reno_loader_partial_prefix_origin_raw(&owned, previous_present,
+                        owned.stage, &compat_resume_station)) { continue; }
+            compat_resume_slot = 0;
+            compat_resume_query = compat_history->lookup_key; /* real parent owning loan */
+            break;
+        case 2:
+            if (owned.stage != RENO_LOADER_SETUP_TRACKED || owned.inner_owned == NULL
+                    || owned.observed_inner_resume.consumer_entered) { continue; }
+            if (!owned.observed_partial_resume.consumer_entered) {
+                if (owned.retained_inner_resume.consumer_entered != 1
+                        || owned.retained_inner_resume.observation_called[0] != 1
+                        || !reno_loader_inner_pause_pair_raw(owned.retained_inner_resume.disposition,
+                            owned.retained_inner_resume.observation_outcome[0])
+                        || owned.retained_inner_resume.inner_moved || owned.retained_inner_resume.bound_called) {
+                    continue;
+                }
+                compat_resume_slot = 1;
+                compat_resume_query = compat_history->lookup_key;
+            } /* actual partial-inner producer obtains its own fresh factory-key observation */
+            break;
+        case 3:
+            if (owned.stage != RENO_LOADER_SETUP_BOUND || owned.bound_owned == NULL
+                    || owned.observed_bound_resume.consumer_entered
+                    || !reno_loader_observed_bound_origin_raw(&owned, previous_present,
+                        &compat_resume_bound_origin)) { continue; }
+            if (compat_resume_bound_origin == RENO_LOADER_BOUND_ORIGIN_NATIVE_PARENT) {
+                compat_resume_slot = 2;
+                compat_resume_query = compat_history->lookup_key;
+                compat_resume_candidate = owned.bound_owned;
+            } else if (compat_resume_bound_origin != RENO_LOADER_BOUND_ORIGIN_PARTIAL
+                    && compat_resume_bound_origin != RENO_LOADER_BOUND_ORIGIN_OBSERVED_INNER) {
+                continue;
+            } /* non-native origins use their own actual-key observation */
+            break;
+        case 4:
+            if (owned.stage != RENO_LOADER_SETUP_CLAIMED
+                    || owned.claimed_registration_resume.consumer_entered) { continue; }
+            break; /* only actual protocol history is borrowed here */
+        case 5:
+            if (owned.stage != RENO_LOADER_SETUP_CLAIMED
+                    || owned.claimed_registration_resume.consumer_entered
+                    || owned.mutation.captured != 1 || owned.mutation.key_owned == NULL
+                    || owned.mutation.bound_owned == NULL) { continue; }
+            compat_resume_slot = 3;
+            compat_resume_query = owned.mutation.key_owned; /* tuple owning loan, not old lookup text */
+            compat_resume_candidate = owned.mutation.bound_owned;
+            break;
+        }
+
+        if (compat_resume_slot >= 0) {
+            /* Distinct Owner for this stage. Previous Owners were drained;
+             * retained scalar history is never reset or promoted to fresh.
+             */
+            reno_loader_observe_selection_once(source, actual_loader, dictionary,
+                compat_resume_query, &compat_resume_owner[compat_resume_slot]);
+            reno_cleanup_settle_indicator(&first, &cleanup_failed);
+            if (first == NULL && !compat_resume_owner[compat_resume_slot].history.unadmitted_return) {
+                reno_loader_observe_selection_associations_once(source, actual_loader, dictionary,
+                    compat_resume_query, compat_resume_candidate, &compat_resume_owner[compat_resume_slot]);
+                reno_cleanup_settle_indicator(&first, &cleanup_failed);
+            }
+            reno_loader_selection_borrow_view(&compat_resume_owner[compat_resume_slot],
+                compat_resume_query, &compat_resume_view[compat_resume_slot]);
+            compat_resume_protocol = &compat_resume_view[compat_resume_slot];
+        }
+
+        if (first == NULL && !compat_resume_protocol->history.unadmitted_return) {
+            compat_resume_called = 1;
+            switch (compat_resume_phase) {
+            case 0:
+                compat_resume_status = reno_loader_resume_retained_inner_once(source, actual_loader,
+                    dictionary, previous, previous_present, &owned, &first);
+                compat_resume_entered = owned.retained_inner_resume.consumer_entered;
+                break;
+            case 1:
+                compat_resume_status = reno_loader_resume_observed_partial_once(source, actual_loader,
+                    dictionary, previous, previous_present, &owned, compat_resume_protocol, &first);
+                compat_resume_entered = owned.observed_partial_resume.consumer_entered;
+                break;
+            case 2:
+                compat_resume_status = reno_loader_resume_observed_inner_once(source, actual_loader,
+                    dictionary, previous, previous_present, &owned, compat_resume_protocol, &first);
+                compat_resume_entered = owned.observed_inner_resume.consumer_entered;
+                break;
+            case 3:
+                compat_resume_status = reno_loader_resume_observed_bound_once(source, actual_loader,
+                    dictionary, previous, previous_present, &owned, compat_resume_protocol, &first);
+                compat_resume_entered = owned.observed_bound_resume.consumer_entered;
+                break;
+            case 4:
+                compat_resume_status = reno_loader_resume_claimed_registration_once(source, actual_loader,
+                    dictionary, &owned, compat_resume_protocol, &first);
+                compat_resume_entered = owned.claimed_registration_resume.consumer_entered;
+                break;
+            case 5:
+                compat_resume_status = reno_loader_resume_returned_effect_once(source, actual_loader,
+                    dictionary, &owned, compat_resume_protocol, &first, &compat_resume_registration_dispatched);
+                compat_resume_entered = compat_resume_registration_dispatched
+                    && owned.claimed_registration_resume.consumer_entered;
+                break;
+            }
+        }
+
+        /* END ALL actual View loans BEFORE any eleven-slot consumer. The
+         * returned-effect query may lose its tuple owning in such a consumer;
+         * a text-equal parent lookup key is not an independent factory root.
+         * Only actual scalar history remains accessible through protocol.
+         */
+        if (compat_resume_slot >= 0) {
+            compat_resume_view[compat_resume_slot].original_class = NULL;
+            compat_resume_view[compat_resume_slot].query = NULL;
+            compat_resume_view[compat_resume_slot].current = NULL;
+            compat_resume_view[compat_resume_slot].candidate_bound = NULL;
+            compat_resume_view[compat_resume_slot].related = NULL;
+        }
+        compat_resume_query = NULL;
+        compat_resume_candidate = NULL;
+        reno_cleanup_settle_indicator(&first, &cleanup_failed);
+        if (compat_resume_called && compat_resume_status < 0 && first == NULL && PyErr_Occurred() == NULL) {
+            switch (compat_resume_phase) {
+            case 0: owned.retained_inner_resume.unadmitted_return = 1; break;
+            case 1: owned.observed_partial_resume.unadmitted_return = 1; break;
+            case 2: owned.observed_inner_resume.unadmitted_return = 1; break;
+            case 3: owned.observed_bound_resume.unadmitted_return = 1; break;
+            case 4:
+            case 5: owned.claimed_registration_resume.unadmitted_return = 1; break;
+            }
+        }
+        if (compat_resume_called && compat_resume_entered) {
+            /* Actual producer return -> success is continuous: raw loan end,
+             * scalar transport and empty-indicator settlement add no callout.
+             * No old STORED route is entered by the stage gates above.
+             */
+            compat_resume_status = reno_loader_try_finish_native_success(source,
+                &owned, &first, &compat_resume_handled);
+            if (compat_resume_handled) { goto compat_resume_settled; }
+            reno_cleanup_settle_indicator(&first, &cleanup_failed);
+        }
+
+        for (compat_resume_pass = 0; compat_resume_pass < 2; ++compat_resume_pass) {
+            compat_resume_status = reno_loader_try_finish_setup_abort(&owned, &first, &compat_resume_handled);
+            if (compat_resume_handled) { goto compat_resume_settled; }
+            reno_cleanup_settle_indicator(&first, &cleanup_failed);
+            compat_resume_status = reno_loader_try_finish_unadmitted_setup(&owned,
+                compat_resume_protocol, &first, &compat_resume_handled);
+            if (compat_resume_handled) { goto compat_resume_settled; }
+            reno_cleanup_settle_indicator(&first, &cleanup_failed);
+            compat_resume_status = reno_loader_try_finish_cancelled_setup(&owned,
+                compat_resume_protocol, &first, &compat_resume_handled);
+            if (compat_resume_handled) { goto compat_resume_settled; }
+            reno_cleanup_settle_indicator(&first, &cleanup_failed);
+            if (compat_resume_pass != 0 || compat_resume_slot < 0) { break; }
+
+            /* Query and all five View loans ended before any cleanup. Only
+             * these FOUR actual positions are touched; LAST may call out.
+             * Next pass may settle actual cleanup first/terminal candidate;
+             * the next different business stage gets its own fresh evidence.
+             */
+            reno_cleanup_release_owned(&compat_resume_owner[compat_resume_slot].related_owned, &first, &cleanup_failed);
+            reno_cleanup_release_owned(&compat_resume_owner[compat_resume_slot].candidate_bound_owned, &first, &cleanup_failed);
+            reno_cleanup_release_owned(&compat_resume_owner[compat_resume_slot].output.current_owned, &first, &cleanup_failed);
+            reno_cleanup_release_owned(&compat_resume_owner[compat_resume_slot].original_class_owned, &first, &cleanup_failed);
+            compat_resume_drained[compat_resume_slot] = 1;
+        }
+    }
+    break; /* ELEVEN and all actual histories stay in the SAME complete child */
+
+compat_resume_settled:
+    /* Eleven already moved/settled by the actual handled consumer. No source,
+     * setup, Record, registry or payload access follows. Earlier stage Owners
+     * are drained; release each remaining owning occurrence independently.
+     */
+    for (compat_resume_i = 4; compat_resume_i > 0; --compat_resume_i) {
+        if (compat_resume_owner[compat_resume_i - 1].history.consumer_entered
+                && !compat_resume_drained[compat_resume_i - 1]) {
+            reno_cleanup_release_owned(&compat_resume_owner[compat_resume_i - 1].related_owned, &first, &cleanup_failed);
+            reno_cleanup_release_owned(&compat_resume_owner[compat_resume_i - 1].candidate_bound_owned, &first, &cleanup_failed);
+            reno_cleanup_release_owned(&compat_resume_owner[compat_resume_i - 1].output.current_owned, &first, &cleanup_failed);
+            reno_cleanup_release_owned(&compat_resume_owner[compat_resume_i - 1].original_class_owned, &first, &cleanup_failed);
+            compat_resume_drained[compat_resume_i - 1] = 1;
+        }
+    }
+    if (first != NULL) { compat_resume_status = -1; }
+    *first_owned = first;
+    first = NULL;
+    return compat_resume_status;
+} while (0);
+
+/* r1514: one distinct observation/settlement after the original receiver
+ * entered but retained an unwritten BOUND candidate. The helper settles its
+ * own five local roots on EVERY return; only scalar protocol escapes here.
+ */
+do {
+    unsigned int bound_finish_i;
+    int bound_finish_extras_clear = 1;
+    int bound_finish_status;
+    int bound_finish_handled = 0;
+
+    if (compat_history == NULL || selection_history == NULL
+            || selection_entry != RENO_LOADER_COMPLETE_HISTORY
+            || native_preparation_query != NULL || entry_record != NULL || entry_observation != NULL
+            || first != NULL || PyErr_Occurred() != NULL || selection_history->history.unadmitted_return
+            || owned.stage != RENO_LOADER_SETUP_BOUND || owned.mutation.captured
+            || owned.observed_bound_resume.consumer_entered != 1
+            || publication_child_selection.original_class_owned != NULL
+            || publication_child_selection.output.current_owned != NULL
+            || publication_child_selection.candidate_bound_owned != NULL
+            || publication_child_selection.related_owned != NULL
+            || publication_child_selection.history.consumer_entered
+            || publication_child_selection.history.association_consumer_entered
+            || publication_child_view.original_class != NULL || publication_child_view.query != NULL
+            || publication_child_view.current != NULL || publication_child_view.candidate_bound != NULL
+            || publication_child_view.related != NULL || publication_child_observation_called
+            || publication_child_association_called || compat_publication_query_owned != NULL) { break; }
+    for (bound_finish_i = 0; bound_finish_i < 4; ++bound_finish_i) {
+        if (compat_resume_owner[bound_finish_i].history.unadmitted_return
+                || compat_resume_view[bound_finish_i].history.unadmitted_return
+                || compat_resume_owner[bound_finish_i].original_class_owned != NULL
+                || compat_resume_owner[bound_finish_i].output.current_owned != NULL
+                || compat_resume_owner[bound_finish_i].candidate_bound_owned != NULL
+                || compat_resume_owner[bound_finish_i].related_owned != NULL
+                || compat_resume_view[bound_finish_i].original_class != NULL
+                || compat_resume_view[bound_finish_i].query != NULL
+                || compat_resume_view[bound_finish_i].current != NULL
+                || compat_resume_view[bound_finish_i].candidate_bound != NULL
+                || compat_resume_view[bound_finish_i].related != NULL
+                || (compat_resume_owner[bound_finish_i].history.consumer_entered
+                    && compat_resume_drained[bound_finish_i] != 1)) {
+            bound_finish_extras_clear = 0;
+        }
+    }
+    if (!bound_finish_extras_clear) { break; }
+    bound_finish_status = reno_loader_try_finish_displaced_bound_setup(source,
+        actual_loader, dictionary, previous, previous_present, &owned,
+        &compat_bound_finish_protocol.history, &first, &bound_finish_handled);
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    if (bound_finish_status < 0 && first == NULL && PyErr_Occurred() == NULL) {
+        compat_bound_finish_protocol.history.unadmitted_return = 1;
+    }
+    if (bound_finish_handled) { goto bound_finish_settled; }
+    /* All local five are already drained. This View carries history ONLY;
+     * its five pointer loans never began. New first and protocol are real,
+     * even when the new Current did not qualify for normal abandonment.
+     */
+    bound_finish_status = reno_loader_try_finish_setup_abort(&owned, &first, &bound_finish_handled);
+    if (bound_finish_handled) { goto bound_finish_settled; }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    bound_finish_status = reno_loader_try_finish_unadmitted_setup(&owned,
+        &compat_bound_finish_protocol, &first, &bound_finish_handled);
+    if (bound_finish_handled) { goto bound_finish_settled; }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    bound_finish_status = reno_loader_try_finish_cancelled_setup(&owned,
+        &compat_bound_finish_protocol, &first, &bound_finish_handled);
+    if (bound_finish_handled) { goto bound_finish_settled; }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    break; /* same full child retains eleven and ALL old/new scalar histories */
+bound_finish_settled:
+    /* Eleven and helper five are settled; all previous resume extras were
+     * drained before entry, publication extras have not begun. No source,
+     * setup, Record, payload or View read follows this actual handled exit.
+     */
+    if (first != NULL) { bound_finish_status = -1; }
+    *first_owned = first; first = NULL;
+    return bound_finish_status;
+} while (0);
+
+
+/* r1515: a distinct current-restored continuation, not the old once receiver.
+ * New scalar receipt survives fallthrough; helper's five local roots do not.
+ */
+do {
+    unsigned int entered_bound_i;
+    int entered_bound_extras_clear = 1;
+    int entered_bound_status;
+    int entered_bound_handled = 0;
+
+    if (compat_history == NULL || selection_history == NULL
+            || selection_entry != RENO_LOADER_COMPLETE_HISTORY
+            || native_preparation_query != NULL || entry_record != NULL || entry_observation != NULL
+            || first != NULL || PyErr_Occurred() != NULL || selection_history->history.unadmitted_return
+            || compat_bound_finish_protocol.history.unadmitted_return
+            || compat_entered_bound_result.consumer_entered
+            || owned.stage != RENO_LOADER_SETUP_BOUND || owned.mutation.captured
+            || owned.observed_bound_resume.consumer_entered != 1
+            || publication_child_selection.original_class_owned != NULL
+            || publication_child_selection.output.current_owned != NULL
+            || publication_child_selection.candidate_bound_owned != NULL
+            || publication_child_selection.related_owned != NULL
+            || publication_child_selection.history.consumer_entered
+            || publication_child_selection.history.association_consumer_entered
+            || publication_child_view.original_class != NULL || publication_child_view.query != NULL
+            || publication_child_view.current != NULL || publication_child_view.candidate_bound != NULL
+            || publication_child_view.related != NULL || publication_child_observation_called
+            || publication_child_association_called || compat_publication_query_owned != NULL) { break; }
+    for (entered_bound_i = 0; entered_bound_i < 4; ++entered_bound_i) {
+        if (compat_resume_owner[entered_bound_i].history.unadmitted_return
+                || compat_resume_view[entered_bound_i].history.unadmitted_return
+                || compat_resume_owner[entered_bound_i].original_class_owned != NULL
+                || compat_resume_owner[entered_bound_i].output.current_owned != NULL
+                || compat_resume_owner[entered_bound_i].candidate_bound_owned != NULL
+                || compat_resume_owner[entered_bound_i].related_owned != NULL
+                || compat_resume_view[entered_bound_i].original_class != NULL
+                || compat_resume_view[entered_bound_i].query != NULL
+                || compat_resume_view[entered_bound_i].current != NULL
+                || compat_resume_view[entered_bound_i].candidate_bound != NULL
+                || compat_resume_view[entered_bound_i].related != NULL
+                || (compat_resume_owner[entered_bound_i].history.consumer_entered
+                    && compat_resume_drained[entered_bound_i] != 1)) { entered_bound_extras_clear = 0; }
+    }
+    if (!entered_bound_extras_clear) { break; }
+    entered_bound_status = reno_loader_continue_entered_bound_once(source,
+        actual_loader, dictionary, previous, previous_present, &owned,
+        &compat_entered_bound_result, &first, &entered_bound_handled);
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    if (entered_bound_status < 0 && first == NULL && PyErr_Occurred() == NULL) {
+        compat_entered_bound_result.unadmitted_return = 1;
+    }
+    /* A separate aggregate protocol, never a forged observation outcome.
+     * All five pointer loans in this history-only View stay NULL forever.
+     */
+    compat_entered_bound_protocol.history.unadmitted_return =
+        compat_entered_bound_result.unadmitted_return
+        || compat_entered_bound_result.observation.unadmitted_return
+        || compat_entered_bound_result.installation.unadmitted_return
+        || compat_entered_bound_result.registration.unadmitted_return;
+    if (entered_bound_handled) { goto entered_bound_settled; }
+    entered_bound_status = reno_loader_try_finish_setup_abort(&owned, &first, &entered_bound_handled);
+    if (entered_bound_handled) { goto entered_bound_settled; }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    entered_bound_status = reno_loader_try_finish_unadmitted_setup(&owned,
+        &compat_entered_bound_protocol, &first, &entered_bound_handled);
+    if (entered_bound_handled) { goto entered_bound_settled; }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    entered_bound_status = reno_loader_try_finish_cancelled_setup(&owned,
+        &compat_entered_bound_protocol, &first, &entered_bound_handled);
+    if (entered_bound_handled) { goto entered_bound_settled; }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    break; /* real BOUND/CLAIMED/STORED, ELEVEN, tuple and new receipt stay HERE */
+entered_bound_settled:
+    /* Core/error consumer settled ELEVEN; helper FIVE drained before writer;
+     * old resume extras drained and publication not entered. No source/setup/
+     * Record/payload/View access after handled. Scalar/error transport only.
+     */
+    if (first != NULL) { entered_bound_status = -1; }
+    *first_owned = first; first = NULL;
+    return entered_bound_status;
+} while (0);
+
+
+/* r1516: real unwatched effect may survive status0. This new once-stage has
+ * no object owning; actual related postquery debt stays in the same ELEVEN.
+ */
+do {
+    unsigned int entered_registration_i;
+    int entered_registration_extras_clear = 1;
+    int entered_registration_status;
+    int entered_registration_handled = 0;
+
+    if (compat_history == NULL || selection_history == NULL
+            || selection_entry != RENO_LOADER_COMPLETE_HISTORY
+            || native_preparation_query != NULL || entry_record != NULL || entry_observation != NULL
+            || first != NULL || PyErr_Occurred() != NULL || selection_history->history.unadmitted_return
+            || compat_bound_finish_protocol.history.unadmitted_return
+            || compat_entered_bound_protocol.history.unadmitted_return
+            || compat_entered_registration_result.consumer_entered
+            || owned.stage != RENO_LOADER_SETUP_CLAIMED
+            || !reno_loader_entered_bound_unwatched_history_raw(&owned, &compat_entered_bound_result)
+            || publication_child_selection.original_class_owned != NULL
+            || publication_child_selection.output.current_owned != NULL
+            || publication_child_selection.candidate_bound_owned != NULL
+            || publication_child_selection.related_owned != NULL
+            || publication_child_selection.history.consumer_entered
+            || publication_child_selection.history.association_consumer_entered
+            || publication_child_view.original_class != NULL || publication_child_view.query != NULL
+            || publication_child_view.current != NULL || publication_child_view.candidate_bound != NULL
+            || publication_child_view.related != NULL || publication_child_observation_called
+            || publication_child_association_called || compat_publication_query_owned != NULL) { break; }
+    for (entered_registration_i = 0; entered_registration_i < 4; ++entered_registration_i) {
+        if (compat_resume_owner[entered_registration_i].history.unadmitted_return
+                || compat_resume_view[entered_registration_i].history.unadmitted_return
+                || compat_resume_owner[entered_registration_i].original_class_owned != NULL
+                || compat_resume_owner[entered_registration_i].output.current_owned != NULL
+                || compat_resume_owner[entered_registration_i].candidate_bound_owned != NULL
+                || compat_resume_owner[entered_registration_i].related_owned != NULL
+                || compat_resume_view[entered_registration_i].original_class != NULL
+                || compat_resume_view[entered_registration_i].query != NULL
+                || compat_resume_view[entered_registration_i].current != NULL
+                || compat_resume_view[entered_registration_i].candidate_bound != NULL
+                || compat_resume_view[entered_registration_i].related != NULL
+                || (compat_resume_owner[entered_registration_i].history.consumer_entered
+                    && compat_resume_drained[entered_registration_i] != 1)) { entered_registration_extras_clear = 0; }
+    }
+    if (!entered_registration_extras_clear) { break; }
+    entered_registration_status = reno_loader_resume_entered_bound_registration_once(source,
+        actual_loader, dictionary, &owned, &compat_entered_bound_result,
+        &compat_entered_registration_result, &first, &entered_registration_handled);
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    if (entered_registration_status < 0 && first == NULL && PyErr_Occurred() == NULL) {
+        compat_entered_registration_result.unadmitted_return = 1;
+    }
+    /* This aggregate is AFTER the new stage, not the earlier r1515 zero.
+     * Keep its protocol separate from every actual observation/registration.
+     */
+    compat_entered_registration_protocol.history.unadmitted_return =
+        compat_entered_registration_result.unadmitted_return
+        || compat_entered_registration_result.registration.unadmitted_return;
+    if (entered_registration_handled) { goto entered_registration_settled; }
+    entered_registration_status = reno_loader_try_finish_setup_abort(&owned, &first, &entered_registration_handled);
+    if (entered_registration_handled) { goto entered_registration_settled; }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    entered_registration_status = reno_loader_try_finish_unadmitted_setup(&owned,
+        &compat_entered_registration_protocol, &first, &entered_registration_handled);
+    if (entered_registration_handled) { goto entered_registration_settled; }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    entered_registration_status = reno_loader_try_finish_cancelled_setup(&owned,
+        &compat_entered_registration_protocol, &first, &entered_registration_handled);
+    if (entered_registration_handled) { goto entered_registration_settled; }
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    break; /* all actual stage/related/ELEVEN/tuple and old/new scalar history */
+entered_registration_settled:
+    /* Core/error consumer settled ELEVEN. No new object owning, old resume
+     * extras drained, publication not entered. Only actual scalar/error return.
+     */
+    if (first != NULL) { entered_registration_status = -1; }
+    *first_owned = first; first = NULL;
+    return entered_registration_status;
+} while (0);
+
+
+/* r1511: inspect actual histories before either publication scope. No fresh
+ * authority is reconstructed from ended resume Views or the original lookup.
+ * Aggregate errors/debts even for lawful unprepared or incomplete profiles.
+ */
+do {
+    unsigned int compat_publication_i;
+    if (compat_history == NULL) { break; }
+    if (compat_bound_finish_protocol.history.unadmitted_return
+            || compat_entered_bound_protocol.history.unadmitted_return
+            || compat_entered_registration_protocol.history.unadmitted_return) {
+        compat_publication_extra_unadmitted = 1;
+    }
+    for (compat_publication_i = 0; compat_publication_i < 4; ++compat_publication_i) {
+        if (compat_resume_owner[compat_publication_i].history.unadmitted_return
+                || compat_resume_view[compat_publication_i].history.unadmitted_return) {
+            compat_publication_extra_unadmitted = 1;
+        }
+        if (compat_resume_owner[compat_publication_i].original_class_owned != NULL
+                || compat_resume_owner[compat_publication_i].output.current_owned != NULL
+                || compat_resume_owner[compat_publication_i].candidate_bound_owned != NULL
+                || compat_resume_owner[compat_publication_i].related_owned != NULL
+                || compat_resume_view[compat_publication_i].original_class != NULL
+                || compat_resume_view[compat_publication_i].query != NULL
+                || compat_resume_view[compat_publication_i].current != NULL
+                || compat_resume_view[compat_publication_i].candidate_bound != NULL
+                || compat_resume_view[compat_publication_i].related != NULL
+                || (compat_resume_owner[compat_publication_i].history.consumer_entered
+                    && compat_resume_drained[compat_publication_i] != 1)) {
+            compat_publication_resume_outputs_clear = 0;
+        }
+    }
+    if (compat_publication_extra_unadmitted || !compat_publication_resume_outputs_clear
+            || selection_entry != RENO_LOADER_COMPLETE_HISTORY
+            || native_preparation_query != NULL || entry_record != NULL
+            || entry_observation != NULL || dictionary == NULL || !PyDict_Check(dictionary)
+            || compat_history->prepared_dictionary_received != 1
+            || compat_history->dictionary_is_dict != 1
+            || compat_history->lookup_entered != 1 || compat_history->lookup_returned != 1
+            || compat_history->lookup_value_observed != 1
+            || compat_history->lookup_key == NULL
+            || !PyUnicode_CheckExact(compat_history->lookup_key)
+            || !exact_ascii_name(compat_history->lookup_key, "exec_module", 11)
+            || previous_present > 1 || (previous_present && previous == NULL)
+            || (!previous_present && previous != NULL)) {
+        break; /* historical profile only; other lawful domains stay in full child */
+    }
+    compat_publication_history_ok = 1;
+} while (0);
+
+/* r1516: history projection is NOT freshness. New kinds may only use this
+ * child's next actual observation. A profile holds no object owning/root.
+ */
+(void)reno_loader_publication_source_history_raw(&owned, &compat_entered_bound_result,
+    &compat_entered_registration_result, &publication_source);
+
+do {
+    const RenoLoaderCompleteSelectionEntry publication_entry = selection_entry;
+    RenoSpecAttr312InstallContext publication_context = {0};
+    /* r1516 publication legacy classification is in the pure history projector. */
+    const RenoLoaderSelectionHistory *observed_history;
+    const RenoLoaderSelectionView *publication_selection_view;
+    const RenoLoaderExistingRegistrationResult *old_registration;
+    RenoLoaderRecordMutationOwned *original_mutation;
+    RenoLoaderRecordObject *actual_record;
+    RenoLoaderRecordObject *head;
+    RenoState *publication_state;
+    RenoSpecAttr312BackingRelation publication_backing;
+    int status;
+
+    /* Consume this handoff once, even on an unmatched branch. publication_entry
+     * expires with this scope; later complete-child continuations see HISTORY.
+     * That does not reject any lawful history or change the parent's enum.
+     */
+    selection_entry = RENO_LOADER_COMPLETE_HISTORY;
+
+    /* The non-HISTORY private entry TRANSPORTS an actual caller ordering, never
+     * authenticates freshness by itself. Its sole producer snapshots NEW
+     * UNCHANGED/E1 BEFORE the later Current call; actual caller suffix proof
+     * excludes the late-E0 -> NEW callback counterexample. Re-audit that
+     * continuous caller span whenever any intervening operation changes.
+     */
+    if ((publication_entry != RENO_LOADER_COMPLETE_NATIVE_AFTER_UNCHANGED_REGISTRATION
+                && publication_entry != RENO_LOADER_COMPLETE_HISTORY)
+            || (compat_history != NULL && !compat_publication_history_ok)
+            || source == NULL || source->state == NULL
+            || source->module == NULL || source->owner == NULL
+            || actual_loader == NULL || dictionary == NULL || selection_history == NULL
+            || first != NULL || PyErr_Occurred() != NULL
+            || owned.absent_prepare.unadmitted_return
+            || owned.absent_install.unadmitted_return
+            || owned.absent_install.registration.unadmitted_return
+            || owned.present_install.unadmitted_return
+            || owned.present_install.installation.unadmitted_return
+            || owned.present_install.registration.unadmitted_return
+            || owned.retained_inner_resume.unadmitted_return
+            || owned.retained_inner_resume.installation.unadmitted_return
+            || owned.retained_inner_resume.registration.unadmitted_return
+            || owned.observed_bound_resume.unadmitted_return
+            || owned.observed_bound_resume.installation.unadmitted_return
+            || owned.observed_bound_resume.registration.unadmitted_return
+            || owned.observed_inner_resume.unadmitted_return
+            || owned.observed_inner_resume.installation.unadmitted_return
+            || owned.observed_inner_resume.registration.unadmitted_return
+            || owned.claimed_registration_resume.unadmitted_return
+            || owned.claimed_registration_resume.registration.unadmitted_return
+            || owned.observed_partial_resume.unadmitted_return
+            || owned.observed_partial_resume.installation.unadmitted_return
+            || owned.observed_partial_resume.registration.unadmitted_return
+            || owned.stage != RENO_LOADER_SETUP_CLAIMED
+            || owned.prepared_owned != NULL || owned.record_owned == NULL
+            || owned.inner_owned != NULL || owned.bound_owned != NULL || owned.related_owned != NULL
+            || owned.mutation.captured != 1 || owned.mutation.previous_present > 1
+            || previous_present > 1 || owned.mutation.previous_present != previous_present
+            || owned.mutation.original_class_owned == NULL
+            || owned.mutation.loader_owned != actual_loader
+            || owned.mutation.dictionary_owned != dictionary
+            || owned.mutation.key_owned == NULL || owned.mutation.bound_owned == NULL
+            || owned.mutation.previous_owned != previous
+            || (previous_present && previous == NULL)
+            || (!previous_present && previous != NULL)
+            || publication_source.kind < RENO_LOADER_PUBLICATION_HISTORY_LEGACY
+            || publication_source.kind > RENO_LOADER_PUBLICATION_HISTORY_ENTERED_UNWATCHED
+            || publication_source.registration == NULL
+            || (publication_source.kind != RENO_LOADER_PUBLICATION_HISTORY_LEGACY
+                && (compat_history == NULL || publication_entry != RENO_LOADER_COMPLETE_HISTORY
+                    || native_preparation_query != NULL || entry_record != NULL || entry_observation != NULL))
+            || selection_history->history.unadmitted_return) {
+        break; /* owned remains here for the SAME full child's other branches */
+    }
+    old_registration = publication_source.registration; /* exhausted actual C scalar receipt */
+    if (!reno_loader_registration_unchanged_history_raw(old_registration)) { break; }
+    if (!reno_record_type_effect(source->state->arena.install.record_type)
+            || !Py_IS_TYPE(owned.record_owned,
+                (PyTypeObject *)source->state->arena.install.record_type)) { break; }
+    actual_record = (RenoLoaderRecordObject *)owned.record_owned;
+    if (actual_record->phase != RENO_LOADER_RECORD_INSTALLING || actual_record->linked
+            || actual_record->registry_owner_state != NULL || actual_record->prev != NULL
+            || actual_record->next != NULL || actual_record->restore_cancelled
+            || actual_record->store_attempted != 1 || actual_record->store_returned != 1
+            || actual_record->effect_observed != 1 || actual_record->restore_attempted
+            || actual_record->restore_returned || actual_record->restore_effect_observed) { break; }
+    original_mutation = &owned.mutation;
+    if (compat_history != NULL) {
+        /* Independent owning of the ORIGINAL factory-key identity. Parent
+         * lookup_key remains a different actual loan; never replace this root
+         * with text equality or a clearable Record payload/cycle argument.
+         * Acquire only after full base/NEW/E1 gates and before child Current.
+         */
+        compat_publication_query_owned = Py_NewRef(original_mutation->key_owned);
+        reno_cleanup_settle_indicator(&first, &cleanup_failed);
+        if (compat_publication_query_owned == NULL || first != NULL || PyErr_Occurred() != NULL) {
+            goto selected_publication_failure;
+        }
+    }
+    actual_record = NULL; /* no old payload/phase authority crosses observation */
+    if (publication_entry == RENO_LOADER_COMPLETE_NATIVE_AFTER_UNCHANGED_REGISTRATION) {
+        publication_selection_view = selection_history;
+        publication_parent_view_fresh = 1; /* actual native caller raw-origin span */
+    } else {
+        /* A DISTINCT explicit stage AFTER exhausted NEW. Never reset or call
+         * that registration again, or turn its UNCHANGED/COMPAT into MATCHED.
+         * This zero Owner is this child's own real output, not a parent token.
+         */
+        publication_child_observation_called = 1;
+        reno_loader_observe_selection_once(source, actual_loader, dictionary,
+            original_mutation->key_owned, &publication_child_selection);
+        reno_cleanup_settle_indicator(&first, &cleanup_failed);
+        if (first != NULL || publication_child_selection.history.unadmitted_return
+                || publication_child_selection.history.outcome == RENO_SPEC_ATTR312_SELECTION_ERROR) {
+            goto selected_publication_failure;
+        }
+        publication_child_association_called = 1;
+        reno_loader_observe_selection_associations_once(source, actual_loader, dictionary,
+            original_mutation->key_owned, original_mutation->bound_owned,
+            &publication_child_selection);
+        reno_cleanup_settle_indicator(&first, &cleanup_failed);
+        if (first != NULL || publication_child_selection.history.unadmitted_return) {
+            goto selected_publication_failure;
+        }
+        reno_loader_selection_borrow_view(&publication_child_selection,
+            original_mutation->key_owned, &publication_child_view);
+        publication_selection_view = &publication_child_view;
+    }
+    observed_history = &publication_selection_view->history;
+    if (publication_selection_view->original_class != original_mutation->original_class_owned
+            || publication_selection_view->query != original_mutation->key_owned
+            || publication_selection_view->candidate_bound != original_mutation->bound_owned
+            || publication_selection_view->observed != 1 || publication_selection_view->present != 1
+            || publication_selection_view->current != original_mutation->bound_owned
+            || publication_selection_view->related != NULL
+            || observed_history->consumer_entered != 1 || observed_history->qualified != 1
+            || observed_history->api_called != 1 || observed_history->api_returned != 1
+            || observed_history->permit_cancelled
+            || observed_history->outcome != RENO_SPEC_ATTR312_SELECTION_OBSERVED
+            || observed_history->association_consumer_entered != 1
+            || observed_history->association_query_entered != 1
+            || observed_history->association_query_returned != 1
+            || observed_history->association_query_completed != 1
+            || observed_history->association_query_status != 1
+            || observed_history->association_before_query_cancelled
+            || observed_history->association_backing_checked != 1
+            || observed_history->association_backing_relation != RENO_SPEC_ATTR312_BACKING_SAME
+            || observed_history->association_candidate_supplied != 1
+            || observed_history->association.kind != RENO_LOADER_QUERY_NONE) {
+        break;
+    }
+
+    if (publication_child_observation_called) {
+        publication_child_current_matched = 1; /* actual data, not writer receipt */
+        /* End this View BEFORE the first output release. The independent
+         * original mutation.class/bound ownings cover these same class/current/
+         * candidate outputs even if the Record was cleared inside comparison.
+         * related is NULL after real NONE. All three nonNULL releases are
+         * NONLAST; there is no callback invalidating this actual observation.
+         */
+        publication_child_view.original_class = NULL;
+        publication_child_view.query = NULL;
+        publication_child_view.current = NULL;
+        publication_child_view.candidate_bound = NULL;
+        publication_child_view.related = NULL;
+        publication_selection_view = NULL;
+        observed_history = NULL;
+        reno_cleanup_release_owned(&publication_child_selection.related_owned, &first, &cleanup_failed);
+        reno_cleanup_release_owned(&publication_child_selection.candidate_bound_owned, &first, &cleanup_failed);
+        reno_cleanup_release_owned(&publication_child_selection.output.current_owned, &first, &cleanup_failed);
+        reno_cleanup_release_owned(&publication_child_selection.original_class_owned, &first, &cleanup_failed);
+        publication_child_outputs_drained = 1;
+        /* Owner retains actual scalar history only. Never reproject its empty
+         * owning outputs or read the ended View for a later decision.
+         */
+        if (first != NULL || PyErr_Occurred() != NULL) { goto selected_publication_failure; }
+    }
+    publication_selection_view = NULL;
+    observed_history = NULL;
+
+    /* Install context borrows ONLY MOVE-owned original products. Selection's
+     * read policy supplies actual current DATA; original unique writer plus
+     * these independent full INSTALL checks supply publication authority.
+     * No dictionary setter, tracking, notification or effect is inferred here.
+     */
+    publication_context.source = source;
+    publication_context.record_guard = owned.record_owned;
+    publication_context.mutation = original_mutation;
+    publication_context.preparation = NULL;
+    publication_context.absent = original_mutation->previous_present ? 0 : 1;
+    publication_context.registration = 1;
+    publication_context.attempt_started = 1;
+    publication_context.cancelled = 0;
+    if (!reno_loader_install_permit_raw(&publication_context)) { break; }
+    publication_backing = _PyReno_SpecAttr312_OriginalBackingRelation(actual_loader,
+        (PyTypeObject *)original_mutation->original_class_owned, dictionary);
+    if (publication_backing != RENO_SPEC_ATTR312_BACKING_SAME || PyErr_Occurred() != NULL
+            || !reno_loader_install_permit_raw(&publication_context)) {
+        break;
+    }
+
+    /* Final actual permit -> first link -> actual query is one continuous
+     * no-callout span under independent GIL/layout/live-registry/normal-ref
+     * premises. Never write the exhausted old_registration receipt.
+     */
+    publication_state = source->state;
+    actual_record = (RenoLoaderRecordObject *)owned.record_owned;
+    head = publication_state->controls.record_head;
+    actual_record->phase = RENO_LOADER_RECORD_ACTIVE;
+    actual_record->registry_owner_state = publication_state;
+    actual_record->prev = NULL;
+    actual_record->next = head;
+    if (head != NULL) { head->prev = actual_record; }
+    publication_state->controls.record_head = actual_record;
+    actual_record->linked = 1;
+    owned.stage = RENO_LOADER_SETUP_STORED;
+    selected_publication_linked_here = 1;
+
+    selected_publication_postquery_called = 1;
+    selected_publication_query_status = reno_loader_record_query_raw(source,
+        original_mutation->loader_owned, original_mutation->dictionary_owned,
+        original_mutation->bound_owned, NULL, &owned.related_owned, &owned.current);
+    selected_publication_postquery_returned = 1;
+    if (selected_publication_query_status != 1 || PyErr_Occurred() != NULL) {
+        /* Query may have reported through a callback and retained partial
+         * related owning. Do not reuse saved State/head/payload/View authority.
+         * Keep actual STORED/link history even though failure must now unlink.
+         */
+        goto selected_publication_failure;
+    }
+    selected_publication_postquery_completed = 1;
+
+    /* Same-activation proof, not a status-only certificate: last complete
+     * INSTALL permit established source/product/ALL prior registry exclusions;
+     * actual SAME backing and current data were consumed in this continuous
+     * span. Link only changed phase/registry links/stage. query's status1 path
+     * has NO callback/allocation/release, only normal NEW of the unique new
+     * head, so actual ONE/ACTIVE/related==candidate and complete products/
+     * source/backing follow. All error-reporting paths return0. Install source
+     * accessors use borrowed memcpy members, NOT old descriptor NEW/DECREF.
+     * These are independently reviewed GIL/layout/normal-primitive premises,
+     * still not a C/ABI/runtime/physical proof. No post-link pure gate can
+     * lawfully fail in THIS span. Never apply this to an older STORED history
+     * after a callback or to any query failure/precommit unmatched route.
+     */
+
+    /* Independent success, not native_success's old MATCHED-only route.
+     * Within the original ELEVEN: absent seven nonNULL debts, present eight.
+     * Compatibility separately releases its optional factory-key owning below.
+     * Caller-held actual backing
+     * owns bound -> actual inner -> actual Record, covering related + record.
+     * Intact Record fields cover mutation bound/key/dict/loader/previous;
+     * parent also owns loader/dict and historical previous. Actual State known20
+     * owning and live loader implicit type cover class. Every release is
+     * NONLAST in this exact no-callback/normal-reference span, never because
+     * of Track, a cycle, pointer equality or a sampled refcount.
+     */
+    old_registration = NULL;
+    observed_history = NULL;
+    original_mutation = NULL;
+    actual_record = NULL;
+    publication_state = NULL;
+    head = NULL;
+    publication_context.source = NULL;
+    publication_context.record_guard = NULL;
+    publication_context.mutation = NULL;
+    reno_cleanup_release_owned(&owned.related_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.previous_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.key_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.dictionary_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.loader_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.original_class_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.inner_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.record_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.prepared_owned, &first, &cleanup_failed);
+    publication_source.registration = NULL; /* end C scalar loan, no object owning */
+    reno_cleanup_release_owned(&compat_publication_query_owned, &first, &cleanup_failed);
+    status = first == NULL ? 0 : -1;
+    *first_owned = first;
+    first = NULL;
+    return status;
+
+selected_publication_failure:
+    /* Entered only for actual observation/query error or unadmitted protocol
+     * return, never for a lawful normal COMPAT/cancel/mismatch. Adopt escaping
+     * first before cleanup; keep old receipts and actual STORED/link history.
+     */
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    if (first == NULL) { selected_publication_unadmitted = 1; }
+    old_registration = NULL;
+    observed_history = NULL;
+    publication_selection_view = NULL;
+    original_mutation = NULL;
+    publication_state = NULL;
+    head = NULL;
+    publication_context.source = NULL;
+    publication_context.record_guard = NULL;
+    publication_context.mutation = NULL;
+    publication_child_view.original_class = NULL;
+    publication_child_view.query = NULL;
+    publication_child_view.current = NULL;
+    publication_child_view.candidate_bound = NULL;
+    publication_child_view.related = NULL;
+    /* Reborrow SAME actual owning guard, never a clearable payload readback.
+     * Query/error reporting may have cleared it; permanent body/layout still
+     * belongs to this guard. This does not authorize clearing any related node.
+     */
+    actual_record = (RenoLoaderRecordObject *)owned.record_owned;
+    if (actual_record->phase != RENO_LOADER_RECORD_RETIRED) {
+        actual_record->phase = RENO_LOADER_RECORD_FAILED;
+    }
+    reno_record_clear_sources(actual_record, &first, &cleanup_failed);
+    actual_record = NULL;
+    /* Cancel/unlink/detach precede potentially LAST releases. The postquery
+     * related is newest. Local observer four outputs then precede original
+     * tuple/setup debts. Already drained positions are actually NULL; no
+     * equal-pointer occurrence is cancelled against any independent debt.
+     * No State/source/View/Record/payload reads after clear_sources returns.
+     */
+    reno_cleanup_release_owned(&owned.related_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.related_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.candidate_bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.output.current_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.original_class_owned, &first, &cleanup_failed);
+    publication_child_outputs_drained = 1;
+    reno_cleanup_release_owned(&owned.mutation.previous_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.key_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.dictionary_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.loader_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.original_class_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.inner_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.record_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.prepared_owned, &first, &cleanup_failed);
+    publication_source.registration = NULL; /* end C scalar loan, no object owning */
+    reno_cleanup_release_owned(&compat_publication_query_owned, &first, &cleanup_failed);
+    *first_owned = first;
+    first = NULL;
+    return -1;
+} while (0);
+
+/* All unhandled paths remain inside the SAME not-yet-complete child. Settle
+ * actual indicator before any next decision. The remaining integrated body
+ * must finish all other legal normal/abort/postpublication branches and ALL
+ * owning exits. It additionally owns publication_child_selection's FOUR
+ * possible output debts/history and the optional FIFTH compatibility query
+ * owning; outputs_drained describes only the original four, never that key.
+ * Never reproject its ended View, replay this new stage or drop these debts.
+ * There is deliberately no fake default return or undefined tail call.
+ * This block MUST NOT be installed as a standalone complete implementation.
+ */
+reno_cleanup_settle_indicator(&first, &cleanup_failed);
+
+/* NORMAL continuation in this SAME complete child. Publication/error now
+ * also settles the optional compatibility key. Each original consumer retains
+ * its FULL gate and action; an unmatched gate never authorizes default cancellation or completion.
+ */
+do {
+    const RenoLoaderSelectionView *normal_selection = NULL;
+    int normal_uses_child_view = 0;
+    int normal_handled = 0;
+    int normal_status = 0;
+
+    if (first != NULL || PyErr_Occurred() != NULL || selection_history == NULL
+            || (compat_history != NULL && (compat_publication_extra_unadmitted
+                || !compat_publication_resume_outputs_clear))) {
+        break; /* actual first/protocol/other legal domains keep ALL debts here */
+    }
+    normal_uses_child_view = publication_child_observation_called
+        && !publication_child_outputs_drained;
+    normal_selection = normal_uses_child_view
+        ? &publication_child_view : selection_history;
+
+    /* cancelled/rebacked read only the View's actual protocol bit. A parent's
+     * HISTORY current is never current authority. Child protocol error cannot
+     * hide here: its real error path already took the preceding failure exit.
+     * Input producer protocol errors remain excluded by each original gate.
+     */
+    normal_status = reno_loader_try_finish_cancelled_setup(&owned,
+        normal_selection, &first, &normal_handled);
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    if (!normal_handled && first == NULL) {
+        normal_status = reno_loader_try_finish_rebacked_setup(source, actual_loader,
+            dictionary, &owned, normal_selection, &first, &normal_handled);
+        reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    }
+    if (!normal_handled && first == NULL && normal_uses_child_view) {
+        /* Only this child's latest undrained REAL View. The two unhandled raw
+         * gates above make no callback/MOVE, so this span remains continuous.
+         * Actual query loan is NOT covered only by mutation.key. Native:
+         * the fixed caller owns attempted_query_owned from owner18047 through
+         * child return, releasing it only at18165 (late NEW requires it at18066).
+         * Compatibility: this child acquired compat_publication_query_owned
+         * from the actual original factory key before its new Current. These
+         * distinct roots preserve the original whole nested-call loan even
+         * when a consumer MOVEs/clears/releases mutation.key. End the outer
+         * View before settling four outputs, then release the optional key.
+         * Never substitute the parent's original lookup_key by text equality.
+         */
+        normal_status = reno_loader_try_finish_displaced_attempt_setup(source,
+            actual_loader, dictionary, &owned, normal_selection, &first, &normal_handled);
+        reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    }
+    if (!normal_handled) {
+        break; /* ELEVEN + outer FOUR + optional query stay in full child */
+    }
+
+    /* Nested consumer already MOVED/settled ELEVEN and may have called out.
+     * No more owned/State/source/Record/payload or borrowed-View reads. End
+     * outer output loans using pointer writes only, then settle this frame's
+     * FOUR independent outputs; a different related Record is only released.
+     * The nested11 -> outer4 -> optional query order follows frame ownership.
+     * It differs from common-error extra4 -> tuple10 -> optional query order;
+     * no identical exception priority or full physical budget is claimed.
+     */
+    normal_selection = NULL;
+    publication_child_view.original_class = NULL;
+    publication_child_view.query = NULL;
+    publication_child_view.current = NULL;
+    publication_child_view.candidate_bound = NULL;
+    publication_child_view.related = NULL;
+    reno_cleanup_release_owned(&publication_child_selection.related_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.candidate_bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.output.current_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.original_class_owned, &first, &cleanup_failed);
+    publication_child_outputs_drained = 1;
+    publication_source.registration = NULL; /* end C scalar loan, no object owning */
+    reno_cleanup_release_owned(&compat_publication_query_owned, &first, &cleanup_failed);
+    if (normal_status == 0 && first != NULL) { normal_status = -1; }
+    *first_owned = first;
+    first = NULL;
+    return normal_status; /* preserve negative even when actual first is NULL */
+} while (0);
+
+/* All still-unhandled domains remain in the SAME not-yet-complete body with
+ * original eleven, outer four and optional query owning, actual first/histories.
+ * own bound with ONE/MULTIPLE, COMPAT/UNKNOWN, noncancelled source/product
+ * mismatch, parent HISTORY without a child View and all other legal cases
+ * still require real policy and ALL exit settlement. No default return,
+ * undefined tail, new observation/retry, or installation claim is inserted.
+ * This material MUST NOT be installed as a standalone complete child.
+ */
+
+/* A distinct complete-selector alias policy, AFTER the three pure unhandled
+ * NORMAL gates. This is NOT the original NONE-only INSTALL permit, and never
+ * resets its receipt/cancellation or replays NEW/STORE. Only a fresh actual
+ * parent-origin or child observation has recognized query or historical aliases.
+ * Unhandled domains retain ELEVEN + remaining FOUR + optional query here.
+ */
+do {
+    const unsigned char alias_parent_origin = publication_parent_view_fresh;
+    const RenoLoaderSelectionView *alias_view = NULL;
+    const RenoLoaderSelectionHistory *alias_history = NULL;
+    const RenoLoaderExistingRegistrationResult *alias_registration = NULL;
+    RenoLoaderRecordMutationOwned *alias_mutation = NULL;
+    RenoLoaderRecordObject *alias_record = NULL;
+    RenoLoaderRecordObject *alias_node = NULL;
+    RenoLoaderRecordObject *alias_prior = NULL;
+    RenoLoaderRecordObject *alias_first_related = NULL;
+    RenoLoaderRecordObject *alias_head = NULL;
+    RenoState *alias_state = NULL;
+    PyObject *alias_inner = NULL;
+    PyObject *alias_actual_current = NULL;
+    PyObject *alias_actual_related = NULL;
+    /* r1516 alias legacy classification is in the pure history projector. */
+    RenoSpecAttr312BackingRelation alias_backing;
+    RenoLoaderRecordQueryKind alias_kind = RENO_LOADER_QUERY_NONE;
+    int alias_scan_ok = 1;
+    int alias_same_loader;
+    int alias_same_dictionary;
+    int alias_same_current;
+    int alias_same_candidate;
+    int alias_same_previous;
+    int alias_query_match;
+    int alias_previous_seen = 0;
+    int alias_query_status;
+    int alias_status;
+
+    /* One raw-origin consumption; no fresh token escapes this do scope. */
+    publication_parent_view_fresh = 0;
+    if (first != NULL || PyErr_Occurred() != NULL
+            || (compat_history != NULL && !compat_publication_history_ok)
+            || source == NULL || source->state == NULL || source->module == NULL
+            || source->owner == NULL || actual_loader == NULL || dictionary == NULL
+            || selection_history == NULL || alias_parent_origin > 1
+            || (!alias_parent_origin && (!publication_child_observation_called || !publication_child_association_called))
+            || (alias_parent_origin && (publication_child_observation_called
+                || publication_child_association_called || publication_child_outputs_drained))
+            || publication_child_outputs_drained > 1
+            || owned.absent_prepare.unadmitted_return
+            || owned.absent_install.unadmitted_return
+            || owned.absent_install.registration.unadmitted_return
+            || owned.present_install.unadmitted_return
+            || owned.present_install.installation.unadmitted_return
+            || owned.present_install.registration.unadmitted_return
+            || owned.retained_inner_resume.unadmitted_return
+            || owned.retained_inner_resume.installation.unadmitted_return
+            || owned.retained_inner_resume.registration.unadmitted_return
+            || owned.observed_bound_resume.unadmitted_return
+            || owned.observed_bound_resume.installation.unadmitted_return
+            || owned.observed_bound_resume.registration.unadmitted_return
+            || owned.observed_inner_resume.unadmitted_return
+            || owned.observed_inner_resume.installation.unadmitted_return
+            || owned.observed_inner_resume.registration.unadmitted_return
+            || owned.claimed_registration_resume.unadmitted_return
+            || owned.claimed_registration_resume.registration.unadmitted_return
+            || owned.observed_partial_resume.unadmitted_return
+            || owned.observed_partial_resume.installation.unadmitted_return
+            || owned.observed_partial_resume.registration.unadmitted_return
+            || selection_history->history.unadmitted_return
+            || owned.stage != RENO_LOADER_SETUP_CLAIMED
+            || owned.prepared_owned != NULL || owned.record_owned == NULL
+            || owned.inner_owned != NULL || owned.bound_owned != NULL || owned.related_owned != NULL
+            || owned.mutation.captured != 1 || owned.mutation.previous_present > 1
+            || previous_present > 1 || owned.mutation.previous_present != previous_present
+            || owned.mutation.original_class_owned == NULL
+            || owned.mutation.loader_owned != actual_loader
+            || owned.mutation.dictionary_owned != dictionary
+            || owned.mutation.key_owned == NULL || owned.mutation.bound_owned == NULL
+            || owned.mutation.previous_owned != previous
+            || (previous_present && previous == NULL)
+            || (!previous_present && previous != NULL)
+            || publication_source.kind < RENO_LOADER_PUBLICATION_HISTORY_LEGACY
+            || publication_source.kind > RENO_LOADER_PUBLICATION_HISTORY_ENTERED_UNWATCHED
+            || publication_source.registration == NULL
+            || (alias_parent_origin && publication_source.kind != RENO_LOADER_PUBLICATION_HISTORY_LEGACY)
+            || (publication_source.kind != RENO_LOADER_PUBLICATION_HISTORY_LEGACY
+                && (compat_history == NULL || selection_entry != RENO_LOADER_COMPLETE_HISTORY
+                    || native_preparation_query != NULL || entry_record != NULL || entry_observation != NULL))
+            || !reno_loader_setup_inner_debt_matches_raw(&owned, first)) {
+        break;
+    }
+    alias_registration = publication_source.registration; /* same immutable C scalar source */
+    if (!reno_loader_registration_unchanged_history_raw(alias_registration)) { break; }
+    alias_mutation = &owned.mutation;
+    /* Parent View owns NOTHING here: all its owning slots stay with caller.
+     * This child's untouched four positions are separate, actual NULL slots.
+     */
+    if (alias_parent_origin && (publication_child_selection.related_owned != NULL
+            || publication_child_selection.candidate_bound_owned != NULL
+            || publication_child_selection.output.current_owned != NULL
+            || publication_child_selection.original_class_owned != NULL
+            || publication_child_selection.output.observed || publication_child_selection.output.present
+            || publication_child_selection.history.consumer_entered
+            || publication_child_selection.history.association_consumer_entered
+            || publication_child_view.original_class != NULL || publication_child_view.query != NULL
+            || publication_child_view.current != NULL || publication_child_view.candidate_bound != NULL
+            || publication_child_view.related != NULL)) { break; }
+    if (alias_parent_origin || !publication_child_outputs_drained) {
+        alias_view = alias_parent_origin ? selection_history : &publication_child_view;
+        alias_history = &alias_view->history;
+        if (alias_view->original_class != alias_mutation->original_class_owned
+                || alias_view->query != alias_mutation->key_owned
+                || alias_view->candidate_bound != alias_mutation->bound_owned
+                || alias_view->observed != 1 || alias_view->present != 1
+                || alias_view->current != alias_mutation->bound_owned
+                || alias_view->related == owned.record_owned) { break; }
+        alias_actual_current = alias_view->current;
+        alias_actual_related = alias_view->related;
+    } else {
+        /* Same-child NONE matched actual data BEFORE the nonlast output drain.
+         * Original tuple guards kept class/bound; the raw permit and unhandled
+         * NORMAL gates made no callback. Transport equality, not an empty View.
+         */
+        if (publication_child_current_matched != 1
+                || publication_child_selection.related_owned != NULL
+                || publication_child_selection.candidate_bound_owned != NULL
+                || publication_child_selection.output.current_owned != NULL
+                || publication_child_selection.original_class_owned != NULL
+                || publication_child_selection.output.observed != 1
+                || publication_child_selection.output.present != 1
+                || publication_child_view.original_class != NULL
+                || publication_child_view.query != NULL || publication_child_view.current != NULL
+                || publication_child_view.candidate_bound != NULL || publication_child_view.related != NULL
+                || publication_child_selection.history.association.kind != RENO_LOADER_QUERY_NONE) { break; }
+        alias_history = &publication_child_selection.history;
+        alias_actual_current = alias_mutation->bound_owned; /* actual same-object witness, not recapture */
+    }
+    if (alias_history->consumer_entered != 1 || alias_history->qualified != 1
+            || alias_history->api_called != 1 || alias_history->api_returned != 1
+            || alias_history->permit_cancelled || alias_history->unadmitted_return
+            || alias_history->outcome != RENO_SPEC_ATTR312_SELECTION_OBSERVED
+            || alias_history->association_consumer_entered != 1
+            || alias_history->association_query_entered != 1
+            || alias_history->association_query_returned != 1
+            || alias_history->association_query_completed != 1
+            || alias_history->association_query_status != 1
+            || alias_history->association_before_query_cancelled
+            || alias_history->association_backing_checked != 1
+            || alias_history->association_backing_relation != RENO_SPEC_ATTR312_BACKING_SAME
+            || alias_history->association_candidate_supplied != 1) { break; }
+    if (alias_history->association.kind == RENO_LOADER_QUERY_NONE) {
+        /* Zero FIRST fields mean no match, never a Record INIT certificate. */
+        if ((!publication_child_outputs_drained && !alias_parent_origin) || alias_actual_related != NULL
+                || alias_history->association.phase != 0
+                || alias_history->association.same_loader || alias_history->association.same_dictionary
+                || alias_history->association.current_is_installed_bound
+                || alias_history->association.candidate_bound_is_installed_bound
+                || alias_history->association.restore_cancelled
+                || alias_history->association.store_attempted || alias_history->association.store_returned
+                || alias_history->association.effect_observed || alias_history->association.restore_attempted
+                || alias_history->association.restore_returned || alias_history->association.restore_effect_observed) { break; }
+    } else {
+        if (publication_child_outputs_drained || alias_actual_related == NULL
+                || (alias_history->association.kind != RENO_LOADER_QUERY_ONE
+                    && alias_history->association.kind != RENO_LOADER_QUERY_MULTIPLE)
+                || alias_history->association.phase != RENO_LOADER_RECORD_ACTIVE
+                || alias_history->association.same_loader > 1
+                || alias_history->association.same_dictionary > 1
+                || (!alias_history->association.same_loader && !alias_history->association.same_dictionary)
+                || alias_history->association.current_is_installed_bound
+                || alias_history->association.candidate_bound_is_installed_bound
+                || alias_history->association.restore_cancelled
+                || alias_history->association.store_attempted != 1
+                || alias_history->association.store_returned != 1
+                || alias_history->association.effect_observed != 1
+                || alias_history->association.restore_attempted
+                || alias_history->association.restore_returned
+                || alias_history->association.restore_effect_observed) { break; }
+    }
+
+    /* These consistency gates do not create the independently rooted source,
+     * lawful products/spans, matching primitives, GIL or live/acyclic registry.
+     * INSTALL-source accessors on this path are the reviewed borrowed memcpy
+     * ones. No allocation/release/callback may interrupt this positive span.
+     */
+    if (!reno_loader_binding_source_fresh_install_raw(source, actual_loader)) { break; }
+    alias_state = source->state;
+    if (alias_state->bootstrap_marker != RENO_BOOT_TYPED
+            || alias_state->controls.phase != RENO_MODULE_ACTIVE
+            || alias_state->controls.install_phase != RENO_INSTALL_ACTIVE
+            || alias_state->controls.arena_owner != RENO_ARENA_STATE
+            || alias_state->controls.published_arena != &alias_state->arena
+            || alias_state->controls.meta_active_count <= 0 || alias_state->controls.record_draining
+            || alias_state->controls.record_exit_mode != RENO_RECORD_EXIT_NONE
+            || alias_state->arena.install.proxy != (PyObject *)source->owner
+            || source->owner->phase != RENO_PROXY_ACTIVE
+            || source->owner->module_lifetime != source->module
+            || source->owner->origin_state != alias_state
+            || !reno_ws_known_status(alias_state, 20, 1)
+            || !reno_ws_known_status(alias_state, 97, 1)
+            || !reno_record_type_effect(alias_state->arena.install.record_type)
+            || !Py_IS_TYPE(owned.record_owned, (PyTypeObject *)alias_state->arena.install.record_type)
+            || alias_mutation->original_class_owned != alias_state->arena.known.roots[20]
+            || !Py_IS_TYPE(alias_mutation->original_class_owned, &PyType_Type)
+            || Py_TYPE(actual_loader) != (PyTypeObject *)alias_mutation->original_class_owned
+            || !PyDict_Check(dictionary) || !PyUnicode_CheckExact(alias_mutation->key_owned)
+            || !exact_ascii_name(alias_mutation->key_owned, "exec_module", 11)
+            || !Py_IS_TYPE(alias_mutation->bound_owned, &PyMethod_Type)
+            || PyMethod_GET_SELF(alias_mutation->bound_owned) != actual_loader) { break; }
+    alias_record = (RenoLoaderRecordObject *)owned.record_owned;
+    if (alias_record->module_lifetime != source->module || alias_record->origin_state != alias_state
+            || alias_record->owner_proxy != (PyObject *)source->owner
+            || alias_record->retired_error_class != alias_state->arena.known.roots[97]
+            || alias_record->phase != RENO_LOADER_RECORD_INSTALLING || alias_record->restore_cancelled
+            || alias_record->linked || alias_record->registry_owner_state != NULL
+            || alias_record->prev != NULL || alias_record->next != NULL
+            || alias_record->original_loader != actual_loader || alias_record->loader_dict != dictionary
+            || alias_record->attribute_key != alias_mutation->key_owned
+            || alias_record->installed_bound != alias_mutation->bound_owned
+            || alias_record->previous_present != alias_mutation->previous_present
+            || alias_record->previous_value != alias_mutation->previous_owned
+            || alias_record->store_attempted != 1 || alias_record->store_returned != 1
+            || alias_record->effect_observed != 1 || alias_record->restore_attempted
+            || alias_record->restore_returned || alias_record->restore_effect_observed) { break; }
+    alias_inner = PyMethod_GET_FUNCTION(alias_mutation->bound_owned);
+    if (!reno_loader_created_dispatch_matches_raw(alias_record, actual_loader,
+            alias_inner, alias_mutation->bound_owned)) { break; }
+    alias_inner = NULL;
+
+    alias_node = alias_state->controls.record_head;
+    while (alias_node != NULL) {
+        if (alias_node == alias_record
+                || Py_TYPE((PyObject *)alias_node) != (PyTypeObject *)alias_state->arena.install.record_type
+                || alias_node->linked != 1 || alias_node->registry_owner_state != alias_state
+                || alias_node->origin_state != alias_state || alias_node->prev != alias_prior
+                || alias_node->module_lifetime != source->module
+                || alias_node->owner_proxy != (PyObject *)source->owner
+                || alias_node->retired_error_class != alias_state->arena.known.roots[97]
+                || alias_node->original_loader == NULL || alias_node->loader_dict == NULL
+                || !PyDict_Check(alias_node->loader_dict)
+                || alias_node->attribute_key == NULL
+                || !exact_ascii_name(alias_node->attribute_key, "exec_module", 11)
+                || alias_node->phase != RENO_LOADER_RECORD_ACTIVE || alias_node->restore_cancelled
+                || alias_node->previous_present > 1
+                || (alias_node->previous_present && alias_node->previous_value == NULL)
+                || (!alias_node->previous_present && alias_node->previous_value != NULL)
+                || alias_node->store_attempted > 1 || alias_node->store_returned > 1
+                || alias_node->effect_observed > 1 || alias_node->restore_attempted > 1
+                || alias_node->restore_returned > 1 || alias_node->restore_effect_observed > 1) {
+            alias_scan_ok = 0;
+            break;
+        }
+        alias_same_loader = alias_node->original_loader == actual_loader;
+        alias_same_dictionary = alias_node->loader_dict == dictionary;
+        alias_same_current = alias_node->installed_bound != NULL
+            && alias_node->installed_bound == alias_actual_current;
+        alias_same_candidate = alias_node->installed_bound != NULL
+            && alias_node->installed_bound == alias_mutation->bound_owned;
+        alias_query_match = alias_same_loader || alias_same_dictionary || alias_same_current || alias_same_candidate;
+        alias_same_previous = alias_mutation->previous_present && alias_node->installed_bound != NULL
+            && alias_node->installed_bound == alias_mutation->previous_owned;
+        if (alias_query_match || alias_same_previous) {
+            /* Historical previous is an additional validation relation ONLY.
+             * Every queried or previous-only node passes the complete gates.
+             */
+            if ((alias_query_match && ((!alias_same_loader && !alias_same_dictionary)
+                        || alias_same_current || alias_same_candidate))
+                    || alias_node->store_attempted != 1 || alias_node->store_returned != 1
+                    || alias_node->effect_observed != 1 || alias_node->restore_attempted
+                    || alias_node->restore_returned || alias_node->restore_effect_observed
+                    || alias_node->installed_bound == NULL
+                    || !Py_IS_TYPE(alias_node->installed_bound, &PyMethod_Type)
+                    || !reno_loader_binding_source_fresh_install_raw(source, alias_node->original_loader)) {
+                alias_scan_ok = 0;
+                break;
+            }
+            alias_inner = PyMethod_GET_FUNCTION(alias_node->installed_bound);
+            if (!reno_loader_created_dispatch_matches_raw(alias_node, alias_node->original_loader,
+                    alias_inner, alias_node->installed_bound)) {
+                alias_scan_ok = 0;
+                break;
+            }
+            alias_inner = NULL;
+            if (alias_same_previous) { alias_previous_seen = 1; }
+            if (alias_query_match) {
+                if (alias_kind == RENO_LOADER_QUERY_NONE) {
+                    /* FIRST is from the original query union, never previous-only. */
+                    if (alias_same_loader != alias_history->association.same_loader
+                            || alias_same_dictionary != alias_history->association.same_dictionary
+                            || (PyObject *)alias_node != alias_actual_related) {
+                        alias_scan_ok = 0;
+                        break;
+                    }
+                    alias_first_related = alias_node;
+                    alias_kind = RENO_LOADER_QUERY_ONE;
+                } else {
+                    alias_kind = RENO_LOADER_QUERY_MULTIPLE;
+                }
+            }
+        }
+        alias_prior = alias_node;
+        alias_node = alias_node->next;
+    }
+    if (!alias_scan_ok || alias_kind != alias_history->association.kind || alias_node != NULL
+            || (alias_kind == RENO_LOADER_QUERY_NONE && !alias_previous_seen)
+            || (PyObject *)alias_first_related != alias_actual_related
+            || PyErr_Occurred() != NULL) { break; }
+    alias_backing = _PyReno_SpecAttr312_OriginalBackingRelation(actual_loader,
+        (PyTypeObject *)alias_mutation->original_class_owned, dictionary);
+    if (alias_backing != RENO_SPEC_ATTR312_BACKING_SAME || PyErr_Occurred() != NULL) { break; }
+
+    /* Final COMPLETE alias policy -> link -> query is one continuous raw span.
+     * End any remaining View loans; leave all FOUR positions untouched. No unhandled exit
+     * remains once registration starts. Old ACTIVE payloads stay intact; only
+     * the ordinary head.prev insertion link is updated. No dict/value write.
+     */
+    alias_view = NULL;
+    alias_history = NULL;
+    alias_registration = NULL;
+    alias_actual_current = NULL;
+    alias_actual_related = NULL;
+    alias_first_related = NULL;
+    alias_prior = NULL;
+    alias_node = NULL;
+    publication_child_view.original_class = NULL;
+    publication_child_view.query = NULL;
+    publication_child_view.current = NULL;
+    publication_child_view.candidate_bound = NULL;
+    publication_child_view.related = NULL;
+    alias_head = alias_state->controls.record_head;
+    alias_record->phase = RENO_LOADER_RECORD_ACTIVE;
+    alias_record->registry_owner_state = alias_state;
+    alias_record->prev = NULL;
+    alias_record->next = alias_head;
+    if (alias_head != NULL) { alias_head->prev = alias_record; }
+    alias_state->controls.record_head = alias_record;
+    alias_record->linked = 1;
+    owned.stage = RENO_LOADER_SETUP_STORED;
+
+    /* owned.related is ACTUALLY NULL from the entry gate; no prior occurrence
+     * is overwritten. New current is the original actual product, not a value
+     * reconstructed as expected from the dictionary. Real query fills ALL
+     * observation fields and can retain a partial owning on failure.
+     */
+    alias_query_status = reno_loader_record_query_raw(source, actual_loader, dictionary,
+        alias_mutation->bound_owned, NULL, &owned.related_owned, &owned.current);
+    if (alias_query_status != 1 || PyErr_Occurred() != NULL) {
+        goto selected_alias_publication_failure;
+    }
+
+    /* Prior NONE gives ONE; prior ONE/MULTIPLE gives MULTIPLE with new head.
+     * FIRST=this ACTIVE candidate with real A1/R1/E1. This follows from the
+     * complete policy and unchanged successful raw scan, NOT status1 alone.
+     * All error-reporting query paths return0. Do not call native_success,
+     * whose ONE requirement belongs to a different producer/policy.
+     */
+    alias_mutation = NULL;
+    alias_record = NULL;
+    alias_state = NULL;
+    alias_head = NULL;
+    alias_inner = NULL;
+    /* Actual current dict->bound->inner->Record, intact payloads and actual
+     * State roots cover the ELEVEN NONLAST occurrences in this normal span;
+     * absent/present give seven/eight nonNULL debts. Every occurrence counts.
+     * Only AFTER all payload reads, settle FOUR possibly-NULL outer outputs.
+     * Old related may be LAST/callback: never infer NONLAST from its own cycle.
+     */
+    reno_cleanup_release_owned(&owned.related_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.previous_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.key_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.dictionary_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.loader_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.original_class_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.inner_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.record_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.prepared_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.related_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.candidate_bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.output.current_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.original_class_owned, &first, &cleanup_failed);
+    publication_child_outputs_drained = 1;
+    publication_source.registration = NULL; /* end C scalar loan, no object owning */
+    reno_cleanup_release_owned(&compat_publication_query_owned, &first, &cleanup_failed);
+    alias_status = first == NULL ? 0 : -1;
+    *first_owned = first;
+    first = NULL;
+    return alias_status;
+
+selected_alias_publication_failure:
+    /* Only actual query error/unadmitted return enters, never a normal alias
+     * mismatch. Query error reporting may have called out and invalidated ALL
+     * saved source/State/node/payload authority. Adopt actual first, reborrow
+     * only the SAME continuously owned Record BODY and preserve STORED/A/R/E.
+     */
+    reno_cleanup_settle_indicator(&first, &cleanup_failed);
+    alias_mutation = NULL;
+    alias_record = NULL;
+    alias_state = NULL;
+    alias_head = NULL;
+    alias_inner = NULL;
+    alias_view = NULL;
+    alias_history = NULL;
+    alias_registration = NULL;
+    alias_first_related = NULL;
+    alias_prior = NULL;
+    alias_node = NULL;
+    alias_record = (RenoLoaderRecordObject *)owned.record_owned;
+    if (alias_record->phase != RENO_LOADER_RECORD_RETIRED) {
+        alias_record->phase = RENO_LOADER_RECORD_FAILED;
+    }
+    reno_record_clear_sources(alias_record, &first, &cleanup_failed);
+    alias_record = NULL;
+    /* Cancel/unlink/detach THIS candidate before all possibly LAST releases.
+     * Postquery related first, then FOUR outer outputs, then original ten;
+     * never explicitly clear the queried old alias. No payload read follows.
+     */
+    reno_cleanup_release_owned(&owned.related_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.related_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.candidate_bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.output.current_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&publication_child_selection.original_class_owned, &first, &cleanup_failed);
+    publication_child_outputs_drained = 1;
+    reno_cleanup_release_owned(&owned.mutation.previous_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.key_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.dictionary_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.loader_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.mutation.original_class_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.bound_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.inner_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.record_owned, &first, &cleanup_failed);
+    reno_cleanup_release_owned(&owned.prepared_owned, &first, &cleanup_failed);
+    publication_source.registration = NULL; /* end C scalar loan, no object owning */
+    reno_cleanup_release_owned(&compat_publication_query_owned, &first, &cleanup_failed);
+    *first_owned = first;
+    first = NULL;
+    return -1; /* first-less protocol failure is reported by the parent LAST */
+} while (0);
+
+/* r1517: only still-unhandled protected-code drift reaches this final scope.
+ * Old handled exits keep their contracts. No prior observer/profile gives
+ * source authority, and ordinary storage/instance/alias changes do not reject.
+ */
+do {
+    unsigned int rejection_i;
+    unsigned char rejection_extra_unadmitted = 0;
+    unsigned char rejection_resume_clear = 1;
+    unsigned char rejection_unadmitted = 0;
+    int rejection_handled = 0;
+    int rejection_status;
+
+    if (selection_history == NULL || first != NULL || PyErr_Occurred() != NULL) { break; }
+    rejection_extra_unadmitted = selection_history->history.unadmitted_return
+        || compat_bound_finish_protocol.history.unadmitted_return
+        || compat_entered_bound_protocol.history.unadmitted_return
+        || compat_entered_registration_protocol.history.unadmitted_return
+        || compat_publication_extra_unadmitted
+        || publication_child_selection.history.unadmitted_return
+        || publication_child_view.history.unadmitted_return
+        || selected_publication_unadmitted;
+    for (rejection_i = 0; rejection_i < 4; ++rejection_i) {
+        if (compat_resume_owner[rejection_i].history.unadmitted_return
+                || compat_resume_view[rejection_i].history.unadmitted_return) {
+            rejection_extra_unadmitted = 1;
+        }
+        if (compat_resume_owner[rejection_i].original_class_owned != NULL
+                || compat_resume_owner[rejection_i].output.current_owned != NULL
+                || compat_resume_owner[rejection_i].candidate_bound_owned != NULL
+                || compat_resume_owner[rejection_i].related_owned != NULL
+                || compat_resume_view[rejection_i].original_class != NULL
+                || compat_resume_view[rejection_i].query != NULL
+                || compat_resume_view[rejection_i].current != NULL
+                || compat_resume_view[rejection_i].candidate_bound != NULL
+                || compat_resume_view[rejection_i].related != NULL
+                || (compat_resume_owner[rejection_i].history.consumer_entered
+                    && compat_resume_drained[rejection_i] != 1)) {
+            rejection_resume_clear = 0;
+        }
+    }
+    if (rejection_extra_unadmitted || !rejection_resume_clear) { break; }
+    rejection_status = reno_loader_try_finish_source_code_rejection(source, &owned,
+        &publication_child_selection, &publication_child_view,
+        &compat_publication_query_owned, &publication_source, rejection_extra_unadmitted,
+        &first, &rejection_handled, &rejection_unadmitted);
+    if (!rejection_handled) { break; }
+    /* All SIXTEEN settled, child View/profile loans ended; no business read.
+     * Actual first remains private through caller-owned final cleanup. The
+     * first-less protocol case returns -1 for existing parent LAST reporting.
+     */
+    if (first != NULL || rejection_unadmitted) { rejection_status = -1; }
+    *first_owned = first; first = NULL;
+    return rejection_status;
+} while (0);
+
+/* Still-unhandled legal domains keep ELEVEN, any remaining FOUR and optional
+ * query owning in the SAME complete child. Unqualified observation/history, old STORED,
+ * COMPAT/UNKNOWN, source/product mismatch and the other original branches need
+ * complete real policy and owning exits. No default or undefined tail here.
+ * This combined material MUST NOT be installed as a standalone complete body.
+ */

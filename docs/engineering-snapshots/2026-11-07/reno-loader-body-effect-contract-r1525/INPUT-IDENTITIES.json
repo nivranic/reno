@@ -1,0 +1,57 @@
+{
+  "scope": "local source facts for body effect sequence; no new network or source execution",
+  "files": [
+    {
+      "scope": "project",
+      "path": "data/t16-h01-native-root-handoff-r1112/inputs-02/importlib/_bootstrap_external.py",
+      "bytes": 69406,
+      "sha256": "9bde390a6f254cf6641bfdba053084c1d506c7324c142131c695d030662ab63d"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-combined-admission-design-r1108/cpython-v3.12.10/Python/bytecodes.c",
+      "bytes": 143622,
+      "sha256": "f8c050621f1498d953d4898aaf29457e154620fec7f8bb987b4d3fde6f5a1d84"
+    },
+    {
+      "scope": "general",
+      "path": "reno-loader-body-operands-source-r1524/FINAL-REVIEW.json",
+      "bytes": 13801,
+      "sha256": "7f0c85b54d9b9b055ee5cec3f515880a43eb61f1f632d3c5dedee2dcfa81876e"
+    },
+    {
+      "scope": "general",
+      "path": "reno-loader-body-operands-source-r1524/STATIC-VERIFICATION.json",
+      "bytes": 16440,
+      "sha256": "ff4bcc4e803dddf1d6a8d99ec547a5c33a49b0a859caa8cf3397ee4ab55a5b9e"
+    },
+    {
+      "scope": "general",
+      "path": "reno-loader-body-operands-source-r1524/working-01/native/reno_windows_cpython312_owner_factory.c.txt",
+      "bytes": 1107642,
+      "sha256": "3cefe12fdb068f0d66e4d00eb12d074402892369f469a095da572ac91d469937"
+    },
+    {
+      "scope": "general",
+      "path": "reno-loader-body-operands-source-r1524/working-01/runtime/Python/ceval.c.txt",
+      "bytes": 120031,
+      "sha256": "19ef73308393c4db92b7aae7ffdd972a0bf98a01ceaa37a3d201ba7f1d497cd2"
+    },
+    {
+      "scope": "general",
+      "path": "reno-loader-call-return-transport-r1521/NATIVE-CALLER-CORRECTION.md",
+      "bytes": 5868,
+      "sha256": "3cc1c8b200ff9beb91118a7e56300015c7371f70ce0a9ce7aa14eb06f7baf9d3"
+    },
+    {
+      "scope": "general",
+      "path": "reno-native-v3-call-design-r1523/DRAFT.md",
+      "bytes": 8814,
+      "sha256": "8ea5a01a5cf94f8fcd57a9b607b8368b9283f6b607368d800caac142393871b0"
+    }
+  ],
+  "network_calls": 0,
+  "candidate_generated": false,
+  "candidate_executed": false,
+  "full_goal_complete": false
+}

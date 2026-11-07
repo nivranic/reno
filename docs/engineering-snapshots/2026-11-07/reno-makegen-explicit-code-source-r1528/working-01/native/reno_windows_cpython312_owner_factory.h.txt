@@ -1,0 +1,51 @@
+#ifndef RENO_WINDOWS_CPYTHON312_OWNER_FACTORY_H
+#define RENO_WINDOWS_CPYTHON312_OWNER_FACTORY_H
+
+#include <Python.h>
+#include "reno_windows_cpython312_handle_owner.h"
+
+#if defined(_WIN32)
+/* Uninstalled full-API CPython 3.12.10 Windows x64 candidate. Link this
+ * translation unit with the nine unchanged r1196 native sources/headers.
+ * It defines a dedicated extension, _reno_handle_owner312; no build, loader,
+ * product import, bootstrap/catalog or holder integration is supplied here.
+ *
+ * Legal C caller domain: attached matching interpreter/GIL, no entry raised
+ * exception, and a continuously held actual owning reference to the module
+ * returned by THIS module definition's real initialization path. The exact
+ * module/definition checks below reject mismatches; they do not establish
+ * that original caller/source precondition or binary authenticity.
+ *
+ * Returns NEW reference to the actual factory PyCFunction originally created
+ * by this module's exec slot and retained in private C state, or NULL with
+ * the actual preparation/rejection exception. Current public factory/kernel
+ * bindings are compared with independent actual original roots; neither
+ * current export is used to manufacture expected. Every namespace key must
+ * be exact str; missing/replaced aliases or native fields reject. Nothing
+ * repairs an alias, grants a replacement or resets a source baseline.
+ *
+ * The factory takes NO Python arguments and returns a real NEW EMPTY owner.
+ * This same exec separately constructs owner_kernel_new_empty, a NOARGS C
+ * entry that consumes this capture's actual NEW factory with one real
+ * PyObject_CallNoArgs, then transports that call's actual NEW result after
+ * fresh source checks. It does not implement the original Python bootstrap.
+ * Public calls grant neither holder association, path/budget authority nor
+ * access to an existing owner's native resources. No owner/type/raw/HANDLE/
+ * fd/DTO adoption, setter or cached-product interface is added. Each full
+ * kernel call adds five complete namespace scans and their preparation/error
+ * behavior; native fields cover the selected call shape, not all metadata.
+ */
+PyObject *reno_windows_cpython312_owner_factory_capture(PyObject *module);
+
+/* NEW actual owner through this same original-factory capture/dispatch path.
+ * Legal caller module/source/GIL/entry-error preconditions are those above;
+ * rejection checks do not grant provenance to an arbitrary module pointer.
+ * The existing NOARGS kernel is an actual consumer of this typed C API.
+ * Only the verified original producer's real NEW result crosses the opaque
+ * result boundary; no external PyObject/owner/type/raw resource is adopted.
+ * This does not implement original holder/bootstrap/fd/accounting wiring.
+ */
+RenoWindowsHandleOwner *
+reno_windows_cpython312_owner_factory_new_empty(PyObject *module);
+#endif
+#endif

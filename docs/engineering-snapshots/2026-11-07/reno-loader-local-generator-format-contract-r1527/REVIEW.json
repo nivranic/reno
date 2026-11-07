@@ -1,0 +1,69 @@
+{
+  "scope": "independent bounded existing-local generator, format and join implementation text review only",
+  "reviewed_identities": {
+    "IMPLEMENTATION-NOTES.md": {
+      "bytes": 9125,
+      "sha256": "4f26089de0218c24b46899e75cfe3629281a362e4f4f9b9630b06fab2dc4df2d"
+    },
+    "INPUT-IDENTITIES.json": {
+      "bytes": 3271,
+      "sha256": "0c8f47fd49ded5573b097e7b6306b2cee7e53a8ca393d6741800f3f7361454f7"
+    },
+    "ROOT-REVIEW.json": {
+      "bytes": 2220,
+      "sha256": "45c472c5cb564cf5e17f450a1b6b8200a955513a4083c09e7961f21fbc741f5b"
+    },
+    "IMPLEMENTATION-NOTES-01.md": {
+      "bytes": 8995,
+      "sha256": "6edd2e5d8bf90b219e85116b2d07cdce2482a3cfe90e44998ffbb9ab46a14722"
+    },
+    "ROOT-REVIEW-01.json": {
+      "bytes": 1837,
+      "sha256": "b45b3c7ea8146fa9de82891b3613ef46907a299e3cd8b3e3838eadba32b4e1f8"
+    }
+  },
+  "independent_investigation_review_passed": true,
+  "independent_initial_full_document_read_receipt": "0fcfab",
+  "independent_corrected_full_document_and_exact_diff_receipt": "424d48",
+  "independent_input_identity_and_provenance_receipt": "3c6595",
+  "independent_generator_return_and_frame_copy_read_receipt": "2cbc83",
+  "independent_format_and_join_read_receipt": "557d74",
+  "all_13_listed_input_identities_match": true,
+  "two_genobject_copies_byte_identical": true,
+  "existing_local_implementations_remove_makecoro_implementation_absence_gap": true,
+  "makecoro_flags_makegen_capacity_and_actual_frame_copy_views_distinguished": true,
+  "frame_copy_service_representation_not_claimed_raw_compilable_source": true,
+  "format_exact_unicode_fast_path_and_unicode_subclass_route_distinguished": true,
+  "join_borrows_items_and_external_handler_consumes_them": true,
+  "join_single_nonexact_item_skips_separator_corrected": true,
+  "original_notes_and_root_review_preserved": true,
+  "initial_join_summary_correction_receipt": "557d74",
+  "file_search_not_claimed_exhaustive": true,
+  "pending_network_request_not_executed": true,
+  "same_live_native_c_caller_policy_retained": true,
+  "legal_code_mutation_counterexample_executed": false,
+  "actual_frame_allocation_safety_or_compat_proved": false,
+  "pycore_genobject_header_contract_proved": false,
+  "actual_target_opcode_sequence_proved": false,
+  "matching_target_build_and_layout_proved": false,
+  "full_first_pending_release_semantics_closed": false,
+  "full_v3_design_or_implementation_admitted": false,
+  "upstream_commit_or_http_authentication_proved": false,
+  "network_calls": 0,
+  "new_candidate_generated": false,
+  "candidate_executed": false,
+  "reference_python_executed": false,
+  "reference_generator_executed": false,
+  "c_parsed": false,
+  "c_preprocessed": false,
+  "c_compiled": false,
+  "product_executed": false,
+  "source_only_closed_fields": [],
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "actual_abi_build_runtime_proved": false,
+  "full_compat_proved": false,
+  "physical_peak_budget_proved": false,
+  "full_goal_complete": false,
+  "goal_status": "active"
+}

@@ -1,0 +1,27 @@
+# r1523：closure 与 code 写入的已核源事实
+
+这份核对独立于待批准的两份genobject读取，仅复用既有本地参考，没有联网或执行产品。它不新增closure快照、拒绝域或runtime修补。
+
+材料为项目相对路径 data/t16-h01-native-root-handoff-r1112/cpython-v3.12.10/Objects/funcobject.c：42,473 B / afb66fea5dff2502978d234982a4c62e04061b7dcf4835fddf64a62d8ebd43fb。主3de55c核身份，6e4b98读三个setter/构造相关段，22f678补读实际watcher调用链。COPY_FREE_VARS来自既有r1108 bytecodes.c:1477–1487；未改变r1522源。
+
+## C API 与 Python setter 不能互相代证
+
+PyFunction_SetClosure:365–387先核function，接受Py_None转NULL或PyTuple_Check后INCREF，随后清func_version并XSETREF func_closure。该函数正文没有核tuple长度与co_nfreevars，也没有逐项核cell。因此“C API返回0”不能单独证明随后COPY_FREE_VARS需要的形状；是否属于正常合法调用域还须结合API与caller合同，不能把未验证形状直接列为普通合法崩溃反例。
+
+func_set_code:473–506核value为code并发实际audit，然后比较当前closure长度与新code的nfreevars；不等时ValueError。检查之后还有handle_func_event、version写入及XSETREF。这个检查只证明其真实读点的关系，不能不核中间效果就写成持续不变量。
+
+function构造的相关段:763–791明确核closure是None/tuple、长度匹配，并在非空时逐项PyCell_Check；其后仍有function.__new__ audit等操作。这种构造检查不能替代SetClosure的实际合同，也不证明对象以后不变。
+
+## 中间 watcher 是真实调用边
+
+handle_func_event:61–70在active_func_watchers非零时进入notify_func_watchers。后者:26–58逐个读取已注册callback并实际调用cb(event,func,new_value)；负返回路径还做repr/格式化/WriteUnraisable及引用清理。不能把该段称为无callback的纯字段写入。
+
+本批没有读取watcher的完整外部合法行为合同，也没有构造或运行修改closure/code的watcher；不能据存在callback推定任何具体破坏一定合法、已经发生或一定不可能。新增guard、重试或禁止watcher均无本稿授予的依据。
+
+## 对 V3 的具体约束
+
+COPY_FREE_VARS取frame.f_code和当前frame.f_funcobj.func_closure，按frame code的offset搬入实际cell引用。这要求该次读取域和正常closure形状真实成立；r1522的显式binder code参数只控制binder的code输入，不对closure作快照，也不改这个opcode。
+
+新V3必须分别证明code选择、frame布局、closure读取及各原callback后的source前提。不能用“__code__ setter有长度检查”全域豁免C setter和后续writer，也不能为了方便提前复制closure改变原读取/引用时点。保持既有source保护域和普通合法callee域，待原始证据及完整设计后再决定实际消费者。
+
+本笔是源码合同核对，不是C解析/构建/运行/COMPAT或预算证明。source_only_closed_fields=[]；candidate_executed=false；complete_child_implemented=false；complete_exec_dispatch_implemented=false；full_goal_complete=false；Goal active。

@@ -1,0 +1,19 @@
+# Task7：正常消费的实际返回与独立效果
+
+承接pending前件r1041 SOURCE07。完整Task7仍包括scope/carrier借用归还、当前Call退出后的两阶段terminal permit、未知资源债务、图字节容量和durable恢复。本段直接实现这些终止门所必需的原consume事实，不以新增观察记录替代完整终止。
+
+当前三处原owned主体只调用 `_consume_owned_ex_group(context)`，丢弃其实际返回；原group `_consume_attempted=True`只说明该次尝试被消耗，失败也为True。`route_cleanup_returned=True`也可能代表没有可确认的set，不证明reset成功。因此不能拿这两个bool释放root或归还业务loan。
+
+在原reservation锁外预建固定consume cell，再与该原reservation一起原子占槽。cell强存同一原group、原callee身份、attempt、actual result/returned、actual error/tb、独立effect snapshot、effect读取错/tb。prepare仅接受active+claimed且有原budget的同槽，只能一次；legacy分支完全维持原consume调用，不预留cell、不补来源。cell不授物理或业务退休权。
+
+三处严格主体在原consume位置准备同cell，先记attempt，再调用同一原 `_consume_owned_ex_group`；实际返回后先直接写result、returned，再做任何后继读取。异常在本层重抛前直接保存实际error及原BaseException traceback descriptor。最外packet→route context end→pending顺序保持。
+
+effect在finally通过bootstrap捕获的原OwnedExclusiveDeadlineLease成员descriptor读取 `_consume_attempted/_phase/_receipt/_normal_exit/_first`，与actual return分列；只记录这些原slot的实际观察，不调用close/reset/consume第二次，不做额外clock、不凭镜像重建原成功。结果身份、正常回执与物理债务合法性由后续完整terminal准入结合原资源事实验证。本次不会因为effect全绿释放scope、carrier、root或32槽。
+
+effect读取若失败，先保cell错误/tb；有原callee异常时不替换原异常，无原异常则该次正常主体应失败，进入pending。首错与后继错沿现budget/pending继续保；记录动作本身因内存不足失败时保原异常，不能宣称所有错误仍完整记录。
+
+同步pending/custody固定函数与类目录、scope enrollment导出/函数closure pins、原group consume函数binding及code/default/closure pins。首次调用前先认证完整新闭包；不能替换新导出绕过记录或把旧pending根重新消费。恢复snapshot增加只读的消费事实结构，原八个位置不变；额外结构不是JSON/DTO授权。
+
+37文件完整候选中预计修改pending、custody、enrollment、scope四文件，其余33逐byte继承。设计/完整源码/验证脚本和实际准备各按既有双审；定向执行真实新runtime、原三owned主体和原consume函数，EX/SQL/native/clock/资源receipt叶明确合成。检查三正常返回、调用失败前后effect、实际返回后effect失败、原错误/tb不被替代、重复/foreign/legacy、原consume尝试被消耗但返回失败、snapshot事实一致。已通过r1042不机械重跑。
+
+保持所有原限额、正常库/service-dist/ACL/settings/平台/Git与r920/r964/r967/P06边界。严格route不激活，_finish_operation硬拒保持；这不是完整Task7或产品验收。

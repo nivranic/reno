@@ -4,13 +4,53 @@ timeline -> validated atoms with evidence refs + deterministic param
 normalization + demo composite confidence."""
 import json
 import time
+from dataclasses import dataclass
+from contextlib import nullcontext
+import hashlib
 from pathlib import Path
 
-from . import config, db, llm
+from . import config, db, llm, model_scopes, storage_admin, storage_lifecycle
 from .dict import normalize_param, stage_for, taxonomy
 
 PROMPT_DIR = Path(__file__).parent / "prompts"
 TAX = taxonomy()
+
+
+class AtomizeError(ValueError):
+    def __init__(self, code):
+        self.code = code
+        super().__init__(code)
+
+
+@dataclass(frozen=True, slots=True)
+class Prepared:
+    profile: object
+    video_id: str
+    duration_ms: int
+    index: dict
+    messages: tuple
+    model: str
+    prompt_version: str
+    taxonomy_version: str
+    source_sha256: str
+    input_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class Generated:
+    atoms: tuple
+    stats: dict
+    execution: object = None
+
+
+def _source(con, video_id):
+    asset = db.get_asset(con, video_id)
+    if asset is None:
+        raise AtomizeError("ATOMIZE_SOURCE_MISSING")
+    index, timeline = db.timeline_index(con, video_id), timeline_text(con, video_id)
+    value = {"asset": {key: asset[key] for key in ("title", "author", "duration_ms")},
+             "index": index, "timeline": timeline}
+    return asset, index, timeline, hashlib.sha256(db.j(value).encode()).hexdigest()
 
 
 def _prompt_text() -> str:
@@ -92,7 +132,7 @@ def _validate_price(raw_price):
     return out
 
 
-def _validate_atom(raw, video_id, idx, index, dur):
+def _validate_atom(raw, video_id, idx, index, dur, *, prompt_version=None):
     """Deterministic post-LLM validation & enrichment. Returns atom or None."""
     claim = (raw.get("claim") or "").strip()
     if not claim or len(claim) < 6:
@@ -154,7 +194,7 @@ def _validate_atom(raw, video_id, idx, index, dur):
         "confidence": composite_confidence(
             {"evidence_nature": nature, "conditions": conditions}, ev_refs),
         "status": "candidate", "cluster_id": None,
-        "model": None, "prompt_version": config.get("atomize_prompt_version"),
+        "model": None, "prompt_version": config.get("atomize_prompt_version") if prompt_version is None else prompt_version,
         "created_at": db.now(),
     }
     if raw.get("notes"):
@@ -162,27 +202,49 @@ def _validate_atom(raw, video_id, idx, index, dur):
     return atom
 
 
-def run(con, video_id: str) -> dict:
-    asset = db.get_asset(con, video_id)
+def prepare(con, video_id: str, *, profile=None) -> Prepared:
+    from .worker import _execution_profile
+    inherited = model_scopes.current_execution()
+    profile = storage_admin.from_connection(con, profile=profile or (
+        inherited.profile if inherited is not None else _execution_profile()))
+    asset, index, tl, source_sha = _source(con, video_id)
     dur = asset["duration_ms"] or 1
-    index = db.timeline_index(con, video_id)
-    tl = timeline_text(con, video_id)
     if not tl.strip():
-        db.log_run(con, video_id, "atomize", ok=False, detail="empty timeline")
-        con.commit()
-        return {"n_atoms": 0, "error": "empty timeline"}
+        raise AtomizeError("ATOMIZE_EMPTY_TIMELINE")
     system = _prompt_text()
     messages = [{"role": "system", "content": system},
                 {"role": "user",
                  "content": f"视频标题:{asset['title']}\nUP主:{asset['author']}\n时长:{dur/1000:.0f}秒\n\n时间轴:\n{tl}"}]
+    prompt_version = config.get("atomize_prompt_version") or "v2"
+    taxonomy_version = config.get("taxonomy_version") or "v2"
+    model = config.get("atomize_model")
+    digest = hashlib.sha256(db.j({"messages": messages, "index": index, "duration_ms": dur,
+        "model": model, "prompt_version": prompt_version, "taxonomy_version": taxonomy_version,
+        "taxonomy": TAX}).encode()).hexdigest()
+    return Prepared(profile, video_id, dur, index, tuple(messages), model,
+                    prompt_version, taxonomy_version, source_sha, digest)
+
+
+def generate(prepared: Prepared, *, business_connection=None) -> Generated:
+    if business_connection is not None and business_connection.in_transaction:
+        raise AtomizeError("ATOMIZE_TRANSACTION_OPEN")
     t0 = time.time()
-    obj, model = llm.chat_json(messages, model=config.get("atomize_model"),
-                               max_tokens=8192)
+    with model_scopes.execution(prepared.profile, "atomize", {
+            "video_id": prepared.video_id, "model": prepared.model,
+            "prompt_version": prepared.prompt_version, "taxonomy_version": prepared.taxonomy_version},
+            selection=(prepared.video_id,), business_connection=business_connection) as execution:
+        with model_scopes.call(execution, "atomize:" + prepared.video_id,
+                business_connection=business_connection, version_tags=(
+                    ("prompt_version", str(prepared.prompt_version)),
+                    ("taxonomy_version", str(prepared.taxonomy_version)),
+                    ("frozen_input_sha256", prepared.input_sha256))):
+            obj, model = llm.chat_json(list(prepared.messages), model=prepared.model, max_tokens=8192)
     dt = time.time() - t0
     raw_atoms = obj.get("atoms", []) if isinstance(obj, dict) else []
     atoms, dropped = [], []
     for i, raw in enumerate(raw_atoms):
-        a = _validate_atom(raw, video_id, i, index, dur)
+        a = _validate_atom(raw, prepared.video_id, i, prepared.index, prepared.duration_ms,
+                           prompt_version=prepared.prompt_version)
         (atoms if a else dropped).append(a or raw.get("claim", "?")[:30])
     # unique ids
     seen = set()
@@ -190,12 +252,45 @@ def run(con, video_id: str) -> dict:
         while a["id"] in seen:
             a["id"] += "x"
         seen.add(a["id"])
-    db.replace_atoms(con, video_id, atoms)
     stats = {"n_raw": len(raw_atoms), "n_atoms": len(atoms),
              "n_dropped": len(dropped), "dropped": dropped[:5],
              "model": model, "process_s": round(dt, 1)}
-    db.log_run(con, video_id, "atomize", model=model,
-               prompt_version=config.get("atomize_prompt_version"), ok=True,
-               detail=str({k: v for k, v in stats.items() if k != "dropped"}))
-    con.commit()
-    return stats
+    if not atoms:
+        raise AtomizeError("ATOMIZE_EMPTY_RESULT")
+    return Generated(tuple(atoms), stats, execution)
+
+
+def apply(con, prepared: Prepared, generated: Generated, *, commit=True) -> dict:
+    """Verify frozen source inputs under the short business transaction."""
+    if (type(commit) is not bool or (commit and con.in_transaction)
+            or (not commit and not con.in_transaction)):
+        raise AtomizeError("ATOMIZE_TRANSACTION_OPEN")
+    profile = storage_admin.from_connection(con, profile=prepared.profile)
+    if not generated.atoms:
+        raise AtomizeError("ATOMIZE_EMPTY_RESULT")
+    with (storage_lifecycle.shared(profile) if commit else nullcontext()):
+        if commit:
+            con.execute("BEGIN IMMEDIATE")
+        try:
+            if _source(con, prepared.video_id)[3] != prepared.source_sha256:
+                raise AtomizeError("ATOMIZE_INPUT_CHANGED")
+            db.replace_atoms(con, prepared.video_id, list(generated.atoms))
+            stats = generated.stats
+            db.log_run(con, prepared.video_id, "atomize", model=stats["model"],
+                       prompt_version=prepared.prompt_version, ok=True,
+                       detail=str({k: v for k, v in stats.items() if k != "dropped"}))
+            if generated.execution is not None and generated.execution.consumer == "atomize":
+                model_scopes.checkpoint(con, generated.execution, completed_items=(prepared.video_id,), completed=True)
+            if commit:
+                con.commit()
+            return dict(stats)
+        except BaseException:
+            if commit:
+                con.rollback()
+            raise
+
+
+def run(con, video_id: str) -> dict:
+    prepared = prepare(con, video_id)
+    generated = generate(prepared, business_connection=con)
+    return apply(con, prepared, generated)

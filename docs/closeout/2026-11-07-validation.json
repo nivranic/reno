@@ -1,0 +1,73 @@
+{
+  "date": "2026-11-07",
+  "scope": "source delivery closeout; no new feature implementation or runtime admission",
+  "frontend": {
+    "typecheck": {"command": "npm run typecheck", "exit_code": 0},
+    "unit_tests": {
+      "command": "npm test -- --maxWorkers=1",
+      "exit_code": 0,
+      "files_passed": 41,
+      "tests_passed": 314,
+      "duration_seconds": 183.26,
+      "terminal_receipt": "88f6ed"
+    },
+    "isolated_build": {
+      "command": "npm run build -- --outDir <CLOSEOUT_OUTPUT>/frontend-build",
+      "exit_code": 0,
+      "receipt": "8672eb",
+      "terminal_receipt": "6bda8b",
+      "normal_service_dist_replaced": false
+    }
+  },
+  "static_index_validation": {
+    "receipt": "d66490",
+    "python_ast_files": 842,
+    "python_ast_errors": 0,
+    "json_files_at_that_checkpoint": 78,
+    "private_path_private_key_or_provider_token_pattern_hits": 0,
+    "sealed_snapshot_identity_checks": 90,
+    "whitespace_exit_code": 0,
+    "scope_note": "Counts describe the cited index checkpoint before this closeout report and license notice were added. The final index is checked again before commit. Pattern scanning is not a complete security audit."
+  },
+  "whitespace_cleanup": {
+    "python_files": 19,
+    "ast_equivalence_confirmed": true,
+    "sealed_source_bytes_changed": 0,
+    "original_snapshot_whitespace_preserved_by_attributes": true,
+    "initial_index_check_failed_then_corrected": true
+  },
+  "independent_reviews": {
+    "official_read_record_consistency": {"receipt": "e0a72d", "blocking_findings": 0},
+    "snapshot_copy_and_manifest": {
+      "receipts": ["f239d1", "15e02c", "dc93c0"],
+      "files": 90,
+      "bytes": 4571959,
+      "blocking_findings": 0
+    },
+    "supplemental_documents_and_portable_test_fixtures": {
+      "receipts": ["7fe814", "31f231", "7383f1"],
+      "blocking_findings": 0,
+      "tests_executed": false
+    }
+  },
+  "git_delivery_hygiene": {
+    "useful_pending_deployment_commit_retained": true,
+    "one_machine_path_in_unpushed_commit_replaced_with_placeholder": true,
+    "private_telemetry_untracked_but_local_files_preserved": true,
+    "historical_one_shot_local_scripts_excluded": 12,
+    "existing_remote_history_rewritten": false,
+    "database_media_private_configuration_or_real_logs_published": false
+  },
+  "not_executed_in_closeout": [
+    "backend pytest suite or end-to-end scenarios",
+    "C parse, preprocessing, compilation, linking or execution",
+    "candidate installation, product imports or native diagnostics",
+    "normal database writes, migrations or maintenance",
+    "service restart, production deployment or dist replacement"
+  ],
+  "source_only_closed_fields": [],
+  "candidate_executed": false,
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "full_goal_complete": false
+}

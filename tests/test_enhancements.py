@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import reno.config as config
-from reno import db
+from reno import db, storage_admin
 
 VIDEO_ID = "BVenhance00000"
 
@@ -17,17 +17,16 @@ VIDEO_ID = "BVenhance00000"
 def env(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     tmp = tmp_path_factory.mktemp("reno-enh")
-    # keep the real config.local.json (API key) visible under the patched ROOT
-    real = config.ROOT
     mp.setattr(config, "ROOT", tmp)
-    if (real / "config.local.json").exists():
-        (tmp / "config.local.json").write_text(
-            (real / "config.local.json").read_text(encoding="utf-8"),
-            encoding="utf-8")
+    # The suite supplies a fresh explicit artificial config; never copy secrets.
+    mp.setattr(config, "_cache", None)
     mp.setattr(config, "DATA", tmp / "data")
+    mp.setattr(config, "MEDIA", tmp / "media")
     mp.setattr(config, "FRAME_CACHE", tmp / "frames")
     mp.setattr(config, "ORIG", tmp / "media" / "originals")
 
+    db.initialize()
+    storage_admin.initialize(storage_admin.profile())
     con = db.connect()
     con.execute(
         "INSERT INTO video_asset (video_id, title, duration_ms, content_sha256,"
@@ -209,7 +208,7 @@ class TestJudgeStableIds:
             judge.run(con)
         finally:
             con.close()
-        baks = list(config.DATA.glob("reno.db.bak-judge-*"))
+        baks = [p for p in config.DATA.glob("reno.db.bak-judge-*") if not p.name.endswith(".json")]
         assert baks, "judge should leave a rollback snapshot"
         assert len(baks) <= 3
 

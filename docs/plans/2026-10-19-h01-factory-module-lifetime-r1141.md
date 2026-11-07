@@ -1,0 +1,57 @@
+# r1141：Factory独立module_lifetime与逐调用guard退出
+
+r1141选择给未实施Factory增加一个不可退休module_lifetime owning字段，原Py_mod_exec实际module先由creation_module_guard跨type/Factory分配，成功move入untracked实例再Track/原位发布。调用期从真实Factory字段取module，不再依赖可能被type_clear移走的ht_module；同时明确以持续Factory→module_lifetime覆盖逐调用module_guard的成功及失败nonlast退出，其他partial/type/free和创建期仍各按actual first/maylast结账。module/state→Factory→module新有限环由m_clear及无需先clear的m_free先detach真实state边破；全字段/caller/layout/build/一般NULL/N4仍未闭。B001/B002 open2，完整design/source/execution均False，产品仍r1106 SOURCE02完整159未安装，Goal active未完。
+
+显式修订r1139无payload形状及r1140仅借Consumer链的guard成功出口；每Factory新增一pointer/一长期module引用，初建guard成功move不重复，逐调用guard成本保留。六完整源514505B/八继承区间和两完整源410552B/11调查区间/9个单文件文本命中分列；它们不是全CPython mutator穷尽、GC反例或运行证明。原四组合/工具前拒绝、Consumer分配后和消费前fresh、>=3.11及预算保持。
+
+本批candidate/产品compile/import/运行/native/模型/QA/诊断0，downloads0，apply0/历史11、源码缺口关闭0、产品pass0。159源/保护56同18缺/原限额和禁项同；完整Goal仍有工程，非只剩验收。
+
+# ADR-r1141：Factory独立module_lifetime与逐调用guard退出
+
+状态：有限子设计待正式双审，无产品源码或执行准入。原候选01/02、口头预审与静态调查保持原字节；本ADR只明确未实施Factory形状及取根/退出的修订。保留LIFETIME-QUESTION-01及STAGED-LIFETIME-01的原字节，不把type当前存活外推为ht_module在任意清理区间都不变；r1139/r1140均不改。本候选显式修订r1139尚未实施的“Factory无payload”形状，仅增加一个不可变的实际module owning字段，不更换原call/body/模块实际来源。
+
+## 1. 选择一条不依赖ht_module读取的调用期根
+
+给实际Factory增加 `module_lifetime` owning字段：来自该次原Py_mod_exec的actual module实参，发布后不可改，直到Factory最终dealloc才结清。没有公开setter、实例dict、weakref或可写__module__，不是PyCFunction的m_module字段；Factory保持固定C tp_call、非BASETYPE、IMMUTABLETYPE、禁止公开实例化。其字段不接受用户subject登记expected，也不从current module alias/type属性或PyType_GetModule后来返回反认原module。
+
+调用期的连续链改为 actual callable operand真实强持Factory→该Factory不可由tp_clear/退休detach的module_lifetime→actual module→模块owned state内存。Factory.tp_clear仍为NULL；GC不会通过此slot切掉payload边。即使FactoryType的ht_module因独立type清理而移走，直接field仍有自己独立取得责任，不能与type的module边去重。
+
+本次Factory C body可从自己固定layout的实际字段取得module借用，再沿匹配引用API取得r1140逐调用module_guard，不必先调用PyType_GetModule。此处对象寿命的borrow→acquire覆盖来自真实持续Factory root和不可退休字段，不靠opaque getter无callback或当前refcount快照。实际receiver、固定layout、C入前行为/适配、引用API/build与真实caller强根依然要源码核对；这不是caller证书、秘密、业务eligible或对任意外部C写内存的防御。
+
+## 2. 原创建端必须先持module再分配
+
+1. 在原Py_mod_exec(actual_module)真实C实参有效区间，任何type/Factory分配或其它callback之前，先取得一笔私有C `creation_module_guard`。不能先借state可退休的module字段，再跨分配补根。原native framework实际module参数及其调用期有效性来自原模块初始化协议，不接收外部Python登记；future源码须证明这是实际原slot。
+2. 这笔module guard持续跨原PyType_FromModuleAndSpec及Factory GC_New。FactoryType实际newref按r1139保在私有owning local跨分配，state另有的type引用独立计账；不能把未来实例的type根倒推到gc_alloc前。
+3. GC_New成功且正确Init后，Factory仍untracked，先raw置module_lifetime=NULL。将creation_module_guard那一笔move到字段，自动槽置NULL，不新增第三笔module引用，也不再释放已move的责任。隐含FactoryType引用仍是另一笔实际责任；不把guard冒认实例自动type根。
+4. 字段完整后才Track。所有可回调准备之后再核原state/phase/slot，按r1139仅在合法空slot发布actual Factory；原type local仅在真正实例type根持续且匹配nonlast包络时结清。不覆盖已退休state，不从current属性补原根。之后实际Factory caller运输和后继fresh仍待。
+5. type创建/Factory分配NULL时无Factory实例；module guard与实际type local仍各由自动槽拥有，可能last，沿本层actual preparation first结账。成功partial失败时，未move由自动guard拥有，已move只由Factory partial拥有；每笔各清一次，不能两边都DECREF。所有callback/清理结束的phase与first层次按原方案处理，一般NULL入口仍未闭。
+
+## 3. traverse、最终释放与新的有限环
+
+Factory traverse访问其实际heap type和module_lifetime，两条各对应真实拥有；不因都间接到同module而去重。发布后不改field，tp_clear=NULL只说明此immutable payload没有可清setter，不代表整图回收完成。
+
+Factory dealloc先UnTrack，detach module_lifetime到owned temp并置NULL，保存自身已有type责任；结清module temp、以匹配GC_Del释放自身、再结清保存的type，不在free后读self。actual first存在时沿r1135结清全部本层责任后还原，仅scalar返回；NULL入口、module/type清理callback、m_free/部分创建及不同build仍待，不能套成功nonlast或假造first。
+
+新增的直接环为module/state→Factory→module。原module m_clear以及无需先clear的m_free必须先退休、detach真实state-owned Factory/各type/source，再允许callback释放；该state边是此新有限环的具名breaker。Factory→FactoryType→module及type自身dict/mro环仍按type_clear/模块detach处理，完整全字段/N4并未关闭。外部真实Factory root持续时延长module寿命合法，不能强制清lifetime边来回收。
+
+## 4. 显式修订r1140的逐调用guard退出依据
+
+本次同时替换r1140 SUCCESS_NONLAST的覆盖链：使用真实callable operand持续强持的actual Factory→本实例不可退休module_lifetime→同一actual module，从guard取得至C body内真正释放的整个区间给独立module根。成功退出无需再以ConsumerType.ht_module作为module_guard的覆盖前提；不能一面沿用旧Consumer条件一面称已消除此依赖。实际Factory root必须持续到guard结清和本C body返回，框架返回后的operand释放仍是外层责任。
+
+失败时，在同一真实Factory连续根和匹配引用包络成立的条件下，本次逐调用module_guard也有这笔独立nonlast覆盖；但其它type guard/partial/contents/free仍可能last，actual preparation first的分层/结清后还原合同保留。不把这个发布后Factory覆盖倒推给创建期guard，尤其Factory尚未产生或字段未move的失败仍按实际拥有及maylast/first处理。若真实receiver持续根、字段或layout尚未证明，不把成功/失败nonlast当已成立，也不用current type/module alias补根。
+
+本C body应在仍由真实operand持Factory时先结清逐调用module_guard；匹配nonlast包络不额外callback的条件仍需build证明。不得在已还原first之后再做release，也不得沿未经证明的可回调释放沿用旧fresh。原state四组合、Consumer创建后及实际消费前fresh仍全部保留。
+
+## 5. 增量成本与组合
+
+相对r1139：每实际模块代的Factory新增一个pointer字段、一笔长期actual module owning；初建在type构造/Factory分配前新增一笔module guard，成功move后自动责任归零，不与原type→module引用去重。相对r1140：逐调用module_guard acquire/release仍保留；明确改变前置来源和本guard退出的持续根覆盖，均采用actual Factory不可退休module字段，不把它算零。state指针/indicator四组合、工具call前准备拒绝、Consumer分配后和实际消费前fresh不省；whole-body其它资源/失败first仍按各自责任。
+
+该形状移除了调用期“先读可能已清ht_module才能找module根”的依赖，同时引入明确字段/生命周期/有限环和成本。实际ABI/内存峰值、全state/source图、原P0/38context/CORE/IMPORT/owner14、完整caller、D1/D2/N4/COMPAT、>=3.11及原预算仍待。无产品候选/compile/import/执行/native/模型/QA/诊断，无真实库/服务/dist/ACL/settings/平台/Git变化；B001/B002 open2，四项完整批准False，Goal active。
+
+# 下一步：原module参数持有与逐字段清理
+
+核原Py_mod_exec调用方在actual module实参进入slot到creation_module_guard取得的实际连续根；不把未来Factory/类型根倒推跨分配，不从current别名补expected。把新增Factory module字段与原type local、state独立引用、两类module guard和全部partial/Track/发布/失败退出接到同一版本来源表。
+
+全module state/A/J/Product/source bank/Consumer及owner14/bank9逐字段图继续；m_clear与未先clear的m_free须先退休、detach全部实际state边，再释放。NULL入口、module/type/free callback、实际原caller/六工具参数运输和所有SCC仍待，逐调用module_guard的条件nonlast不代其它资源清理。
+
+原P0/38context/CORE/IMPORT、226候选叶/7append/3reply/14ownerproducer、D1/D2/N4/COMPAT及>=3.11/ABI/build/预算仍须完整组合双审；此前不生成产品候选，源码准入前不产品compile/import/运行/native/模型/QA/诊断。全部保护/旧红/原限额及已耗授权保持，P06历史0/7无材料不再索取，Goal active。

@@ -10,6 +10,9 @@ import { cn } from "@/lib/cn";
 import { PolarityBadge, AtomStatusBadge } from "@/components/shared/status-badge";
 import { ModalityTag } from "@/components/shared/modality-tag";
 import { EmptyState } from "@/components/shared/states";
+import { KnowledgeDetails } from "@/components/shared/knowledge-details";
+import { SaveDecisionButton } from "@/features/decisions/decision-dialog";
+import { AtomReviewControls } from "@/components/shared/review-controls";
 import { Input, Select } from "@/components/ui/field";
 import { useWorkbench } from "./workbench-store";
 
@@ -140,24 +143,10 @@ function AtomCard({
           </span>
         ) : null}
       </div>
-      {atom.parameters && atom.parameters.length > 0 ? (
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          {atom.parameters.map((p, i) => (
-            <span
-              key={i}
-              className={cn(
-                "rounded border px-1.5 py-0.5 font-mono text-[10.5px]",
-                p.param_status === "unnormalized"
-                  ? "border-st-wait-line bg-st-wait-bg text-st-wait"
-                  : "border-line bg-surface-2 text-ink-2",
-              )}
-            >
-              {p.name}={p.value}
-              {p.unit ?? ""}
-            </span>
-          ))}
-        </div>
-      ) : null}
+      <KnowledgeDetails knowledge={atom} compact />
+      {atom.has_conflict && <p className="mt-1 text-[12px] text-st-wait">存在来源分歧，人工确认不消除冲突</p>}
+      <AtomReviewControls atomId={atom.id} fingerprint={atom.target_fingerprint} />
+      <div className="mt-2"><SaveDecisionButton label="保存个人决定" seed={() => ({ title: atom.claim.slice(0, 100), content_snapshot: { kind: "atom", text: atom.claim }, evidence: [{ target_kind: "atom", target_id: atom.id, target_fingerprint: atom.target_fingerprint ?? "", label: atom.claim }] })} /></div>
       <div className="mt-2 border-t border-line/70 pt-1.5">
         {atom.evidence.length === 0 ? (
           <span className="inline-flex items-center gap-1 text-[11.5px] text-muted">

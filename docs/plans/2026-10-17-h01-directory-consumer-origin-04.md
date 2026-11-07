@@ -1,0 +1,9 @@
+# directory consumer partial与错误记录修订04
+
+SOURCE02仍未执行，保留S002残余/S004和原审查。
+
+S002：channel改固定18槽，原15槽不变，第16槽为独立weakrefable later list，第17/18槽保later记录器自身首个error/tb。wrapper弱locator同时保存原later的weakref；reader核原later身份和类型。resources闭包捕获原list.append/list.__setitem__/TB getter；记录later若再失败，只直接保存固定fallback error/tb，不替换正在传播的原错误。成功门要求later为空、fallback为空；不把丢失观察认作成功。
+
+S004：原raw allocator创建Consumer即同步设置channel与finish_attempted=False两个slot及原raw mirrors，其他初始化不得先将finish_attempted改回None。finish核原raw身份后先记录attempt和actual outcome；实际inner失败分支只保存失败观察，不要求未完成的caller/source初始化成功。正常分支才核全部begin返回/实际caller关闭/来源/history；失败观察不授成功权限，也不称partial init完成。
+
+本批仍无carrier删除或terminal权力，wrapper最终关闭只能由后继核验；SOURCE03再做完整双审后才准入模型。

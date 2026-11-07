@@ -5,7 +5,7 @@
  *   <lg: media column + tabs(证据流 | 原子知识), frame appears on selection
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronsLeftRight } from "lucide-react";
 import { eventsQuery, videoMetaQuery } from "@/lib/queries";
@@ -16,6 +16,7 @@ import { ErrorState, ListSkeleton } from "@/components/shared/states";
 import { VideoStatusBadge } from "@/components/shared/status-badge";
 import { Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/components/shared/toaster";
+import { evidenceReturn } from "@/components/shared/evidence-link";
 import {
   WorkbenchStoreProvider,
   createWorkbenchStore,
@@ -45,6 +46,9 @@ function WorkbenchInner({ videoId }: { videoId: string }) {
 }
 
 function WorkbenchBody({ videoId }: { videoId: string }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const returnTo = evidenceReturn(location.state);
   const store = useWorkbench();
   const toast = useToast();
   const meta = useQuery(videoMetaQuery(videoId));
@@ -88,8 +92,11 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
   // ---- URL: explicit locate replaces ?t=ms (no history spam) ----
   useEffect(() => {
     if (requestedMs == null) return;
-    window.history.replaceState(null, "", `/videos/${encodeURIComponent(videoId)}?t=${requestedMs}`);
-  }, [requestedMs, videoId]);
+    const params = new URLSearchParams(location.search);
+    if (params.get("t") === String(requestedMs)) return;
+    params.set("t", String(requestedMs));
+    navigate({ pathname: location.pathname, search: params.toString(), hash: location.hash }, { replace: true, state: location.state });
+  }, [requestedMs, location.pathname, location.search, location.hash, location.state, navigate]);
 
   // ---- deep link ?t=ms: apply once, after data+metadata, never over a user action ----
   const [searchParams] = useSearchParams();
@@ -158,8 +165,10 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
 
   // ---- resizable atoms panel (lg+) ----
   const [atomsW, setAtomsW] = useState(() => {
-    const saved = Number(localStorage.getItem(ATOMS_W_KEY));
-    return Number.isFinite(saved) && saved >= 300 && saved <= 620 ? saved : 380;
+    try {
+      const saved = Number(localStorage.getItem(ATOMS_W_KEY));
+      return Number.isFinite(saved) && saved >= 300 && saved <= 620 ? saved : 380;
+    } catch { return 380; }
   });
   useEffect(() => {
     const onResize = () => {
@@ -215,8 +224,8 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
         ) : (
           <ErrorState error={meta.error} onRetry={() => void meta.refetch()} context="视频信息" />
         )}
-        <Link to="/" className="mt-4 self-start text-sm text-acc hover:underline">
-          ← 回到收件箱
+        <Link to={returnTo?.to ?? "/"} replace className="mt-4 self-start text-sm text-acc hover:underline">
+          ← {returnTo?.label ?? "回到收件箱"}
         </Link>
       </div>
     );
@@ -227,10 +236,11 @@ function WorkbenchBody({ videoId }: { videoId: string }) {
       {/* header */}
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line bg-bg px-4 py-2.5">
         <Link
-          to="/"
+          to={returnTo?.to ?? "/"}
+          replace
           className="inline-flex items-center gap-1 rounded-ctl px-1.5 py-1 text-[13px] text-muted hover:bg-surface-2 hover:text-ink"
         >
-          <ArrowLeft size={15} /> 收件箱
+          <ArrowLeft size={15} /> {returnTo?.label ?? "收件箱"}
         </Link>
         <h1
           className="min-w-0 flex-[1_1_208px] truncate text-[15px] font-semibold text-ink"

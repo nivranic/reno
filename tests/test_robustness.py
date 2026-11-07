@@ -14,12 +14,13 @@ import concurrent.futures
 import json
 import subprocess
 import threading
+import time
 
 import pytest
 from fastapi.testclient import TestClient
 
 import reno.config as config
-from reno import db
+from reno import db, storage_admin
 
 VIDEO_ID = "BVrobustest000"
 MP4_SECONDS = 1.2
@@ -42,7 +43,8 @@ def iso(tmp_path_factory):
 
     # 1s real video via the bundled ffmpeg (frame extraction needs a real file)
     import imageio_ffmpeg
-    mp4 = tmp / "seed.mp4"
+    mp4 = tmp / "media" / "seed.mp4"
+    mp4.parent.mkdir(parents=True)
     subprocess.run(
         [imageio_ffmpeg.get_ffmpeg_exe(), "-y", "-loglevel", "error",
          "-f", "lavfi", "-i",
@@ -50,6 +52,8 @@ def iso(tmp_path_factory):
          "-pix_fmt", "yuv420p", str(mp4)],
         check=True, capture_output=True)
 
+    db.initialize()
+    storage_admin.initialize(storage_admin.profile())
     con = db.connect()  # follows patched DATA
     con.execute(
         "INSERT INTO video_asset (video_id, source_platform, source_type, title,"
@@ -105,6 +109,14 @@ def client(iso):
     return TestClient(iso["app"])
 
 
+@pytest.fixture()
+def stop_import_worker_before_unpatch(monkeypatch):
+    """Also stop on early HTTP/assertion failure, before pipeline stubs expire."""
+    yield
+    from reno import worker
+    assert worker.stop_running(timeout=5)
+
+
 def threads_call(n, fn):
     """Run fn(i) on n threads; return (results, page_errors)."""
     errs = []
@@ -113,12 +125,36 @@ def threads_call(n, fn):
         try:
             return fn(i)
         except Exception as e:  # noqa: BLE001
-            errs.append(f"{type(e).__name__}: {e}")
+            errs.append(f"{type(e).__name__} [{getattr(e, 'code', 'unknown')}]: {e}")
             return None
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=n) as ex:
         results = list(ex.map(wrap, range(n)))
     return results, errs
+
+
+def wait_for_import_job(task_id):
+    """Import acknowledges a durable job before its asynchronous worker runs."""
+    from reno import worker
+    deadline = time.monotonic() + 10
+    try:
+        while time.monotonic() < deadline:
+            con = db.connect()
+            try:
+                jobs = [dict(row) for row in con.execute(
+                    "SELECT * FROM job WHERE kind='ingest' AND job_id=?", (task_id,))]
+            finally:
+                con.close()
+            assert len(jobs) == 1, jobs
+            if jobs[0]["status"] == "done":
+                return jobs[0]
+            assert jobs[0]["status"] in ("pending", "running"), jobs
+            time.sleep(0.02)
+        raise AssertionError("The single durable import job did not finish")
+    finally:
+        # Stop before monkeypatch teardown can restore the real pipeline while
+        # a pending/active synthetic job still exists.
+        assert worker.stop_running(timeout=5)
 
 
 # ------------------------------------------------------------ A. 边界
@@ -149,18 +185,19 @@ class TestBoundary:
             assert r.status_code == 400, (urls, r.status_code, r.text[:120])
 
     def test_import_batch_cap_200(self, client, monkeypatch):
-        import reno.favlist as favlist
+        from reno import import_tasks, worker
         seen = {}
 
-        def fake_import_urls(urls):
+        def fake_submit(urls, request_id=None):
             seen["n"] = len(urls)
-            return {"imported": [], "duplicate": [], "failed": []}
+            return {"status": "queued", "queued": len(urls), "task_ids": list(range(len(urls)))}
 
-        monkeypatch.setattr(favlist, "import_urls", fake_import_urls)
+        monkeypatch.setattr(import_tasks, "submit_batch", fake_submit)
+        monkeypatch.setattr(worker, "ensure_running", lambda: True)
         r = client.post("/api/import-batch",
                         json={"urls": [f"https://x/{i}" for i in range(300)]})
-        assert r.status_code == 200
-        assert seen["n"] <= 200
+        assert r.status_code == 202 and r.json()["queued"] == 200 and r.json()["skipped"] == 100
+        assert seen["n"] == 200
 
     def test_decision_validates_action_enum(self, client):
         for action in ("accept_a;DROP TABLE user_decision", "__proto__", "", 123, None,
@@ -228,9 +265,10 @@ class TestBoundary:
 
     def test_search_fts_specials_no_500(self, client):
         for q in ('"', "*", "NEAR", "(", "a OR b", "-", "^x", "Colon:",
-                  "x" * 20000, "🎉 emoji", "' OR 1=1 --", "防 水"):
+                  "🎉 emoji", "' OR 1=1 --", "防 水"):
             r = client.get("/api/search", params={"q": q})
             assert r.status_code == 200, (q[:20], r.status_code)
+        assert client.get("/api/search", params={"q": "x" * 20000}).status_code == 400
 
     def test_search_sql_injection_probes(self, client):
         for probe in ("'; DROP TABLE knowledge_atom;--", "' OR '1'='1", "防水\x00"):
@@ -294,54 +332,73 @@ class TestConcurrency:
         bad = [s for s in results if s != 200]
         assert not bad, bad[:5]
 
-    def test_concurrent_same_url_import_single_register(self, iso, monkeypatch):
-        """8 threads import the same content concurrently -> exactly one
-        'imported', the rest 'duplicate', one pipeline trigger."""
+    def test_concurrent_same_url_import_single_register(self, iso, monkeypatch, stop_import_worker_before_unpatch):
+        """8 concurrent requests share one import job and one processing run."""
         import reno.ingest as ingest_mod
 
-        barrier = threading.Barrier(8)
+        release = threading.Event()
         lock = threading.Lock()
         calls = {"n": 0}
 
-        def fake_ingest_url(url):
-            barrier.wait(timeout=15)  # everyone "in flight" together
+        def fake_ingest_url(url, **kwargs):
+            assert release.wait(timeout=15)
             with lock:
                 calls["n"] += 1
-            return ingest_mod.ingest_file(str(iso["mp4"]))
+            return ingest_mod.ingest_file(str(iso["mp4"]), enqueue_process=False, profile=kwargs["profile"])
 
         monkeypatch.setattr(ingest_mod, "ingest_url", fake_ingest_url)
         import reno.pipeline as pipeline_mod
         pipeline_calls = []
         monkeypatch.setattr(pipeline_mod, "run_video",
-                            lambda vid, **kw: pipeline_calls.append(vid))
+                            lambda vid, **kw: pipeline_calls.append(vid) or {})
 
         def hit(i):
             c = TestClient(iso["app"])
             r = c.post("/api/import", json={"url": "https://same/example"})
-            assert r.status_code == 200, (r.status_code, r.text[:200])
+            assert r.status_code == 202, (r.status_code, r.text[:200])
             return r.json()
 
         results, errs = threads_call(8, hit)
+        release.set()
         assert not errs, errs[:3]
-        statuses = [r["status"] for r in results]
-        assert statuses.count("imported") == 1, statuses
-        assert statuses.count("duplicate") == 7, statuses
-        assert len(pipeline_calls) == 1, pipeline_calls
+        assert {r["status"] for r in results} == {"queued"}
+        assert len({r["task_id"] for r in results}) == 1
+        job = wait_for_import_job(results[0]["task_id"])
+        assert calls["n"] == 1 and job["kind"] == "ingest"
+        assert pipeline_calls == [job["video_id"]], pipeline_calls
+        con = db.connect()
+        try:
+            assert con.execute("SELECT COUNT(*) FROM job WHERE kind='process' AND video_id=?", (job["video_id"],)).fetchone()[0] == 0
+        finally:
+            con.close()
 
-    def test_concurrent_same_target_frame_single_valid_file(self, iso):
+    def test_concurrent_same_target_frame_single_valid_file(self, iso, monkeypatch):
+        from app import api
+        from io import BytesIO
+        from PIL import Image
+        original_extract = api.extract_frame
+        calls = []
+
+        def extract(*args, **kwargs):
+            calls.append(args[1])
+            return original_extract(*args, **kwargs)
+
+        monkeypatch.setattr(api, "extract_frame", extract)
+
         def hit(i):
-            c = TestClient(iso["app"])
-            return c.get(f"/api/frame/{VIDEO_ID}/300").status_code
+            with TestClient(iso["app"]) as c:
+                response = c.get(f"/api/frame/{VIDEO_ID}/333")
+                return response.status_code, response.content
 
         results, errs = threads_call(8, hit)
         assert not errs, errs[:3]
-        assert all(s == 200 for s in results), results
-        cache = config.FRAME_CACHE / VIDEO_ID / "f0000300.jpg"
-        from PIL import Image
-        img = Image.open(cache)
-        img.verify()
-        img = Image.open(cache)
-        assert img.size == (320, 240)
+        assert all(status == 200 for status, _ in results), [status for status, _ in results]
+        assert calls == [333]
+        assert len({data for _, data in results}) == 1
+        with Image.open(BytesIO(results[0][1])) as img:
+            img.verify()
+        with Image.open(BytesIO(results[0][1])) as img:
+            assert img.size == (320, 240)
 
     def test_config_model_write_race(self, iso):
         def hit(i):
@@ -352,7 +409,7 @@ class TestConcurrency:
         results, errs = threads_call(20, hit)
         assert not errs, errs[:3]
         assert all(s == 200 for s in results)
-        local = json.loads((config.ROOT / "config.local.json").read_text(encoding="utf-8"))
+        local = json.loads(config.local_path().read_text(encoding="utf-8"))
         assert local["atomize_model"] in ("GLM-5.3", "GLM-5.3-Flash")
 
 
@@ -420,7 +477,7 @@ class TestIdempotency:
         r = client.post("/api/import", json={"url": f"file://{iso['mp4']}"})
         assert r.status_code == 400  # local files go through upload/CLI, not URL import
 
-    def test_import_same_content_sequential(self, iso, monkeypatch):
+    def test_import_same_content_sequential(self, iso, monkeypatch, stop_import_worker_before_unpatch):
         """Re-import of identical content -> duplicate, pipeline runs once."""
         import reno.ingest as ingest_mod
 
@@ -429,21 +486,32 @@ class TestIdempotency:
         con = db.connect()
         con.execute("DELETE FROM video_asset WHERE content_sha256 IN"
                     " (SELECT content_sha256 FROM video_asset WHERE video_id LIKE 'file_%')")
+        con.execute("DELETE FROM task_request WHERE job_id IN (SELECT job_id FROM job WHERE video_id LIKE 'file_%')")
         con.execute("DELETE FROM job WHERE video_id LIKE 'file_%'")
         con.commit()
         con.close()
 
-        def fake_ingest_url(url):
-            return ingest_mod.ingest_file(str(iso["mp4"]))
+        def fake_ingest_url(url, **kwargs):
+            return ingest_mod.ingest_file(str(iso["mp4"]), enqueue_process=False, profile=kwargs["profile"])
 
         monkeypatch.setattr(ingest_mod, "ingest_url", fake_ingest_url)
         import reno.pipeline as pipeline_mod
         pipeline_calls = []
-        monkeypatch.setattr(pipeline_mod, "run_video",
-                            lambda vid, **kw: pipeline_calls.append(vid))
+        def processed(vid, **kwargs):
+            pipeline_calls.append(vid)
+            with storage_admin.connection() as con:
+                con.execute("UPDATE video_asset SET status='processed' WHERE video_id=?", (vid,))
+                con.commit()
+            return {}
+        monkeypatch.setattr(pipeline_mod, "run_video", processed)
         c = TestClient(iso["app"])
         r1 = c.post("/api/import", json={"url": "https://x/first"}).json()
+        assert r1["status"] == "queued"
+        first = wait_for_import_job(r1["task_id"])
         r2 = c.post("/api/import", json={"url": "https://x/second"}).json()
-        assert r1["status"] == "imported"
-        assert r2["status"] == "duplicate"
-        assert len(pipeline_calls) == 1
+        assert r2["status"] == "queued"
+        second = wait_for_import_job(r2["task_id"])
+        assert first["video_id"] == second["video_id"]
+        assert json.loads(first["result_json"])["status"] == "imported"
+        assert json.loads(second["result_json"])["status"] == "duplicate"
+        assert pipeline_calls == [first["video_id"]]

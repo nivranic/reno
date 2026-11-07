@@ -1,0 +1,15 @@
+# State独占锁首错及退出修复
+
+r1164已修复并应用StateStore.exclusive的连贯错误优先级：setup原错、caller原错/取消优先；无caller错时先保unlock错误，仍尝试全部已登记context退出。两个mode继续按原RLock、Directory→lock stream→非阻塞锁的顺序取得，先清_directory后unlock/exit；creating和existing_only原创建规则不变，caller失败时把原异常交给existing generator而跳过其正常成功后验证。optional note固定调用BaseException且失败不覆盖first。
+
+初稿F001曾遗漏合法异常子类可拦截普通__traceback__ lookup，导致ExitStack根本未调用；01/28case初稿未执行并保留。最终用BaseException原member descriptor同位运输actual退出参数，并补两mode各一例。它不记录或观察frames/locals/chain/notes，不新增诊断。准入F002已把旧Root01审查引用纠正为最终Root02，最终完整源码/测试/runner/精确输入两审通过。
+
+唯一新q1164、单普通pytest child实际30Fake/90phase全pass、0.625秒，exit0；stdout101B，无timeout/cleanup/overflow/reader/monitor失败，reader已join。测试使用真实StateStore/RLock/ExitStack/sanitizer与Fake nt目录/stream/locking后端，覆盖两mode各15case、setup/caller/取消、unlock+多exit错误、成功后未知错误、note失败、busy映射、重入与traceback覆写。无真实State文件、SQL、native锁/rename或旧案重放；正常系统DLL导入仍发生，不称整个进程零OS操作。原r1163的13绿未重跑，不跨批相加为43绿。
+
+最终CANDIDATE-02产品127628B/SHA f1428223cfb45219de287e23c3a7021ed13fffc246beb4f81b948b6b5165030a，原r1163基底126953B/a1ed0a…7b55c；仅exclusive增加675B，CRLF正逆像与其余源码保持，新测试8683B。26完整输入589102B、manifest5697B/SHA7f938f04856b1085be108aff63cb49d9930c31c455c54ba21d5e4800a993c017，21顶层相对import模块，不声称完整deferred运行图。worker594799B；generator730718+runner640959=1371677B<1388478B上界<2MiB。8KiB产品control为静态包络非实测，原30case/20/25/共享cleanup10秒、parent360/matrix1680/max2与8192+1输出保持。结果独审后仅应用1产品+1新测试并逐字节读回。
+
+保全仍为55同+sync_state同一文件一个显式历史迁移、18严格缺；本次从r1163合法升级至r1164，不把旧live输入manifest冒认为仍匹配。c973中该原源码、r1106完整159、七旧seal56/78/108/63/53/81/48、r1161已应用及r1163旧测试保持；历史包不回写不重跑。raw3四before/七缺及r1162镜像四before/一缺保持，均未安装。当前源码基底r1158+r1157 GC+r1161目录关闭+r1163_replace首错+r1164 exclusive修复；服务未重启，现有进程载入状态未验。
+
+本批仅闭合所审exclusive本层优先级。下层_observation_stream POSIX validation-close、_existing_lock_stream内部验证-close、_read_bytes/_write stream body-close及media内部first边界仍待，不能反向恢复已经丢掉的first；fdopen失败接管域未知，不补数字fd close或改ABI。完整调查见STATE-OWNERSHIP-AUDIT-01.md。q1162实际State失败和r1159/r1160 request发布原因仍未定，不把30Fake当native恢复证明。
+
+主方案原T16及H03依赖顺序经重核保持；不越过H01/H02/H05前件去发布H04/H06或永久分享。H01完整source/caller/state/生命周期/COMPAT和B001/B002 open2、H02下游、H03现代pending真实落点/占位/全部writer暂停恢复、分享撤销、条件T15与生产云仍待；P06七历史身份用户无备份，不再问。r920/r964诊断授权耗尽，普通开发与同一只读代理授权持续，无新许可待答。正常库/服务/dist/既有权限/settings/Git未主动操作。Goal active未完成，不是只剩验收。

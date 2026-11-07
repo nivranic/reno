@@ -1,0 +1,227 @@
+#ifndef RENO_WINDOWS_CPYTHON312_HANDLE_OWNER_H
+#define RENO_WINDOWS_CPYTHON312_HANDLE_OWNER_H
+
+#include <Python.h>
+#include "reno_windows_serialized_slot.h"
+
+#if defined(_WIN32)
+/* Uninstalled, full-API CPython 3.12.10 Windows x64 candidate. The only
+ * producer of this opaque C type is new_empty below. A typed pointer is not
+ * a source grant: actual product caller/source integration is still absent.
+ * No external PyObject/type/fd/HANDLE is accepted or adopted by the factory.
+ * No session address, fd, OWNED HANDLE, transfer or raw/stream API is
+ * exported. The directory-only observation entry below may return the
+ * actual UNKNOWN Duplicate output; the failed-close entry below can return
+ * this pre-transfer owner's failed HANDLE-close observation. Neither is a
+ * borrow/closer/grant.
+ *
+ * This owner implements ONLY the pre-transfer HANDLE lifetime. It cannot
+ * host r1189/r1190 fd conversion yet; adding that operation requires a new
+ * lifetime contract covering every actual raw/buffer/native consumer.
+ */
+typedef struct RenoWindowsHandleOwner RenoWindowsHandleOwner;
+
+typedef struct {
+    RenoWindowsAdmission admission;
+    unsigned int stop_called;
+    RenoNativeResult stop; /* valid only stop_called */
+    unsigned int close_called;
+    RenoNativeResult close; /* valid only close_called */
+    unsigned int already_empty_or_terminal;
+    /* THIS invocation only, never a replay of an earlier UNKNOWN history.
+     * The handle-only producer cannot set transferred_handle_present or
+     * produce an FD kind. Only available==1 makes its payload valid.
+     */
+    RenoWindowsCloseAttemptFailure close_failure;
+} RenoWindowsHandleOwnerCloseResult;
+
+/* NEW owning Python reference, or NULL with the actual creation exception.
+ * Requires attached thread state/GIL and no entry exception. Creates a
+ * distinct immutable, non-subclassable, non-instantiable heap type per owner.
+ * That additional type allocation/cost is a new behavior, not COMPAT proof.
+ */
+RenoWindowsHandleOwner *reno_windows_cpython312_handle_owner_new_empty(void);
+
+/* Consumes one actual owning reference from the factory or a real retaining
+ * edge; NULL is permitted. May be last: native close/reporting, allocator and
+ * type destruction can call out. Saves/restores the entry raised indicator
+ * by the selected 3.12 API; arbitrary allocator/free behavior is not proven.
+ */
+void reno_windows_cpython312_handle_owner_decref(RenoWindowsHandleOwner *owner);
+
+/* Each call requires a continuously held actual caller owning reference,
+ * GIL and live path/security storage. It acquires a separate owner guard
+ * before any native operation and releases it after native settlement.
+ * The guard release is nonlast only because that caller root persists.
+ * No type/pointer test establishes that source/root precondition.
+ *
+ * Original path/security provenance, audits and original argument/error
+ * behavior belong to the eventual real adapter; these are typed C entries,
+ * not PyCFunction implementations. Native errors are returned as typed facts,
+ * without Python error construction or resource integer publication.
+ */
+RenoWindowsSerializedResult reno_windows_cpython312_handle_owner_create_once(
+    RenoWindowsHandleOwner *owner, const wchar_t *path,
+    DWORD access, DWORD share, const SECURITY_ATTRIBUTES *security,
+    DWORD disposition, DWORD flags);
+RenoWindowsHandleQueryResult reno_windows_cpython312_handle_owner_query_once(
+    RenoWindowsHandleOwner *owner);
+
+/* Two distinct actual factory-created owners, each with its own continuous
+ * caller root. Takes two independent guards through both-gate native work.
+ * This is the fixed same-process DuplicateHandle step needed by original H2
+ * and H3 acquisition. It is not original registry/purpose/ordinal, budget,
+ * event, lease or first integration. Unknown acquisition must still reach
+ * that actual caller's debt/accounting path even though no closer is given.
+ */
+RenoWindowsDuplicateResult reno_windows_cpython312_handle_owner_duplicate_once(
+    RenoWindowsHandleOwner *source, RenoWindowsHandleOwner *destination);
+
+/* Split-lifetime path. This opaque, actually allocated Python object keeps
+ * two immutable owning edges through budget callbacks. It grants neither
+ * authority nor a ticket, lease, original native_started flag or settlement.
+ * Both inputs must be actual factory-produced owners with real caller roots.
+ * No raw HANDLE, process value, policy bool or adoption setter is accepted.
+ */
+typedef struct RenoWindowsPreparedDuplicate RenoWindowsPreparedDuplicate;
+
+typedef enum {
+    RENO_DUPLICATE_PREPARED = 0,
+    RENO_DUPLICATE_RUNNING,
+    RENO_DUPLICATE_FINISHED,
+    RENO_DUPLICATE_CANCELLED
+} RenoWindowsPreparedDuplicatePhase;
+
+typedef enum {
+    RENO_PREPARED_ACCEPTED = 0,
+    RENO_PREPARED_INVALID_ARGUMENT,
+    RENO_PREPARED_ENTRY_ERROR,
+    RENO_PREPARED_WRONG_PHASE,
+    RENO_PREPARED_RUNNING
+} RenoWindowsPreparedAdmission;
+
+typedef struct {
+    RenoWindowsPreparedAdmission admission;
+    RenoWindowsPreparedDuplicatePhase phase; /* only non-NULL job */
+    unsigned int process_prepared;
+    unsigned int prepared_process_is_current_pseudo;
+    unsigned int consume_attempted;
+    unsigned int cancelled;
+    unsigned int directory_process_rejected;
+    unsigned int serialization_attempted;
+    RenoWindowsDuplicateResult operation; /* only serialization_attempted */
+} RenoWindowsPreparedDuplicateResult;
+
+/* NEW owning reference or actual preparation exception. Both factories
+ * acquire independent source/destination roots before allocating type/job,
+ * actually initialize a NULL output and then call GetCurrentProcess once.
+ * Invalid process is retained, never rejected here: original directory
+ * validates it AFTER begin, while source has no such validation. The names
+ * select private static policy, not a caller-supplied validation assertion.
+ * Per-job heap type/GC allocation and native NULL replacing _HANDLE() are
+ * new preparation behavior; ctypes call/conversion/last-error COMPAT is open.
+ */
+RenoWindowsPreparedDuplicate *
+reno_windows_cpython312_prepare_directory_duplicate(
+    RenoWindowsHandleOwner *source, RenoWindowsHandleOwner *destination);
+RenoWindowsPreparedDuplicate *
+reno_windows_cpython312_prepare_source_duplicate(
+    RenoWindowsHandleOwner *source, RenoWindowsHandleOwner *destination);
+
+/* Continuous actual job caller root and GIL required through each call.
+ * Consume is single-attempt, including BUSY/fresh-state/process rejection.
+ * It never calls GetCurrentProcess again. It freshly checks actual slots
+ * under both try-gates, then performs actual borrow/duplicate/end. Legacy
+ * operation.duplicate.process_called stays zero: this call did NOT prepare
+ * the process. Actual preparation facts are in the enclosing result.
+ * native_started/native_called remain original caller facts, not OS-called.
+ */
+RenoWindowsPreparedDuplicateResult
+reno_windows_cpython312_consume_prepared_duplicate(
+    RenoWindowsPreparedDuplicate *job);
+
+/* Cancel only PREPARED (idempotent CANCELLED); RUNNING is rejected.
+ * Scalar-only cancel preserves an active entry exception and resets neither
+ * owner. No ticket settlement/refund or process pseudo-handle close occurs
+ * in cancel/dealloc. Dealloc releases roots and MAY trigger last-owner
+ * native close; it is not effect-free. No retry becomes legal. Actual caller
+ * must still preserve owners/debt through original event/settlement/first;
+ * dealloc fallback close is not that original normal accounting protocol.
+ */
+RenoWindowsPreparedDuplicateResult
+reno_windows_cpython312_cancel_prepared_duplicate(
+    RenoWindowsPreparedDuplicate *job);
+void reno_windows_cpython312_prepared_duplicate_decref(
+    RenoWindowsPreparedDuplicate *job);
+
+typedef enum {
+    RENO_DIRECTORY_OBSERVATION_READY = 0,
+    RENO_DIRECTORY_OBSERVATION_INVALID_ARGUMENT,
+    RENO_DIRECTORY_OBSERVATION_ENTRY_ERROR,
+    RENO_DIRECTORY_OBSERVATION_WRONG_POLICY,
+    RENO_DIRECTORY_OBSERVATION_NOT_FINISHED,
+    RENO_DIRECTORY_OBSERVATION_NOT_UNKNOWN
+} RenoWindowsDirectoryObservationAdmission;
+
+typedef struct {
+    RenoWindowsDirectoryObservationAdmission admission;
+    unsigned int conversion_attempted;
+    /* NEW owning reference on successful conversion; NULL otherwise.
+     * READY + conversion_attempted + NULL is the actual conversion failure,
+     * with its raised indicator intact, not certified zero acquisition.
+     */
+    PyObject *raw_outcome;
+} RenoWindowsDirectoryUnknownObservation;
+
+/* For the original directory raw_outcome debt consumer. Requires a real
+ * continuous caller owning job reference/GIL; takes an independent job
+ * guard across Python value conversion. Only this job's actual directory
+ * Duplicate UNKNOWN output after FINISHED can be observed. Rejected jobs,
+ * source policy, no-acquire and successful OWNED outputs expose no number.
+ * Returns NEW None for actual NULL, else unsigned pointer-width PyLong
+ * (including 2**64-1 for INVALID_HANDLE_VALUE in this x64-only candidate).
+ * The scalar is a nonowning historical observation, never a usable HANDLE,
+ * permission to close/retry/reuse, source proof, ticket or lease.
+ * Original holder validation/catalog/T0/debt registration/first still need
+ * actual caller wiring. In particular do not add output reads to source's
+ * original exception branch. Conversion may fail or call out; no native
+ * replay, state rollback or accounting occurs here. Caller owns and must
+ * release the returned Python reference; an active entry error is preserved
+ * and rejected before admission.
+ */
+RenoWindowsDirectoryUnknownObservation
+reno_windows_cpython312_directory_duplicate_unknown_raw(
+    RenoWindowsPreparedDuplicate *job);
+
+/* Stops new native borrows, then closes at most once. Reliable retirement
+ * of OWNED handles follows from THIS private API's absence of escaping
+ * OWNED handle numbers, fd conversion, raw/stream creation or unfinished
+ * registered work. UNKNOWN observation does not justify a close: UNKNOWN
+ * is terminal with no closer/retry/refund. Count zero alone is not proof.
+ * Reentrant BUSY does not consume ownership or authorize freeing the owner.
+ * The same-gate close_failure fields are set only by THIS actual failing
+ * HANDLE close, not by a later already_empty_or_terminal result. They are
+ * nonowning historical facts for original debt transport; no Python value,
+ * first/lease settlement, permanent gate or caller wiring is created here.
+ */
+RenoWindowsHandleOwnerCloseResult reno_windows_cpython312_handle_owner_close_once(
+    RenoWindowsHandleOwner *owner);
+
+/* Same continuous actual owner caller root/GIL preconditions as operations
+ * above; takes a separate owner guard through the gate-protected snapshot.
+ * Only a stored actual failed HANDLE close can yield a historical number.
+ * UNKNOWN acquisition, normal close or rejection creates no new failure
+ * record. A later rejected close does not clear the unique old history:
+ * snapshot may still return it, not proof the latest invocation called OS.
+ * This owner still has no fd producer or fd conversion. Returned C scalars
+ * are nonowning debt facts, not Python values, authority or permission to
+ * retry/close. Actual caller must preserve original debt/first and perform
+ * any fallible Python representation under its own real roots; no budget,
+ * event, lease, PyLong conversion or original caller wiring occurs here.
+ */
+RenoWindowsFailedCloseObservation
+reno_windows_cpython312_handle_owner_failed_close_observation(
+    RenoWindowsHandleOwner *owner);
+
+#endif
+#endif

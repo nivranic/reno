@@ -28,6 +28,8 @@ function netFail() {
 }
 
 export const handlers = [
+  http.get("/api/capabilities", () => HttpResponse.json({ library_id: "mock-library", primary_epoch: 1, personal_read: false, personal_write: false, personal_upload: false, personal_reason: "Mock 中未启用个人记录" })),
+  http.get("/api/projects/default", () => HttpResponse.json({ enabled: false, project: null, reason: "Mock 中未启用个人记录" })),
   http.get("/api/videos", () => {
     if (scenario() === "offline") return netFail();
     if (scenario() === "server-error") return new HttpResponse(null, { status: 500 });
@@ -55,6 +57,21 @@ export const handlers = [
   http.get("/api/facets", () => HttpResponse.json(makeFacets())),
   http.get("/api/reports", () => HttpResponse.json(makeReports())),
   http.get("/api/health", () => HttpResponse.json(makeHealth())),
+  http.get("/api/budget", () => HttpResponse.json({
+    detail: "Mock 中未启用真实预算账本", code: "BUDGET_LEDGER_UNAVAILABLE",
+  }, { status: 503 })),
+  http.get("/api/sync-status", ({ request }) => {
+    if (scenario() === "offline") return netFail();
+    if (scenario() === "server-error") return new HttpResponse(null, { status: 500 });
+    const params = new URL(request.url).searchParams;
+    return HttpResponse.json({ mode: "home", node_role: "all", configured: false,
+      paired: null, compatible: null, online: false, last_seen: null, lease_until: null,
+      counts: {}, expired_claims: 0, retry_due: 0,
+      queue: { total: 0, items: [], offset: Number(params.get("offset") ?? 0), limit: Number(params.get("limit") ?? 10) },
+      home: { enabled: false, configured: false, state: "disabled", updated_at: null,
+        last_success_at: null, retry_at: null, error_code: null, seeded: false,
+        has_pending_publication: false, work_phase: null, lease_valid: false } });
+  }),
 
   http.get("/api/search", ({ request }) => {
     const url = new URL(request.url);

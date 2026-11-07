@@ -1,0 +1,51 @@
+{
+  "scope": "independent bounded local source and AST effect-sequence investigation only; no implementation admission",
+  "reviewed_identities": {
+    "DRAFT.md": {
+      "bytes": 9151,
+      "sha256": "e09dc3e213a0573f901cc49ca6eaef58c36eb1935fed318d6a25eb3771b37277"
+    },
+    "INPUT-IDENTITIES.json": {
+      "bytes": 2092,
+      "sha256": "a6a5d50e8a524c7b80862e1c34906fd8d8aa7d2baff54563bfed789cfbd54e84"
+    },
+    "ROOT-REVIEW.json": {
+      "bytes": 1569,
+      "sha256": "1bae3193f8f75e47206c203e918051c5ad5bbbd02cd48e89f40a2ac6523e9ba8"
+    }
+  },
+  "independent_investigation_review_passed": true,
+  "independent_full_document_read_receipt": "79cd1b",
+  "independent_input_identity_and_python_ast_receipt": "68daf5",
+  "independent_primitive_read_receipts": [
+    "900564",
+    "478dc4"
+  ],
+  "independent_native_policy_crosscheck_receipt": "4e4a40",
+  "all_8_listed_input_identities_match": true,
+  "source_expression_and_primitive_facts_distinguished": true,
+  "dynamic_importerror_actual_raise_result_and_helper_paths_retained_as_source_obligations": true,
+  "callable_checks_not_moved_before_argument_effects": true,
+  "repr_then_format_and_release_before_null_checks_recorded": true,
+  "missing_global_nameerror_details_not_reduced_to_message_only": true,
+  "same_live_native_c_caller_policy_retained": true,
+  "actual_target_opcode_sequence_proved": false,
+  "dec_ref_inputs_expansion_proved": false,
+  "first_pending_release_semantics_closed": false,
+  "implementation_admitted": false,
+  "v3_layout_and_generator_contract_closed": false,
+  "network_calls": 0,
+  "new_candidate_generated": false,
+  "candidate_executed": false,
+  "reference_python_executed": false,
+  "c_parsed": false,
+  "c_compiled": false,
+  "source_only_closed_fields": [],
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "actual_abi_build_runtime_proved": false,
+  "full_compat_proved": false,
+  "physical_peak_budget_proved": false,
+  "full_goal_complete": false,
+  "goal_status": "active"
+}

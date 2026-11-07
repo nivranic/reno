@@ -1,0 +1,27 @@
+{
+  "scope": "local closure and code-writer source facts only",
+  "reviewed_material": "CLOSURE-NOTES.md",
+  "reviewed_identity": {
+    "bytes": 3189,
+    "sha256": "e0852a4ba325d5b269d0d47d8bf25e02b3218b79a46234d01e5dad0deb35dbca"
+  },
+  "local_reference": "data/t16-h01-native-root-handoff-r1112/cpython-v3.12.10/Objects/funcobject.c",
+  "local_reference_identity": {
+    "bytes": 42473,
+    "sha256": "afb66fea5dff2502978d234982a4c62e04061b7dcf4835fddf64a62d8ebd43fb"
+  },
+  "root_source_fact_review_passed": true,
+  "independent_source_fact_review_passed": true,
+  "root_receipts": ["3de55c", "6e4b98", "22f678"],
+  "independent_receipts": ["51c639", "7fa527"],
+  "all_listed_receipts_exit_zero": true,
+  "api_acceptance_not_confused_with_continuous_shape_invariant": true,
+  "no_runtime_counterexample_claimed": true,
+  "new_guard_or_source_rejection_admitted": false,
+  "network_calls": 0,
+  "source_only_closed_fields": [],
+  "candidate_executed": false,
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "full_goal_complete": false
+}

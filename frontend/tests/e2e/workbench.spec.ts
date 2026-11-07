@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./qa-fixtures";
 
 /** Picks the video with the most evidence events from the real DB (via API). */
 async function richestVideoId(request: import("@playwright/test").APIRequestContext) {
@@ -12,7 +12,8 @@ test.describe("workbench four-linkage (real backend)", () => {
   test("atom click seeks player, updates ?t= and loads the evidence frame", async ({ page, request }) => {
     const vid = await richestVideoId(request);
     await page.goto(`/videos/${vid}`);
-    const atom = page.locator("article").first();
+    // Desktop and mobile layouts both mount a panel; act on the visible one.
+    const atom = page.locator("article:visible").first();
     await expect(atom).toBeVisible({ timeout: 20_000 });
 
     await atom.click();

@@ -1,0 +1,47 @@
+# 镜像写入拒绝候选：源码、隔离失败与后继
+
+r1162已准备镜像实际写入拒绝的完整候选：3产品源码及2测试共119940B，before/after/diff及Root+同一只读代理源码复审完成。固定接入现有legacy presence fence与current-primary/原request epoch，提前覆盖catalog登记及已有receipt推进；submission按真实State→profile SH→原request持续覆盖enqueue/commit，保只读查询、原冻结blob重试及过期lease本地receipt的原源码语义。这只是有限legacy接线，不是现代H01 grant/H03 pending实现。候选未安装。
+
+双审冻结后，仅全新q1162一个普通pytest child执行精确1case选集；实际在原sender_env的StateStore.update(session_id/lease)夹具阶段报公开SYNC_STATE_STORAGE_ERROR。只有setup failed和teardown passed，没有call阶段、没有新增gate执行验证，0 passed。约3.594秒，无timeout/cleanup/输出溢出/reader或monitor失败，reader已join。不能推断具体native API、WinError、底层首错，也不能与r1159/r1160发布失败合并为同因。只保原标准pytest短报告2167B；未读隐藏异常链/frames/locals/notes。
+
+精确58输入1452717B、manifest13085B，SHA141deb8a7ca73dd03b79293dea6a8fc3f1ef0255fc9da64484f3c64d46590485；113模块2926950B仅静态调查，worker采用关键有限选集并明确不全pin，不能称runtime完整图。产品control静态包络1027700B<1MiB，非实测；逐db.connect的schema正文与完整request descriptor已计，source-only真实guard按4根核。准入生成器取消重复58重pin、只用196608B小账；runner实际1500588B加generator128608B=1629196B<1732759B上界<2MiB。原20/25/共享cleanup10秒、parent360/matrix1680及max2保持，仅启动1child。原5测试定义中仅选1案且未进入body；其他4定义、旧queue整模块及HTTP/receipt/blob兼容未新跑。
+
+运行后四live before与新测试严格缺席保持，保护56同/18严格缺、r1106完整159及r1157/1158/1159/1160/1161旧封存56/78/108/63/53均保持，raw3四before/七缺同。当前产品源码仍为r1158+r1157 GC保护+r1161目录关闭修复；本批3产品及旧raw3持久包9产品均未安装，服务未重启。后继先另做原State read/update/_write/原子替换及清理完整合同静态审查，不绕fixture预置State、不自动fallback、不重用q1162或新增native/异常链诊断。r920/r964单次诊断已耗，正常库/服务/dist/既有权限/settings/Git未主动操作。H01完整source/caller/state/生命周期/COMPAT及B001/B002 open2、H02下游、H03现代pending真实落点/占位/全部writer暂停恢复仍待；P06七历史身份用户无备份不再问，永久分享撤销、条件T15及生产云仍待。不是只剩验收，Goal active未完成。
+
+## 执行前准备原文
+
+以下设计与预算保留执行前的历史时态；实际q1162结果以上文为准。其中CANDIDATE-03为历史准备稿，最终源码身份是CANDIDATE-06。下文“未执行”或“复审后才执行”不描述当前运行状态。
+
+# r1162 镜像实际写入与发送的有限拒绝门
+
+当前已有 `personal.require_legacy_write_locked`，但镜像初始化、冻结、入队、发送及回执补写没有使用它；发送的原主/epoch检查又晚于catalog登记和已有receipt推进。此次只修这些可独立交付的有限缺口，现代H01活授权及H03 pending没有落地，不能声称H03完成。
+
+固定helper从真实运行入口的profile/metadata/source核现有legacy presence fence，再核当前主和原请求epoch，错误映射为既有sender SyncError。它不接受回调proof、不授grant、不调用完整require_write的附件完整性检查，保留原附件删除后使用已冻结blob的重试。
+
+初始化最后身份回调后、create和各次持久写之前核门。冻结两支入口先核门，每个原请求按其实际prepare.source.primary_epoch持有本次expected；Context的effect_current在原current最后回调后核门，每次catalog replacement也使用这个expected。body暂存/发布及receipt持久化同样重核；owning临时文件必要清理不因失权跳过。
+
+发送在任何_register_request或旧receipt _advance前设本次原epoch并核门。lease只在实际RPC分支要求，保本地receipt租约过期仍零RPC重放。原HTTP client/transport绑定核及取消链保留。
+
+新增admin.submission只维持真实State→profile SH→原request的上下文，不输出授权DTO。tasks在其中开启实际SQL连接并enqueue/commit，消除原status退出后再另取SH的空隙。嵌套connection复用同一guard；没有在SQL/SH中反向取得State。
+
+status/preview/original_operation共用current保持只读，不加写门。新的五项组件用实际legacy门及真实隔离SQL/文件producer；HTTP为MockTransport，普通中断hook只阻断产品工作，不替代gate。既有队列集成fixture改成真实sender原request，不再以虚构status通过。正常库、服务、dist、既有权限和Git不操作；r920/r964诊断不重放。
+
+候选完整before/after/diff见CANDIDATE-03.json及四个*-02.diff。执行须先Root与同一独立代理复审、输入/预算冻结。未执行产品/pytest，未安装。
+
+最终准备修订：以上五项是测试定义，不是本轮执行数量。最终候选以CANDIDATE-06.json五文件身份为准；实际仅选`test_submission_holds_real_state_and_profile_through_actual_enqueue`一案，使用真实source-only State/SH。其他四个定义、旧queue整模块及receipt/过期lease/blob兼容路径未新跑。关键输入是有限选集，不是113模块完整runtime图。control静态上界1027700B，精确RUN-INPUTS及runner另双审后才执行；本说明不独立授权运行。
+
+
+# r1162 单案有限静态读取包络
+
+只适用于最终case `test_submission_holds_real_state_and_profile_through_actual_enqueue`：原fixture实际创建两个独立库；sender初始化及冻结仅由`source_owned`取得真实State与source单profile SH，后续enqueue也是source单profile。没有receiver/RPC、附件或回调递归读。其他四案/旧queue整模块不在本次选集。所有guard在本选集均至多4根；不把原`owned`的8根错算为4根。
+
+固定预算：schema正文44次×9719=427636B（逐db.connect均重新读取，不用cache省略）；request正文9次×32768=294912B；State正文40次×1152=46080B；facility marker/catalog/blob累计81920B；普通guard及初始化/退出直接lock按折合1000次×4根×32=128000B；其余config/node/直接State锁等49152B。累计1027700B<1048576B。目录listing和stat不是payload正文；SQLite页面/SQL步骤沿原capture独立限额，未用本表扩额。
+
+request九次：freeze发布后pin1、成功submission read+pin2、marker后submission read+pin2、status read+pin2、tree前后各1。没有send。32KiB包括完整schema_descriptor，不按只有业务行估计；独立按固定10表116列DDL计算schema约18807B、作为JSON字符串的schema约22769B，剩余约10KiB涵盖固定原project/source、2条revision、1条mutation_receipt、metadata/counts及两次JSON运输结构。没有额外个人资料或附件。
+
+State为未升级format1，空claims/work和固定UUID36、URL、lease与原状态字段；独立静态compact构造约1059B，1152B帽含余量，已核原_bounded使用compact JSONEncoder。固定sender config单件<512B，每_home按2次fresh正文计（sender snapshot及profile/QA db_path），27home共54次，fixture/其他另留26次，合80×512=40960B；node正文/直接State锁等另留8192B，合49152B。pytest本轮basetemp固定q1162/t、fixture名截断30字符，四profile路径每条≤128B，marker≤1536B，单entry catalog≤768B，零附件blob manifest≤512B；81920B共同余量覆盖相应读取与pin。
+
+同一独立代理核定：每home约3次普通guard，27home约81次；15次写门各至多2次，各context/fixture/capture/SQL借用加总远小于1000。固定producer的schema字符串约22769B、非schema行及snapshot外壳约4693B，外层request/prepare/binding留1600B及spacing160B，约29222B<32KiB。此为静态推导而非产品执行。本表是静态上界，不是instrument实测。未替换reader/来源门、不新增profiler/frame/locals/body marker/异常链。源码准备另守2MiB，child/native20、parent25及cleanup共用≤10、原parent360/matrix1680/max2保持；仅一个普通pytest child。表与精确manifest双审通过前不执行。
+
+
+实际结果以上方及RUN/ROOT-RESULT记录为准：未进入case body，未安装，不能把准备设计与静态包络当成运行成功。

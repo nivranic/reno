@@ -1,0 +1,262 @@
+#include <Python.h>
+#include "reno_windows_cpython312_audit.h"
+#include "reno_windows_cpython312_result.h"
+
+#if defined(_WIN32)
+#if defined(Py_LIMITED_API) || PY_VERSION_HEX != 0x030C0AF0 \
+    || !defined(_WIN64) || !(defined(_M_X64) || defined(__x86_64__)) \
+    || !defined(_MSC_VER) || _MSC_VER < 1900
+#error "This uninstalled internal variant requires full-API CPython 3.12.10 Windows x64 and MSVC-compatible CRT IPH"
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+
+/* Same empty callback body/signature as tagged PC/invalid_parameter_handler.c.
+ * This is a local function, not an import of the runtime's plain extern data.
+ * Its distinct function-pointer identity remains a compatibility difference.
+ */
+static void __cdecl
+reno_silent_invalid_parameter_handler(
+    wchar_t const *expression,
+    wchar_t const *function,
+    wchar_t const *file,
+    unsigned int line,
+    uintptr_t pReserved) { }
+
+/* Exact declaration from the selected tagged header. Do not define
+ * Py_BUILD_CORE just to bypass the internal header's guard. A declaration
+ * is not proof that the actual runtime DLL exports this helper or that the
+ * eventual import library binds the same runtime and CRT/errno table.
+ */
+PyAPI_FUNC(void *) _Py_get_osfhandle_noraise(int fd);
+
+static RenoWindowsAdmission
+audit_try_enter(RenoWindowsSerializedSlot *session)
+{
+    if (session == NULL) {
+        return RENO_WINDOWS_INVALID_ARGUMENT;
+    }
+    if (!TryAcquireSRWLockExclusive(&session->gate)) {
+        return RENO_WINDOWS_BUSY;
+    }
+    return RENO_WINDOWS_ADMITTED;
+}
+
+static RenoWindowsAuditedTransferResult
+transfer_audited_internal(
+    RenoWindowsSerializedSlot *session, int crt_flags, PyObject **fd_result)
+{
+    RenoWindowsAuditedTransferResult value = {0};
+    intptr_t actual_handle;
+    _invalid_parameter_handler old_handler;
+
+    value.admission = audit_try_enter(session);
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        return value;
+    }
+    if (session->native.handle_state != RENO_NATIVE_OWNED
+            || session->native.fd_state != RENO_NATIVE_EMPTY
+            || session->native.registered_borrowers != 0
+            || session->native.stopped) {
+        ReleaseSRWLockExclusive(&session->gate);
+        return value;
+    }
+    value.transfer_stage_eligible = 1;
+    actual_handle = session->native.handle;
+    value.audit_attempted = 1;
+    if (PySys_Audit("msvcrt.open_osfhandle", "Ki",
+            (unsigned long long)(uintptr_t)actual_handle, crt_flags) < 0) {
+        value.python_exception_pending = 1;
+        ReleaseSRWLockExclusive(&session->gate);
+        return value;
+    }
+    value.audit_succeeded = 1;
+    /* NULL is a valid previous handler, not an error sentinel. The actual
+     * owner's root and the same gate must cover both setter calls and core.
+     */
+    old_handler = _set_thread_local_invalid_parameter_handler(
+        reno_silent_invalid_parameter_handler);
+    value.core_called = 1;
+    value.core = reno_native_handle_to_fd_once(&session->native, crt_flags);
+    if (value.core.outcome == RENO_NATIVE_OK) {
+        RenoWindowsFdTransferFact fact = RENO_WINDOWS_FD_TRANSFER_FACT_INITIALIZER;
+        /* This real core already committed the sole fd. Publish its exact
+         * successful transition before IPH restoration or Python conversion;
+         * neither failed attempts nor later observers manufacture this fact.
+         */
+        fact.original_handle = actual_handle;
+        fact.actual_fd = session->native.fd;
+        fact.crt_flags = crt_flags;
+        fact.actual_core = value.core;
+        fact.origin = fd_result == NULL ? RENO_FD_TRANSFER_AUDITED_C_ONLY
+            : RENO_FD_TRANSFER_AUDITED_PYTHON_RESULT;
+        session->fd_transfer_fact = fact;
+        session->transferred_handle_view = actual_handle;
+        session->transferred_handle_view_available = 1;
+        session->transfer_identity_state = RENO_TRANSFER_IDENTITY_UNCHECKED;
+    }
+    /* The core has already moved a successful descriptor into its real
+     * owning slot. Restore only AFTER that commit; do not acquire via the
+     * runtime OPEN helper, which would restore before returning the fd.
+     * All normal core outcomes restore exactly once. No SEH/longjmp unwind.
+     */
+    (void)_set_thread_local_invalid_parameter_handler(old_handler);
+    if (value.core.outcome == RENO_NATIVE_ERRNO) {
+        /* Match the original wrapper's errno observation after END_IPH.
+         * core.saved_errno remains the earlier direct-CRT observation.
+         */
+        value.saved_post_iph_errno = errno;
+        ReleaseSRWLockExclusive(&session->gate);
+        errno = value.saved_post_iph_errno;
+        (void)PyErr_SetFromErrno(PyExc_OSError);
+        value.python_exception_pending = 1;
+        return value;
+    }
+    if (value.core.outcome == RENO_NATIVE_OK && fd_result != NULL) {
+        /* Only the optional Python-result entry reaches this conversion,
+         * which may allocate or return a NEW reference to a cached integer.
+         * The actual fd is already owned by session, and the gate is still
+         * held. Conversion failure leaves that ownership intact. Neither
+         * success nor failure of PyLong creation moves it back to HANDLE.
+         */
+        session->fd_transfer_fact.result_state = RENO_FD_RESULT_CONVERTING;
+        *fd_result = PyLong_FromLong((long)session->native.fd);
+        if (*fd_result == NULL) {
+            session->fd_transfer_fact.result_state = RENO_FD_RESULT_FAILED;
+            value.python_exception_pending = 1;
+        }
+        else {
+            session->fd_transfer_fact.result_state = RENO_FD_RESULT_READY;
+        }
+    }
+    ReleaseSRWLockExclusive(&session->gate);
+    return value;
+}
+
+RenoWindowsAuditedTransferResult
+reno_windows_cpython312_transfer_audited_once(
+    RenoWindowsSerializedSlot *session, int crt_flags)
+{
+    /* Preserve the C-only entry: no successful fd-result conversion. */
+    return transfer_audited_internal(session, crt_flags, NULL);
+}
+
+RenoWindowsPythonTransferResult
+reno_windows_cpython312_transfer_python_result_once(
+    RenoWindowsSerializedSlot *session, int crt_flags)
+{
+    RenoWindowsPythonTransferResult value = {0};
+    value.transfer = transfer_audited_internal(session, crt_flags, &value.fd_object);
+    return value;
+}
+
+static RenoWindowsAuditedIdentityResult
+validate_transfer_audited_internal(
+    RenoWindowsSerializedSlot *session, PyObject **handle_result)
+{
+    RenoWindowsAuditedIdentityResult value = {0};
+    void *observed;
+
+    value.admission = audit_try_enter(session);
+    if (value.admission != RENO_WINDOWS_ADMITTED) {
+        return value;
+    }
+    if (session->native.fd_state != RENO_NATIVE_OWNED
+            || session->native.handle_state != RENO_NATIVE_TRANSFERRED
+            || !session->transferred_handle_view_available
+            || session->transfer_identity_state != RENO_TRANSFER_IDENTITY_UNCHECKED
+            || (session->fd_transfer_fact.origin != RENO_FD_TRANSFER_C_ONLY
+                && session->fd_transfer_fact.origin != RENO_FD_TRANSFER_AUDITED_C_ONLY
+                && session->fd_transfer_fact.origin != RENO_FD_TRANSFER_AUDITED_PYTHON_RESULT)
+            || session->fd_transfer_fact.actual_core.outcome != RENO_NATIVE_OK
+            || session->fd_transfer_fact.close_result_available
+            || session->fd_transfer_fact.actual_fd != session->native.fd
+            || session->fd_transfer_fact.original_handle != session->transferred_handle_view) {
+        ReleaseSRWLockExclusive(&session->gate);
+        return value;
+    }
+    value.validation_stage_eligible = 1;
+    value.begin_called = 1;
+    value.begin = reno_native_begin_borrow(&session->native);
+    if (value.begin.outcome != RENO_NATIVE_OK) {
+        ReleaseSRWLockExclusive(&session->gate);
+        return value;
+    }
+
+    value.audit_attempted = 1;
+    if (PySys_Audit("msvcrt.get_osfhandle", "(i)", session->native.fd) < 0) {
+        session->transfer_identity_state = RENO_TRANSFER_IDENTITY_FAILED;
+        value.python_exception_pending = 1;
+        value.end_called = 1;
+        value.end = reno_native_end_borrow(&session->native);
+        ReleaseSRWLockExclusive(&session->gate);
+        return value;
+    }
+    value.audit_succeeded = 1;
+    value.helper_called = 1;
+    observed = _Py_get_osfhandle_noraise(session->native.fd);
+    if (observed == INVALID_HANDLE_VALUE) {
+        /* Save errno AFTER the whole actual helper, including its original
+         * IPH restoration, returns. Preserve this failure through borrow end.
+         */
+        value.saved_errno = errno;
+        session->transfer_identity_state = RENO_TRANSFER_IDENTITY_FAILED;
+        value.end_called = 1;
+        value.end = reno_native_end_borrow(&session->native);
+        ReleaseSRWLockExclusive(&session->gate);
+        errno = value.saved_errno;
+        (void)PyErr_SetFromErrno(PyExc_OSError);
+        value.python_exception_pending = 1;
+        return value;
+    }
+
+    value.helper_succeeded = 1;
+    value.observed_handle = (intptr_t)observed;
+    if (handle_result != NULL) {
+        /* Match the original GET result conversion before comparison. NULL
+         * without an error is a valid observed value; pass it to the same
+         * converter. A NEW reference may point to a cached integer.
+         */
+        *handle_result = PyLong_FromVoidPtr(observed);
+        if (*handle_result == NULL) {
+            /* Only the result conversion failed. Keep the sole fd owner,
+             * preserve its actual exception through scalar borrow settlement,
+             * and do not perform even the internal native-view comparison.
+             */
+            session->transfer_identity_state = RENO_TRANSFER_IDENTITY_FAILED;
+            value.python_exception_pending = 1;
+            value.end_called = 1;
+            value.end = reno_native_end_borrow(&session->native);
+            ReleaseSRWLockExclusive(&session->gate);
+            return value;
+        }
+    }
+    value.comparison_performed = 1;
+    value.identity_matches = (value.observed_handle == session->transferred_handle_view);
+    value.end_called = 1;
+    value.end = reno_native_end_borrow(&session->native);
+    session->transfer_identity_state = value.identity_matches && value.end.outcome == RENO_NATIVE_OK
+        ? RENO_TRANSFER_IDENTITY_MATCHED : RENO_TRANSFER_IDENTITY_FAILED;
+    ReleaseSRWLockExclusive(&session->gate);
+    return value;
+}
+
+RenoWindowsAuditedIdentityResult
+reno_windows_cpython312_validate_transfer_audited_once(
+    RenoWindowsSerializedSlot *session)
+{
+    /* Legacy C-only entry: no successful HANDLE-result conversion. */
+    return validate_transfer_audited_internal(session, NULL);
+}
+
+RenoWindowsPythonIdentityResult
+reno_windows_cpython312_validate_transfer_python_result_once(
+    RenoWindowsSerializedSlot *session)
+{
+    RenoWindowsPythonIdentityResult value = {0};
+    value.identity = validate_transfer_audited_internal(session, &value.handle_object);
+    return value;
+}
+
+#endif

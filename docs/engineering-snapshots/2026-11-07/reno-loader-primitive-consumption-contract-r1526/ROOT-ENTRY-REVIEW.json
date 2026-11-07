@@ -1,0 +1,35 @@
+{
+  "scope": "root supplemental normal-entry and failed-pending text review only",
+  "reviewed_identities": {
+    "ENTRY-PRECONDITIONS.md": {
+      "bytes": 3832,
+      "sha256": "3a2fad88c8e46bc991b9ef3b85d4032d99538f9944ce3a52ab69439c02b00939"
+    },
+    "ROOT-REVIEW.json": {
+      "bytes": 1900,
+      "sha256": "b252437acf75c443a1030b059f0a45144829ebb850dc7cea15126fb7947951bf"
+    },
+    "reno-loader-body-operands-source-r1524/working-01/runtime/Objects/object.c.txt": {
+      "bytes": 88351,
+      "sha256": "602f1efa10771d5841e82b9fb707fa3087fe7e0151c863cf809564e4890be063"
+    }
+  },
+  "root_entry_review_passed": true,
+  "repr_read_receipt": "9deefa",
+  "normal_entry_and_failure_pending_distinguished": true,
+  "repr_signal_recursion_slot_and_nonexact_unicode_checks_recorded": true,
+  "debug_assertion_not_at_all_early_return_entries_recorded": true,
+  "no_new_source_phase_or_guard_added": true,
+  "all_result_indicator_legal_domains_closed": false,
+  "implementation_admitted": false,
+  "network_calls": 0,
+  "new_candidate_generated": false,
+  "candidate_executed": false,
+  "c_parsed": false,
+  "c_compiled": false,
+  "source_only_closed_fields": [],
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "full_goal_complete": false,
+  "goal_status": "active"
+}

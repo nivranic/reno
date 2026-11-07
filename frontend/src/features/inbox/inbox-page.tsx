@@ -12,12 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
 import { ImportDialog } from "./import-dialog";
 import { VideoTable } from "./video-table";
-import { useToast } from "@/components/shared/toaster";
 
 type SortKey = "imported" | "atoms" | "duration" | "title";
 
 export default function InboxPage() {
-  const toast = useToast();
   const qc = useQueryClient();
   const { data, isError, error, isPending, refetch, isFetching, dataUpdatedAt } = useQuery(videosQuery);
   const [q, setQ] = useUrlParam("q");
@@ -168,7 +166,6 @@ export default function InboxPage() {
         onOpenChange={setImportOpen}
         onImported={() => {
           refresh();
-          toast.success("已加入处理队列,状态将自动更新");
         }}
       />
     </div>

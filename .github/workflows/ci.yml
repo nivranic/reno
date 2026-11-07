@@ -15,10 +15,18 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
+      - name: install real proxy test tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx openssl
       - name: pytest (robustness + units; LLM probes opt-in, skipped here)
+        env:
+          NGINX_TEST_BINARY: /usr/sbin/nginx
+          OPENSSL_TEST_BINARY: /usr/bin/openssl
         run: python -m pytest -q
       - name: verify server boots
         run: |
+          python -m reno init-db
           python -m reno serve --port 8901 &
           sleep 4
           curl -fsS http://127.0.0.1:8901/api/health
@@ -40,3 +48,167 @@ jobs:
       - run: npm run typecheck
       - run: npx vitest run
       - run: npm run build
+
+  checkpoint-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: verify minimum Python and SQLite archive support
+        run: python -m pytest -q tests/test_sync_checkpoints.py tests/test_sync_checkpoint_migrations.py tests/test_sync_checkpoint_publication.py
+
+  reconciliation:
+    runs-on: ubuntu-latest
+    env:
+      TMPDIR: ${{ runner.temp }}
+      RENO_E2E_MANIFEST: ${{ runner.temp }}/reno-reconciliation/qa-manifest.json
+      RENO_E2E_PYTHON: python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: pip install -r requirements.txt
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: prepare isolated synthetic reconciliation records
+        run: python scripts/prepare_product_fixture.py --root "$RUNNER_TEMP/reno-reconciliation" --port 18767 --reconciliation
+      - name: verify real API, filters, complete export and return navigation
+        run: npx playwright test tests/e2e/reconciliation.spec.ts
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reconciliation-evidence
+          path: |
+            ${{ runner.temp }}/reno-reconciliation/playwright-results/**/*.png
+            ${{ runner.temp }}/reno-reconciliation/playwright-results/**/reconciliation.md
+          if-no-files-found: ignore
+
+  derivation:
+    runs-on: ubuntu-latest
+    env:
+      TMPDIR: ${{ runner.temp }}
+      RENO_E2E_MANIFEST: ${{ runner.temp }}/reno-derivation/qa-manifest.json
+      RENO_E2E_PYTHON: python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: pip install -r requirements.txt
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: prepare isolated relation history and immutable static reports
+        run: python scripts/prepare_product_fixture.py --root "$RUNNER_TEMP/reno-derivation" --port 18768 --derivation
+      - name: verify provenance states and explicitly triggered real judge task
+        run: npx playwright test -c playwright.derivation.config.ts
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: derivation-evidence
+          path: |
+            ${{ runner.temp }}/reno-derivation/playwright-derivation-results/**/*.png
+            ${{ runner.temp }}/reno-derivation/playwright-derivation-results/**/conflicts.md
+          if-no-files-found: ignore
+
+  sync-recovery:
+    runs-on: ubuntu-latest
+    env:
+      TMPDIR: ${{ runner.temp }}
+      RENO_E2E_MANIFEST: ${{ runner.temp }}/reno-sync-recovery/qa-manifest.json
+      RENO_E2E_PYTHON: python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: pip install -r requirements.txt
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: restore, hold and republish through independent real processes
+        id: scenario
+        run: python scripts/run_sync_scenario.py --root "$RUNNER_TEMP/reno-sync-recovery" --recovery --keep-server
+      - name: verify restored and resuming states in Chromium
+        run: npx playwright test -c playwright.sync-recovery.config.ts
+        working-directory: frontend
+      - name: stop only the matching isolated cloud
+        if: always() && steps.scenario.outcome == 'success'
+        run: python scripts/run_sync_scenario.py --stop "$RENO_E2E_MANIFEST"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-recovery-evidence
+          path: |
+            ${{ runner.temp }}/reno-sync-recovery/evidence.json
+            ${{ runner.temp }}/reno-sync-recovery/playwright-sync-recovery-results/**/*.png
+          if-no-files-found: ignore
+
+  sync-chain:
+    runs-on: ubuntu-latest
+    env:
+      TMPDIR: ${{ runner.temp }}
+      RENO_E2E_MANIFEST: ${{ runner.temp }}/reno-sync-chain/qa-manifest.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: pip install -r requirements.txt
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: publish through isolated home and cloud processes with fault recovery
+        id: scenario
+        run: python scripts/run_sync_scenario.py --root "$RUNNER_TEMP/reno-sync-chain" --keep-server
+      - name: decode, play and seek the actually synchronized videos
+        run: npx playwright test -c playwright.sync-chain.config.ts
+        working-directory: frontend
+      - name: stop only the matching isolated cloud
+        if: always() && steps.scenario.outcome == 'success'
+        run: python scripts/run_sync_scenario.py --stop "$RENO_E2E_MANIFEST"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-chain-evidence
+          # Exclude the private manifest/config/lease files and raw server logs.
+          path: |
+            ${{ runner.temp }}/reno-sync-chain/evidence.json
+            ${{ runner.temp }}/reno-sync-chain/playwright-sync-chain-results/**/*.png
+          if-no-files-found: ignore

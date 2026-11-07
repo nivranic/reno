@@ -38,26 +38,28 @@ describe("RootLayout bottom nav", () => {
   it("shows the bottom nav on top-level pages", async () => {
     renderShell("/");
     await waitFor(() => expect(screen.getByTestId("bottom-nav")).toBeInTheDocument());
-    expect(screen.getByText("page:inbox")).toBeInTheDocument();
+    expect(await screen.findByText("page:inbox")).toBeInTheDocument();
   });
 
-  it("drops the bottom nav on the workbench (video detail)", () => {
+  it("drops the bottom nav on the workbench (video detail)", async () => {
     renderShell("/videos/BVmock000");
     expect(screen.queryByTestId("bottom-nav")).not.toBeInTheDocument();
-    expect(screen.getByText("page:workbench")).toBeInTheDocument();
+    expect(await screen.findByText("page:workbench")).toBeInTheDocument();
   });
 
-  it("drops the bottom nav on ask (conversation owns the bottom)", () => {
+  it("drops the bottom nav on ask (conversation owns the bottom)", async () => {
     renderShell("/ask");
+    await screen.findByText("page:ask");
     expect(screen.queryByTestId("bottom-nav")).not.toBeInTheDocument();
   });
 
   it("keeps the nav on the reports catalog but drops it while reading ?r=", async () => {
     const { unmount } = renderShell("/reports");
+    await screen.findByText("page:reports");
     await waitFor(() => expect(screen.getByTestId("bottom-nav")).toBeInTheDocument());
     unmount();
     renderShell("/reports?r=summary");
     expect(screen.queryByTestId("bottom-nav")).not.toBeInTheDocument();
-    expect(screen.getByText("page:reports")).toBeInTheDocument();
+    expect(await screen.findByText("page:reports")).toBeInTheDocument();
   });
 });

@@ -157,6 +157,7 @@ export const makeConflicts = (): ConflictsResponse => ({
   conflicts: [
     {
       conflict_id: "conflict_mock_001",
+      derivation: { state: "active", reason: "inputs_match", changed_count: 0, missing_count: 0 },
       ctype: "method_conflict",
       status: "needs_review",
       side_a: {
@@ -180,6 +181,7 @@ export const makeConflicts = (): ConflictsResponse => ({
     },
     {
       conflict_id: "conflict_mock_002",
+      derivation: { state: "active", reason: "inputs_match", changed_count: 0, missing_count: 0 },
       ctype: "numeric_conflict",
       status: "decided:accept_b",
       side_a: {
@@ -426,7 +428,8 @@ export const makeAsk = (question: string): AskResponse => ({
     },
   ],
   conflicts: [
-    { cluster_id: "cluster_mock_001", topic: "防水·涂刷高度", conflict_id: "conflict_mock_001" },
+    { cluster_id: "cluster_mock_001", topic: "防水·涂刷高度", conflict_id: "conflict_mock_001",
+      derivation: { state: "active", reason: "inputs_match", changed_count: 0, missing_count: 0 } },
   ],
 });
 

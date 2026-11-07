@@ -2,11 +2,10 @@
 """One-shot migration: rewrite legacy files_json paths (backslash separators,
 absolute Windows paths) to canonical POSIX media-base-relative form.
 
-Idempotent - safe to re-run; run a db snapshot first (this script does NOT
-auto-snapshot because it only rewrites strings that resolve to existing
-files, but a snapshot is still cheap insurance):
-
-    cp data/reno.db data/reno.db.bak-filesjson-$(date +%Y%m%d-%H%M%S)
+Idempotent - safe to re-run. Before writing, create a committed SQLite backup
+through the protected backup entry described in docs/deploy.md section 5.10.
+Copying only reno.db can omit committed WAL data. This normalizer does not
+create its own backup; it only rewrites paths resolving to existing files.
 
 Usage:
     .venv/Scripts/python -m scripts.normalize_files_json [--dry-run]

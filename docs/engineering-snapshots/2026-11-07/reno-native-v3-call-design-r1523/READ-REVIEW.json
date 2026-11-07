@@ -1,0 +1,26 @@
+{
+  "scope": "two-target official text reading plan only; no V3 source admission",
+  "reviewed_material": "READ-REQUEST.md",
+  "reviewed_identity": {
+    "bytes": 3506,
+    "sha256": "4f1a82c7c34011f00a12e905fcaf9e768856db30e23abcbcef89b897545cb962"
+  },
+  "root_read_plan_review_passed": true,
+  "independent_read_plan_review_passed": true,
+  "independent_review_receipt": "6659a8",
+  "independent_review_exit_code": 0,
+  "target_count": 2,
+  "maximum_reading_service_calls": 8,
+  "first_error_stops_without_retry": true,
+  "maximum_notes_utf8_bytes": 12288,
+  "maximum_optional_combined_service_text_utf8_bytes": 65536,
+  "http_byte_timeout_redirect_guarantees_not_claimed": true,
+  "approval_state_at_review": "not_requested",
+  "network_calls_at_review": 0,
+  "draft_review_is_not_full_v3_design_admission": true,
+  "source_only_closed_fields": [],
+  "candidate_executed": false,
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "full_goal_complete": false
+}

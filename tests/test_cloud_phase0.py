@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import reno.config as config
-from reno import db
+from reno import db, storage_admin
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # app/ importable
 
@@ -30,6 +30,8 @@ def env(tmp_path, monkeypatch):
     tmp.mkdir(parents=True, exist_ok=True)
     # isolated config: reload from the patched ROOT (no local file = defaults)
     mp.setattr(config, "_cache", None)
+    db.initialize()
+    storage_admin.initialize(storage_admin.profile())
     yield tmp
     # set_local persisted into tmp - nothing to restore (tmp is discarded)
 
@@ -90,6 +92,68 @@ def test_import_batch_enqueues_on_cloud(client, env):
     assert body["queued"] == 2 and body["skipped"] == 1
 
 
+@pytest.mark.parametrize("url", [
+    "http://[",
+    "https://www.bilibili.com:invalid/video/test",
+    "http://127.0.0.1/private",
+    "http://169.254.169.254/latest/meta-data/",
+    "https://www.bilibili.com.attacker.invalid/video/test",
+    "https://user:must-not-echo@www.bilibili.com/video/test",
+    "https://www.douyin.com:9443/video/test",
+    42,
+    {"url": "https://www.bilibili.com/video/test"},
+])
+def test_cloud_import_rejects_unsafe_urls_without_dispatch(client, env, monkeypatch, url):
+    from reno import ingest
+
+    _set_role("cloud")
+    monkeypatch.setattr(ingest, "ingest_url", lambda *_: pytest.fail("cloud must never download"))
+    response = client.post("/api/import", json={"url": url})
+    assert response.status_code == 400
+    assert "must-not-echo" not in response.text
+    con = db.connect()
+    try:
+        assert con.execute("SELECT COUNT(*) FROM sync_queue").fetchone()[0] == 0
+        assert con.execute("SELECT COUNT(*) FROM job").fetchone()[0] == 0
+    finally:
+        con.close()
+
+
+def test_cloud_batch_only_queues_supported_public_platforms(client, env, monkeypatch):
+    from reno import ingest
+
+    _set_role("cloud")
+    monkeypatch.setattr(ingest, "ingest_url", lambda *_: pytest.fail("cloud must never download"))
+    good = ["https://b23.tv/fixture", "https://v.douyin.com/fixture/"]
+    bad = ["http://localhost/admin", "https://bilibili.com.attacker.invalid/video/a",
+           "https://must-not-echo@www.douyin.com/video/a"]
+    response = client.post("/api/import-batch", json={"urls": [good[0], *bad, good[1]]})
+    assert response.status_code == 200
+    assert response.json()["queued"] == 2
+    assert response.json()["skipped"] == 3
+    assert "must-not-echo" not in response.text
+    con = db.connect()
+    try:
+        assert [r[0] for r in con.execute("SELECT url FROM sync_queue ORDER BY item_id")] == good
+        assert con.execute("SELECT COUNT(*) FROM job").fetchone()[0] == 0
+    finally:
+        con.close()
+
+
+def test_cloud_batch_reports_links_beyond_its_processing_limit(client, env):
+    _set_role("cloud")
+    urls = [f"https://www.bilibili.com/video/BVfixture{i}" for i in range(201)]
+    response = client.post("/api/import-batch", json={"urls": urls})
+    assert response.status_code == 200
+    assert response.json()["queued"] == 200
+    assert response.json()["skipped"] == 1
+    con = db.connect()
+    try:
+        assert con.execute("SELECT COUNT(*) FROM sync_queue").fetchone()[0] == 200
+    finally:
+        con.close()
+
+
 def test_model_switch_forbidden_on_cloud(client, env):
     _set_role("cloud")
     res = client.post("/api/config/model", json={"model": "GLM-5.3-Flash"})
@@ -134,11 +198,11 @@ def test_sync_surface_opens_with_header_token(client, env):
     _set_role("cloud")
     config.set_local({"sync_token": "unit-test-sync-token"})
     # gate passes; unknown route beneath it 404s (sync endpoints are Phase 1)
-    res = client.get("/api/sync/anything",
+    res = client.get("https://testserver/api/sync/anything",
                      headers={"X-Sync-Token": "unit-test-sync-token"})
     assert res.status_code == 404
     # query-string form must NOT authenticate the sync surface
-    assert client.get("/api/sync/anything?token=unit-test-sync-token").status_code == 401
+    assert client.get("https://testserver/api/sync/anything?token=unit-test-sync-token").status_code == 401
 
 
 # ---------------------------------------------------------------- /ask
@@ -285,4 +349,6 @@ def test_reports_endpoint_reads_data_dir(client, env):
     (gen / "summary.md").write_text("# 单元测试摘要", encoding="utf-8")
     res = client.get("/api/reports")
     assert res.status_code == 200
-    assert res.json()["reports"]["summary"] == "# 单元测试摘要"
+    shown = res.json()["reports"]["summary"]
+    assert shown.startswith("> **历史报告：**") and shown.endswith("\n\n# 单元测试摘要")
+    assert (gen / "summary.md").read_text(encoding="utf-8") == "# 单元测试摘要"

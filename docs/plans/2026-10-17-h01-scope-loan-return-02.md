@@ -1,0 +1,13 @@
+# 正常 scope 借用归还：设计修订02
+
+保留01原稿及其D001–D003红项。本修订优先于01对应段；本批只结束scope逻辑holder，不认证计费完成或任何物理/业务终止权。
+
+**D001 完整轮转。** 原check每次合法读取都reset旧Token再set新Token。准入允许n>=1个原TokenRoot、2n个原Transition，按原tuple顺序逐项核set_i/reset_i与root_i，同一个实际Token只能出现一次；scope.token是最后root。每个原set实际返回该Token、var为原ContextVar、old_value为原baseline、effect=True且无failure；对应原reset使用同Token，actual result=None、returned/effect=True且无failure。每个root原set_transition同set_i，state=reset、reset_attempted=True。原scope/context当前baseline恢复、owner/task身份保持。不把合法多次轮转当未知，也不重做set/reset或调用会旋转的check。
+
+**D002 固定16槽、错误分层。** scope-return cell在占32槽前预建，布局依次为scope、holder lease、原loan entry、reset/grant观察evidence、prepared、delete_attempted、actual delete result、delete_returned、delete_failure、delete_tb、effect_attempted、effect_value、effect_returned、effect_failure、effect_tb、原consume source_history。prepare仅一次；删除前完成所有来源/实际reset门并保存原entry。dict.__delitem__实际返回先存result/returned，finally才查同ticket已无entry的effect；callee与effect异常各自保存，observer失败不能改写实际删除成功，也不能再次删除。snapshot原九位置保留，追加scope-return tuple第十位置。
+
+**D003 收窄计费声明。** 原grant的settlement_finished只说明尝试完成，charge非None只说明有原观察。scope-return准入要求无原first、pending=None，原grants逐身份属于该scope、token_root属于原tokens、settle_attempted/settlement_finished=True且原charge存在；将整个原grants tuple保入evidence。此门仅排除仍活动的逻辑借用，明确不认证charge应用/counter/ledger/postclock成功，不签发计费完成receipt或terminal permit。完整Task7必须另由原ledger认证全部费用债务，当前pending保持所有原grant/charge/counter图且不释放root/槽。不能拿本逻辑loan返回作费用已清证明。
+
+同一次source gate核原consume完整return/effect并与当前原五slot一致、原constructor/source_history与原scope/root身份一致，route cleanup与实际轮转历史均正常；之后只删除issuer就是该原scope的唯一scope loan。原scope.custody_lease保为历史，后续再bind该已归还lease失败。无参hold_scope的旧holder没有issuer归还权；call/carrier/root账均保持。
+
+三个body在原packet→route_end之后且budget无first时调用此gate；gate异常沿原remember/pending保全。整个操作仍不启用strict、不签terminal permit、不执行native/SQL、不安装canonical/c973。源码/脚本/准备双审和原运行限额保持。新增模型须含0/1/多轮合法读取、多Token重复/缺失/乱序、原dict删除返回后effect失败，以及logical-return=True但fee_complete=False的声明边界。

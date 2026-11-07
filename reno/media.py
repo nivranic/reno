@@ -88,15 +88,28 @@ def pick_budget_frames(all_frames, budget: int):
     return sorted(picked, key=lambda f: f["pts_ms"])
 
 
-def run(con, video_id: str) -> dict:
+def _resolve_media_path(value, profile):
+    if type(value) is not str or not value:
+        raise ValueError("Media pointer must be a nonempty path")
+    value = value.replace("\\", "/")
+    if value.startswith("/") or len(value) > 2 and value[1] == ":":
+        return Path(value)
+    return profile.media.parent / value
+
+
+def run(con, video_id: str, *, profile=None) -> dict:
+    # The caller holds this through frame publication and the existing commit.
+    profile = db._require_reference_writer(con, profile)
+    from .sync_protocol import validate_video_id
+    video_id = validate_video_id(video_id)
     asset = dict(db.get_asset(con, video_id))
     import json as _json
     files = _json.loads(asset["files_json"]) if isinstance(asset["files_json"], str) else asset["files_json"]
-    v = config.resolve_media(files["video"])
-    a = config.resolve_media(files.get("audio")) if files.get("audio") else None
-    vdir = config.FRAMES / video_id
+    v = _resolve_media_path(files["video"], profile)
+    a = _resolve_media_path(files["audio"], profile) if files.get("audio") else None
+    vdir = profile.media / "frames" / video_id
     vdir.mkdir(parents=True, exist_ok=True)
-    adir = config.AUDIO / video_id
+    adir = profile.media / "audio" / video_id
     adir.mkdir(parents=True, exist_ok=True)
 
     t0 = time.time()
@@ -126,7 +139,7 @@ def run(con, video_id: str) -> dict:
                      "origin": targets[ms], "dhash": hex(h), "path": str(fp)})
     t_frames = time.time() - t2
 
-    db.replace_frames(con, video_id, kept)
+    db.replace_frames(con, video_id, kept, profile=profile)
     stats = {"n_scene_cuts": len(scenes), "n_targets": len(targets),
              "n_frames_kept": len(kept),
              "audio_s": round(t_audio, 1), "scene_s": round(t_scene, 1),

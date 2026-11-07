@@ -6,12 +6,71 @@ survive judge reruns."""
 import hashlib
 import json
 import time
+from contextlib import nullcontext
 from pathlib import Path
 
-from . import config, db, llm
+from . import config, db, derivation, llm, model_scopes, storage_lifecycle
 from . import dedup
 
 PROMPT_DIR = Path(__file__).parent / "prompts"
+
+
+class JudgeError(ValueError):
+    def __init__(self, message, code="JUDGE_INVALID_RESULT"):
+        super().__init__(message)
+        self.code = code
+
+
+def _judgment_map(candidates, judgments):
+    """Incomplete, duplicate or mismatched model output is never a fresh result."""
+    if type(judgments) is not list:
+        raise JudgeError("Judge results must be a list")
+    by_pair = {(item["a"], item["b"]): item for item in candidates}
+    by_id = {item["pair_id"]: item for item in candidates}
+    result = {}
+    for item in judgments:
+        if type(item) is not dict or item.get("relation") not in {"same", "related", "different", "conflicting"}:
+            raise JudgeError("Judge returned an invalid relation")
+        if "pair_id" in item:
+            if type(item["pair_id"]) is not int or item["pair_id"] not in by_id:
+                raise JudgeError("Judge returned an unknown pair")
+            candidate = by_id[item["pair_id"]]
+            pair = (candidate["a"], candidate["b"])
+            if ("a" in item or "b" in item) and (item.get("a"), item.get("b")) != pair:
+                raise JudgeError("Judge pair ID disagrees with its members")
+        else:
+            pair = (item.get("a"), item.get("b"))
+            if not all(type(value) is str for value in pair) or pair not in by_pair:
+                raise JudgeError("Judge returned unknown members")
+        if pair in result:
+            raise JudgeError("Judge returned duplicate verdicts")
+        result[pair] = item
+    if set(result) != set(by_pair):
+        raise JudgeError("Judge omitted candidate verdicts")
+    return result
+
+
+def _commit_results(con, frozen, clusters, conflicts):
+    """Compare the entire candidate input set after LLM work, under a write lock."""
+    if con.in_transaction:
+        raise JudgeError("Judge requires ownership of its result transaction", "JUDGE_TRANSACTION_OPEN")
+    con.execute("BEGIN IMMEDIATE")
+    try:
+        current = {a["id"]: derivation.input_fingerprint(a) for a in db.all_atoms(con)}
+        if current != frozen:
+            raise JudgeError("Judge inputs changed; existing results were preserved", "JUDGE_INPUT_CHANGED")
+        db.replace_clusters(con, clusters)
+        db.replace_conflicts(con, conflicts)
+        # Human review binding remains an independent content identity.
+        from . import review
+        review.replay(con)
+        execution = model_scopes.current_execution()
+        if execution is not None and execution.consumer == "judge":
+            model_scopes.checkpoint(con, execution, completed=True)
+        con.commit()
+    except BaseException:
+        con.rollback()
+        raise
 
 
 def _prompt_text() -> str:
@@ -59,14 +118,20 @@ def _judge_llm(cands, batch_size: int = 15):
     """Batch judging: one JSON response per <=15 pairs. A single call over
     dozens of pairs exceeds max_tokens and gets truncated mid-JSON."""
     system = _prompt_text()
+    execution = model_scopes.current_execution()
+    prompt_version = config.get("judge_prompt_version") or "v2"
     all_j, model_used = [], None
     for i in range(0, len(cands), batch_size):
         chunk = cands[i:i + batch_size]
         user = json.dumps(chunk, ensure_ascii=False)
-        obj, model = llm.chat_json(
-            [{"role": "system", "content": system},
-             {"role": "user", "content": f"候选对列表(JSON,共{len(chunk)}对,pair_id 已重编号):\n{user}"}],
-            max_tokens=4096)
+        messages = [{"role": "system", "content": system},
+                    {"role": "user", "content": f"候选对列表(JSON,共{len(chunk)}对,pair_id 已重编号):\n{user}"}]
+        with (model_scopes.call(execution, f"judge:batch:{i // batch_size}", version_tags=(
+                ("prompt_version", str(prompt_version)),
+                ("candidate_sha256", hashlib.sha256(db.j(chunk).encode()).hexdigest()),
+                ("frozen_input_sha256", hashlib.sha256(db.j(messages).encode()).hexdigest())))
+                if execution is not None else nullcontext()):
+            obj, model = llm.chat_json(messages, max_tokens=4096)
         model_used = model_used or model
         all_j.extend(obj.get("judgments", []))
     return all_j, model_used
@@ -89,33 +154,70 @@ class UF:
             self.p[ra] = rb
 
 
-def run(con, sim_threshold: float = 0.22) -> dict:
+def run(con, sim_threshold: float = 0.22, *, profile=None) -> dict:
+    from . import storage_admin
+    from .worker import _execution_profile
+    if con.in_transaction:
+        raise JudgeError("Finish pending writes before running judge", "JUDGE_TRANSACTION_OPEN")
+    inherited = model_scopes.current_execution()
+    profile = storage_admin.from_connection(con, profile=profile or (
+        inherited.profile if inherited is not None else _execution_profile()))
+    return _run(con, sim_threshold, profile=profile)
+
+
+def _run(con, sim_threshold: float = 0.22, *, profile=None) -> dict:
     t0 = time.time()
+    if con.in_transaction:
+        raise JudgeError("Finish pending writes before running judge", "JUDGE_TRANSACTION_OPEN")
     # snapshot before anything: judge deletes and regenerates
     # clusters/conflicts, so a rollback point is cheap insurance
-    bak = config.DATA / f"reno.db.bak-judge-{time.strftime('%Y%m%d-%H%M%S')}"
-    db.snapshot(con, bak)
-    old_backups = sorted(config.DATA.glob("reno.db.bak-judge-*"))
-    for stale in old_backups[:-3]:
-        stale.unlink(missing_ok=True)
-    sim_pairs = dedup.candidates(con, sim_threshold)
-    param_pairs = dedup.param_conflict_candidates(con)
+    from . import storage_admin, storage_backups
+    import uuid
+    profile = storage_admin.from_connection(con, profile=profile)
+    # Finish the original journal before introducing another backup or cleanup
+    # request. A partial unlink must be retryable through the ordinary producer.
+    for operation_id in storage_backups.pending_retention(profile, kind="judge", keep=3):
+        resumed = storage_backups.retain_recent(profile, kind="judge", keep=3, operation_id=operation_id)
+        if resumed["blocked"]:
+            error = JudgeError(f"Backup retention operation {operation_id} remains blocked", "JUDGE_BACKUP_RETENTION_BLOCKED")
+            error.operation_id = operation_id
+            raise error
+    bak = profile.database.with_name(f"{profile.database.name}.bak-judge-{time.strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex}")
+    db.snapshot(con, bak, profile=profile, kind="judge")
+    operation_id = str(uuid.uuid4())
+    retention = storage_backups.retain_recent(profile, kind="judge", keep=3,
+                                              operation_id=operation_id)
+    if retention["blocked"]:
+        error = JudgeError(f"Backup retention operation {operation_id} is blocked; retry judge to resume it", "JUDGE_BACKUP_RETENTION_BLOCKED")
+        error.operation_id = operation_id
+        raise error
+    with model_scopes.execution(profile, "judge", {"sim_threshold": sim_threshold,
+            "prompt_version": config.get("judge_prompt_version") or "v2",
+            "model": config.get("atomize_model")}, business_connection=con):
+        return _run_candidates(con, sim_threshold, profile=profile, t0=t0)
+
+
+def _run_candidates(con, sim_threshold, *, profile, t0):
+    con.execute("BEGIN")
+    try:
+        atoms = db.all_atoms(con)
+        atoms_by_id = {a["id"]: a for a in atoms}
+        frozen = {aid: derivation.input_fingerprint(atom) for aid, atom in atoms_by_id.items()}
+    finally:
+        con.rollback()
+    sim_pairs = dedup.candidates(con, sim_threshold, atoms=atoms)
+    param_pairs = dedup.param_conflict_candidates(con, atoms=atoms)
     cands = _merge_candidates(sim_pairs, param_pairs)
     if not cands:
-        db.replace_clusters(con, [])
-        db.replace_conflicts(con, [])
-        con.commit()
+        with storage_lifecycle.shared(profile):
+            _commit_results(con, frozen, [], [])
         return {"candidates": 0, "clusters": 0, "conflicts": 0}
     judgments, model = _judge_llm(cands)
 
     uf = UF()
     clusters_edges = {}   # root -> {"same": n, "related": n, "conflicting": n}
     conflicts = []
-    by_id = {c["a"] + "|" + c["b"]: c for c in cands}
-    atoms_by_id = {a["id"]: a for a in db.all_atoms(con)}
-    jmap = {}
-    for j in judgments:
-        jmap[(j.get("a"), j.get("b"))] = j
+    jmap = _judgment_map(cands, judgments)
     for c in cands:
         key = (c["a"], c["b"])
         j = jmap.get(key) or {}
@@ -134,6 +236,7 @@ def run(con, sim_threshold: float = 0.22) -> dict:
                 f"{c['a']}|{c['b']}|{ctype}".encode("utf-8")).hexdigest()[:10]
             conflicts.append({
                 "conflict_id": f"cfl_{pair_key}",
+                "derivation_json": derivation.bind_inputs(atoms_by_id, [c["a"], c["b"]]),
                 "type": ctype,
                 "status": "needs_user_decision" if authority_gap else "needs_review",
                 "members": {
@@ -182,24 +285,15 @@ def run(con, sim_threshold: float = 0.22) -> dict:
             ",".join(sorted(members)).encode("utf-8")).hexdigest()[:10]
         clusters.append({
             "cluster_id": f"clu_{members_key}",
+            "derivation_json": derivation.bind_inputs(atoms_by_id, sorted(members)),
             "canonical_topic": f"{m0.get('category') or ''}·{m0.get('subject') or (m0.get('claim') or '')[:20]}",
             "relation": relation,
             "judge_reason": f"same:{rel_counts['same']} related:{rel_counts['related']} conflicting:{rel_counts['conflicting']}",
             "members": sorted(members),
             "linked_conflict": linked,
         })
-    db.replace_clusters(con, clusters)
-    db.replace_conflicts(con, conflicts)
-    # carry prior user decisions over to the regenerated conflicts: stable
-    # content-derived ids make this a plain status restore (last decision wins)
-    con.execute(
-        """UPDATE conflict_case SET status =
-             'decided:' || (SELECT ud.action FROM user_decision ud
-                            WHERE ud.conflict_id = conflict_case.conflict_id
-                            ORDER BY ud.decision_id DESC LIMIT 1)
-           WHERE EXISTS (SELECT 1 FROM user_decision ud
-                         WHERE ud.conflict_id = conflict_case.conflict_id)""")
-    con.commit()
+    with storage_lifecycle.shared(profile):
+        _commit_results(con, frozen, clusters, conflicts)
     stats = {"candidates": len(cands), "clusters": len(clusters),
              "conflicts": len(conflicts),
              "conflict_types": sorted({c["type"] for c in conflicts}),

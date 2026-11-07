@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import reno.config as config
-from reno import db
+from reno import db, storage_admin
 
 VIDEO_ID = "BVscale0000000"
 N_ATOMS = 10_000
@@ -22,9 +22,12 @@ def scaled(tmp_path_factory):
     tmp = tmp_path_factory.mktemp("reno-scale")
     mp.setattr(config, "ROOT", tmp)
     mp.setattr(config, "DATA", tmp / "data")
+    mp.setattr(config, "MEDIA", tmp / "media")
     mp.setattr(config, "FRAME_CACHE", tmp / "frames")
     mp.setattr(config, "ORIG", tmp / "media" / "originals")
 
+    db.initialize()
+    storage_admin.initialize(storage_admin.profile())
     con = db.connect()
     con.execute("PRAGMA synchronous=OFF")
     con.execute(
@@ -89,7 +92,12 @@ class TestScale:
         client = TestClient(scaled["app"])
         r, times = _timed(lambda: client.get("/api/search", params={"q": "防水"}))
         assert r.status_code == 200
-        assert len(r.json()["results"]) == 80  # cap honored at scale
+        assert len(r.json()["results"]) == 30  # bounded default page, accurate total
+        assert r.json()["total"] == N_ATOMS
+        first = client.get("/api/search", params={"q": "防水", "page_size": 100}).json()
+        second = client.get("/api/search", params={"q": "防水", "page_size": 100, "page": 2}).json()
+        assert len(first["results"]) == len(second["results"]) == 100
+        assert not ({a["id"] for a in first["results"]} & {a["id"] for a in second["results"]})
         assert max(times) < 2000, times
         print(f"\n[search] p-max {max(times):.0f}ms ({[f'{t:.0f}' for t in times]})")
 

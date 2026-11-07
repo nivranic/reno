@@ -15,3 +15,17 @@ docs/serve.log
 .zcode-shots/
 .mimosa/
 docs/generated/
+# Private session telemetry and historical one-shot local delivery tools.
+.glm-router/telemetry/
+/scripts/checklist_summary_normal_delivery.py
+/scripts/inspect_checklist_summary_normal_inventory.py
+/scripts/inspect_checklist_summary_normal_process.ps1
+/scripts/seal_checklist_summary_normal_delivery.py
+/scripts/stage_checklist_summary_assets.py
+/scripts/start_checklist_summary_normal.ps1
+/scripts/update_checklist_summary_delivery_docs.py
+/scripts/verify_checklist_preview_build.py
+/scripts/verify_checklist_summary_browser.py
+/scripts/verify_checklist_summary_browser_v2.py
+/scripts/verify_checklist_summary_browser_views.py
+/scripts/verify_checklist_summary_normal_http.py

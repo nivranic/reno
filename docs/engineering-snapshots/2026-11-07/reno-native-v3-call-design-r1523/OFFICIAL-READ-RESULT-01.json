@@ -1,0 +1,33 @@
+{
+  "scope": "r1523 approved official text reading completion only",
+  "read_request_identity": {
+    "bytes": 3506,
+    "sha256": "4f1a82c7c34011f00a12e905fcaf9e768856db30e23abcbcef89b897545cb962"
+  },
+  "calls_used": 2,
+  "maximum_reading_service_calls": 8,
+  "calls_remaining_unused": 6,
+  "service_errors_observed": 0,
+  "application_retries": 0,
+  "reading_complete": true,
+  "optional_representation_saved_bytes": 0,
+  "raw_http_or_commit_identity_proved": false,
+  "target_compile_input_identity_proved": false,
+  "pycore_genobject_makecoro_declaration_present_in_service_representation": false,
+  "implementation_or_execution_admitted": false,
+  "source_only_closed_fields": [],
+  "candidate_executed": false,
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "full_goal_complete": false,
+  "artifact_identities": {
+    "OFFICIAL-READ-CALLS-01.json": {
+      "bytes": 1500,
+      "sha256": "6df0811848a4d07ce802ed01f9cfad532d4f6686d036e65f65980f50a0bd143f"
+    },
+    "OFFICIAL-READ-NOTES-01.md": {
+      "bytes": 2733,
+      "sha256": "5ecbb8b3132fb6cfc82e6bf6b0239d23a3fb35836b9949c72669e70eaca4355b"
+    }
+  }
+}

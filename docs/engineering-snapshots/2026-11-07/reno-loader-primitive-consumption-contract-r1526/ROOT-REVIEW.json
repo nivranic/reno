@@ -1,0 +1,45 @@
+{
+  "scope": "root bounded generated-handler consumption and error handoff text review only",
+  "reviewed_identities": {
+    "CONSUMPTION-CONTRACT.md": {
+      "bytes": 11300,
+      "sha256": "81de64bacc07d1ff05be32b7f9edbf15a405155558814846ab8f8665da34f8b6"
+    },
+    "INPUT-IDENTITIES.json": {
+      "bytes": 3044,
+      "sha256": "9b11fe0afcbf666d3a116076a64387703ba272cf0e821a501ead932ef05749ee"
+    }
+  },
+  "root_investigation_review_passed": true,
+  "all_12_listed_input_identities_match": true,
+  "listed_generated_handler_release_order_checked_as_text": true,
+  "build_string_descending_piece_consumption_recorded": true,
+  "format_and_attr_inputs_consumed_before_result_classification_recorded": true,
+  "error_labels_shrink_already_consumed_inputs_recorded": true,
+  "pending_indicator_move_differs_from_owner_settlement_recorded": true,
+  "original_r1250_gate_scope_and_compat_boundaries_preserved": true,
+  "primitive_effect_then_outer_failure_handoff_is_design_obligation": true,
+  "same_live_native_c_caller_policy_retained": true,
+  "selected_generated_handler_facts_are_not_actual_target_opcode_proof": true,
+  "actual_target_opcode_sequence_proved": false,
+  "matching_macro_and_build_identity_proved": false,
+  "full_first_pending_release_semantics_closed": false,
+  "implementation_admitted": false,
+  "full_v3_layout_and_generator_contract_closed": false,
+  "network_calls": 0,
+  "new_candidate_generated": false,
+  "candidate_executed": false,
+  "reference_python_executed": false,
+  "c_parsed": false,
+  "c_preprocessed": false,
+  "c_compiled": false,
+  "product_executed": false,
+  "source_only_closed_fields": [],
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "actual_abi_build_runtime_proved": false,
+  "full_compat_proved": false,
+  "physical_peak_budget_proved": false,
+  "full_goal_complete": false,
+  "goal_status": "active"
+}

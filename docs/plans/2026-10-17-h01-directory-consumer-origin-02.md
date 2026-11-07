@@ -1,0 +1,11 @@
+# directory consumer 来源修订02
+
+原稿保留。Root和独立复核同时发现 D001：普通list channel、callee指针和任意有效Call不足以证明固定wrapper实际发行；直接调用begin/finish可能构造虚假结束声明。
+
+改用 `_make_lock_consumer_observer` 原闭包。只有其实际wrapper建立weakrefable `_LockConsumerChannel`，预建15槽，登记弱索引后调用捕获的原inner；只读reader仅核原弱channel、原弱wrapper Call、捕获inner和原locks身份，不创建、补登记或推进任何状态。弱索引不得直接或经原Call/locks/owner等强持channel；root强持由实际consumer raw-record承担。实际结果和异常始终由wrapper直接写channel，不由reader或begin/finish补写。
+
+三层Call分列：wrapper Call为channel[1]，原inner的Call为begin传入的parent，resources begin/finish各有自己的child。begin核inner.parent就是原wrapper，保存实际inner Call；finish由wrapper传入，核实际inner Call已closed、parent仍是原wrapper，不能提前要求wrapper关闭，也不签wrapper退出。后继terminal必须重新核原wrapper已实际关闭及其cleanup_failure为空。
+
+原reader、wrapper、factory、channel class及其函数/闭包/类目录、原lifecycle globals绑定全部纳入固定目录。原wrapper默认签名保持；inner仅新增私有channel参数。partial begin先创建原raw record并将record发布到同原channel，再做后续来源门；begin失败亦保存record/channel/实际inner失败，原首错不被finish错误替换。
+
+finish对每次record最多attempt一次，先标attempt和保存原channel outcome，再认证原callee/source/selection/history。成功observation只能表明本模型下的原inner实际返回和原来源，不能单独作为carrier删除或terminal权力。保留全部loan/root、计费/物理债务、strict禁用及原限额。

@@ -12,7 +12,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import reno.config as config
-from reno import db
+from reno import db, storage_admin
 from reno.atomize import _validate_atom, composite_confidence
 from reno.dict import expand_synonyms, stage_for, taxonomy
 
@@ -26,16 +26,16 @@ sys.path.insert(0, str(SCRIPTS))
 def env(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     tmp = tmp_path_factory.mktemp("reno-multidim")
-    real = config.ROOT
     mp.setattr(config, "ROOT", tmp)
-    if (real / "config.local.json").exists():
-        (tmp / "config.local.json").write_text(
-            (real / "config.local.json").read_text(encoding="utf-8"),
-            encoding="utf-8")
+    # The suite supplies a fresh explicit artificial config; never copy secrets.
+    mp.setattr(config, "_cache", None)
     mp.setattr(config, "DATA", tmp / "data")
+    mp.setattr(config, "MEDIA", tmp / "media")
     mp.setattr(config, "FRAME_CACHE", tmp / "frames")
     mp.setattr(config, "ORIG", tmp / "media" / "originals")
 
+    db.initialize()
+    storage_admin.initialize(storage_admin.profile())
     con = db.connect()
     for vid, sha in ((VIDEO_ID, "md-sha-a"), (VIDEO_B, "md-sha-b")):
         con.execute(
@@ -74,6 +74,7 @@ def env(tmp_path_factory):
     con.commit()
     yield {"con": con}
     con.close()
+    mp.undo()
 
 
 # ---------- stage derivation ----------
@@ -162,6 +163,7 @@ def test_replace_atoms_carries_v2_fields(env):
     db.replace_atoms(con, VIDEO_ID, [atom2])
     assert con.execute("SELECT dimension FROM knowledge_atom WHERE id='atom_md_000'"
                        ).fetchone()["dimension"] == "验收质检"
+    con.commit()
 
 
 # ---------- retrieval / API ----------

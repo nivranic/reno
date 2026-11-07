@@ -1,0 +1,315 @@
+#if !defined(_WIN32) && !defined(_POSIX_C_SOURCE)
+#define _POSIX_C_SOURCE 200809L
+#endif
+
+#include "reno_owned_native_slot.h"
+
+#include <errno.h>
+
+#if defined(_WIN32)
+#include <io.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
+#endif
+
+static RenoNativeResult
+result(RenoNativeOutcome outcome, int saved_errno, unsigned long saved_winerror)
+{
+    RenoNativeResult value;
+    value.outcome = outcome;
+    value.saved_errno = saved_errno;
+    value.saved_winerror = saved_winerror;
+    return value;
+}
+
+static int
+empty_for_acquisition(const RenoOwnedNativeSlot *slot)
+{
+    return slot->fd_state == RENO_NATIVE_EMPTY
+        && slot->handle_state == RENO_NATIVE_EMPTY
+        && slot->registered_borrowers == 0;
+}
+
+static int
+single_resource_owned(const RenoOwnedNativeSlot *slot)
+{
+    return (slot->handle_state == RENO_NATIVE_OWNED
+            && slot->fd_state == RENO_NATIVE_EMPTY)
+        || (slot->fd_state == RENO_NATIVE_OWNED
+            && (slot->handle_state == RENO_NATIVE_EMPTY
+                || slot->handle_state == RENO_NATIVE_TRANSFERRED));
+}
+
+#if defined(_WIN32)
+RenoNativeDuplicateResult
+reno_native_duplicate_handle_once(
+    RenoOwnedNativeSlot *source, RenoOwnedNativeSlot *destination)
+{
+    RenoNativeDuplicateResult value = {0};
+    HANDLE process;
+    HANDLE acquired = NULL;
+    BOOL returned;
+
+    value.native = result(RENO_NATIVE_INVALID_ARGUMENT, 0, 0);
+    if (source == NULL || destination == NULL || source == destination) {
+        return value;
+    }
+    value.native = result(RENO_NATIVE_INVALID_STATE, 0, 0);
+    if (source->handle_state != RENO_NATIVE_OWNED
+            || source->fd_state != RENO_NATIVE_EMPTY || source->stopped
+            || source->registered_borrowers != 1
+            || destination->stopped || !empty_for_acquisition(destination)) {
+        return value;
+    }
+    value.process_called = 1;
+    process = GetCurrentProcess();
+    if (process != (HANDLE)(LONG_PTR)-1) {
+        return value;
+    }
+    value.process_is_current_pseudo = 1;
+    value.duplicate_called = 1;
+    returned = DuplicateHandle(process, (HANDLE)source->handle, process,
+        &acquired, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    value.returned_success = returned != 0;
+    value.output_present = acquired != NULL;
+    value.output_valid = acquired != NULL && acquired != INVALID_HANDLE_VALUE;
+    if (value.returned_success && value.output_valid) {
+        /* Actual destination root, before GetLastError or result conversion. */
+        destination->handle = (intptr_t)acquired;
+        destination->handle_state = RENO_NATIVE_OWNED;
+        value.target_acquired = 1;
+    }
+    else if (value.returned_success || value.output_present) {
+        /* Preserve the actual bad output for the original unknown-acquire
+         * debt path. UNKNOWN makes this an observation, never a usable or
+         * owning HANDLE; no borrow, closer or reuse is authorized.
+         */
+        destination->handle = (intptr_t)acquired;
+        destination->handle_state = RENO_NATIVE_UNKNOWN;
+        destination->stopped = 1;
+        value.acquisition_unknown = 1;
+    }
+    value.saved_post_duplicate_winerror = (unsigned long)GetLastError();
+    if (value.target_acquired) {
+        value.native = result(RENO_NATIVE_OK, 0, 0);
+    }
+    else if (!value.returned_success && !value.output_present) {
+        value.native = result(RENO_NATIVE_WINERROR, 0,
+            value.saved_post_duplicate_winerror);
+    }
+    else {
+        value.native = result(value.returned_success
+            ? RENO_NATIVE_ACQUISITION_UNKNOWN : RENO_NATIVE_WINERROR,
+            0, value.saved_post_duplicate_winerror);
+    }
+    return value;
+}
+
+RenoNativeResult
+reno_native_create_file_once(
+    RenoOwnedNativeSlot *slot, const wchar_t *path, DWORD access, DWORD share,
+    const SECURITY_ATTRIBUTES *security, DWORD disposition, DWORD flags)
+{
+    HANDLE acquired;
+    DWORD saved_error;
+
+    if (slot == NULL || path == NULL) {
+        return result(RENO_NATIVE_INVALID_ARGUMENT, 0, 0);
+    }
+    if (slot->stopped) {
+        return result(RENO_NATIVE_STOPPED, 0, 0);
+    }
+    if (!empty_for_acquisition(slot)) {
+        return result(RENO_NATIVE_INVALID_STATE, 0, 0);
+    }
+    acquired = CreateFileW(path, access, share,
+        (LPSECURITY_ATTRIBUTES)security, disposition, flags, NULL);
+    if (acquired == INVALID_HANDLE_VALUE) {
+        saved_error = GetLastError();
+        return result(RENO_NATIVE_WINERROR, 0, (unsigned long)saved_error);
+    }
+    /* First post-success actions are native scalar stores to the actual
+     * owner. No Python result conversion, allocation, or callback intervenes.
+     */
+    slot->handle = (intptr_t)acquired;
+    slot->handle_state = RENO_NATIVE_OWNED;
+    return result(RENO_NATIVE_OK, 0, 0);
+}
+
+RenoNativeResult
+reno_native_handle_to_fd_once(RenoOwnedNativeSlot *slot, int crt_flags)
+{
+    int acquired;
+    int saved_error;
+
+    if (slot == NULL) {
+        return result(RENO_NATIVE_INVALID_ARGUMENT, 0, 0);
+    }
+    if (slot->stopped) {
+        return result(RENO_NATIVE_STOPPED, 0, 0);
+    }
+    if (slot->handle_state != RENO_NATIVE_OWNED
+            || slot->fd_state != RENO_NATIVE_EMPTY
+            || slot->registered_borrowers != 0) {
+        return result(RENO_NATIVE_INVALID_STATE, 0, 0);
+    }
+    acquired = _open_osfhandle(slot->handle, crt_flags);
+    if (acquired < 0) {
+        saved_error = errno;
+        return result(RENO_NATIVE_ERRNO, saved_error, 0);
+    }
+    slot->fd = acquired;
+    slot->fd_state = RENO_NATIVE_OWNED;
+    slot->handle = (intptr_t)0;
+    slot->handle_state = RENO_NATIVE_TRANSFERRED;
+    return result(RENO_NATIVE_OK, 0, 0);
+}
+
+RenoNativeResult
+reno_native_close_handle_after_retirement(RenoOwnedNativeSlot *slot)
+{
+    HANDLE closing;
+    DWORD saved_error;
+
+    if (slot == NULL) {
+        return result(RENO_NATIVE_INVALID_ARGUMENT, 0, 0);
+    }
+    if (!slot->stopped) {
+        return result(RENO_NATIVE_INVALID_STATE, 0, 0);
+    }
+    if (slot->registered_borrowers != 0) {
+        return result(RENO_NATIVE_BUSY, 0, 0);
+    }
+    if (slot->handle_state != RENO_NATIVE_OWNED
+            || slot->fd_state != RENO_NATIVE_EMPTY) {
+        return result(RENO_NATIVE_INVALID_STATE, 0, 0);
+    }
+    closing = (HANDLE)slot->handle;
+    slot->handle = (intptr_t)0;
+    slot->handle_state = RENO_NATIVE_ATTEMPTED;
+    if (!CloseHandle(closing)) {
+        saved_error = GetLastError();
+        slot->failed_close.fd = -1;
+        slot->failed_close.handle = (intptr_t)closing;
+        slot->failed_close.failure = result(
+            RENO_NATIVE_WINERROR, 0, (unsigned long)saved_error);
+        slot->handle_state = RENO_NATIVE_UNKNOWN;
+        slot->failed_close.kind = RENO_NATIVE_FAILED_HANDLE_CLOSE;
+        return slot->failed_close.failure;
+    }
+    slot->handle_state = RENO_NATIVE_CLOSED;
+    return result(RENO_NATIVE_OK, 0, 0);
+}
+#else
+RenoNativeResult
+reno_native_openat_once(
+    RenoOwnedNativeSlot *slot, int directory_fd, const char *path,
+    int effective_flags, mode_t mode)
+{
+    int acquired;
+    int saved_error;
+
+    if (slot == NULL || path == NULL) {
+        return result(RENO_NATIVE_INVALID_ARGUMENT, 0, 0);
+    }
+    if (slot->stopped) {
+        return result(RENO_NATIVE_STOPPED, 0, 0);
+    }
+    if (!empty_for_acquisition(slot)) {
+        return result(RENO_NATIVE_INVALID_STATE, 0, 0);
+    }
+    acquired = openat(directory_fd, path, effective_flags, mode);
+    if (acquired < 0) {
+        saved_error = errno;
+        return result(RENO_NATIVE_ERRNO, saved_error, 0);
+    }
+    slot->fd = acquired;
+    slot->fd_state = RENO_NATIVE_OWNED;
+    return result(RENO_NATIVE_OK, 0, 0);
+}
+#endif
+
+RenoNativeResult
+reno_native_begin_borrow(RenoOwnedNativeSlot *slot)
+{
+    if (slot == NULL) {
+        return result(RENO_NATIVE_INVALID_ARGUMENT, 0, 0);
+    }
+    if (slot->stopped) {
+        return result(RENO_NATIVE_STOPPED, 0, 0);
+    }
+    if (!single_resource_owned(slot)) {
+        return result(RENO_NATIVE_INVALID_STATE, 0, 0);
+    }
+    if (slot->registered_borrowers == SIZE_MAX) {
+        return result(RENO_NATIVE_COUNTER_OVERFLOW, 0, 0);
+    }
+    slot->registered_borrowers++;
+    return result(RENO_NATIVE_OK, 0, 0);
+}
+
+RenoNativeResult
+reno_native_end_borrow(RenoOwnedNativeSlot *slot)
+{
+    if (slot == NULL) {
+        return result(RENO_NATIVE_INVALID_ARGUMENT, 0, 0);
+    }
+    if (!single_resource_owned(slot) || slot->registered_borrowers == 0) {
+        return result(RENO_NATIVE_INVALID_STATE, 0, 0);
+    }
+    slot->registered_borrowers--;
+    return result(RENO_NATIVE_OK, 0, 0);
+}
+
+RenoNativeResult
+reno_native_stop_borrows(RenoOwnedNativeSlot *slot)
+{
+    if (slot == NULL) {
+        return result(RENO_NATIVE_INVALID_ARGUMENT, 0, 0);
+    }
+    slot->stopped = 1;
+    return result(RENO_NATIVE_OK, 0, 0);
+}
+
+RenoNativeResult
+reno_native_close_fd_after_retirement(RenoOwnedNativeSlot *slot)
+{
+    int closing;
+    int status;
+    int saved_error;
+
+    if (slot == NULL) {
+        return result(RENO_NATIVE_INVALID_ARGUMENT, 0, 0);
+    }
+    if (!slot->stopped) {
+        return result(RENO_NATIVE_INVALID_STATE, 0, 0);
+    }
+    if (slot->registered_borrowers != 0) {
+        return result(RENO_NATIVE_BUSY, 0, 0);
+    }
+    if (slot->fd_state != RENO_NATIVE_OWNED
+            || (slot->handle_state != RENO_NATIVE_EMPTY
+                && slot->handle_state != RENO_NATIVE_TRANSFERRED)) {
+        return result(RENO_NATIVE_INVALID_STATE, 0, 0);
+    }
+    closing = slot->fd;
+    slot->fd = -1;
+    slot->fd_state = RENO_NATIVE_ATTEMPTED;
+#if defined(_WIN32)
+    status = _close(closing);
+#else
+    status = close(closing);
+#endif
+    if (status < 0) {
+        saved_error = errno;
+        slot->failed_close.fd = closing;
+        slot->failed_close.handle = (intptr_t)0;
+        slot->failed_close.failure = result(RENO_NATIVE_ERRNO, saved_error, 0);
+        slot->fd_state = RENO_NATIVE_UNKNOWN;
+        slot->failed_close.kind = RENO_NATIVE_FAILED_FD_CLOSE;
+        return slot->failed_close.failure;
+    }
+    slot->fd_state = RENO_NATIVE_CLOSED;
+    return result(RENO_NATIVE_OK, 0, 0);
+}

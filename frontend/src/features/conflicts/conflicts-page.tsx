@@ -2,10 +2,10 @@
  * four-action semantics (accept_a / accept_b / both / reject — same enums as
  * the backend), notes preserved on failure, re-decide supported (append-only
  * decision log + status overwrite), no fake undo. */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Scale, Video } from "lucide-react";
+import { Loader2, RefreshCw, Scale, Video } from "lucide-react";
 import type { Conflict, DecisionAction } from "@/lib/api-types";
 import { getConflicts, postDecision } from "@/lib/api";
 import { qk } from "@/lib/queries";
@@ -19,6 +19,11 @@ import { Tabs } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
 import { useToast } from "@/components/shared/toaster";
+import { taskCapabilitiesQuery, taskKeys, taskRequestId, useCreateTask, useMaintenanceTasks, isActiveTask } from "@/lib/task-api";
+import { TaskStatusPanel } from "@/features/collect/task-status-panel";
+import { ReviewHistory } from "@/components/shared/review-controls";
+import { DerivationBadge, DerivationNotice } from "@/components/shared/derivation-notice";
+import { normalizeDerivation } from "@/lib/derivation";
 
 const ACTIONS: { action: DecisionAction; label: string; tone: string }[] = [
   { action: "accept_a", label: "采纳 A", tone: "default" },
@@ -40,6 +45,10 @@ export default function ConflictsPage() {
     queryFn: ({ signal }) => getConflicts(signal),
   });
   const [filter, setFilter] = useState<"open" | "decided" | "all">("open");
+  const capabilities = useQuery(taskCapabilitiesQuery);
+  const jobs = useMaintenanceTasks();
+  const refresh = useCreateTask("judge");
+  const judging = jobs.data?.tasks.some((task) => task.kind === "judge" && isActiveTask(task));
 
   const conflicts = useMemo(() => data?.conflicts ?? [], [data]);
   const filtered = useMemo(() => {
@@ -70,6 +79,24 @@ export default function ConflictsPage() {
         }
       />
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Button variant="outline" disabled={!capabilities.data?.tasks || refresh.isPending || judging}
+          onClick={() => refresh.mutate()}>
+          {refresh.isPending || judging ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          {judging ? "争议更新中" : "更新争议"}
+        </Button>
+        <p className="text-[12px] text-muted">按当前知识重新识别争议，可能消耗模型配额或产生费用；已有决定保留在历史中。</p>
+      </div>
+      {capabilities.data?.tasks === false ? <p className="mb-3 text-[13px] text-st-wait">本节点暂不能更新争议；{capabilities.data.node_role === "cloud" ? "请到家庭节点执行，完成后通过同步发布更新结果。" : "可继续查看已有结果。"}</p> : null}
+      {capabilities.isError ? <ErrorState error={capabilities.error} context="任务能力" onRetry={() => void capabilities.refetch()} /> : null}
+      {refresh.isPending ? <p role="status" className="mb-3 text-[13px] text-muted">正在提交更新请求，尚未确认入队。</p> : null}
+      {refresh.isError ? <p role="alert" className="mb-3 text-[13px] text-st-bad">更新请求尚未确认：{errMessage(refresh.error)}；再次点击可核对同一请求。</p> : null}
+      <TaskStatusPanel kind="judge" limit={2} hideWhenEmpty />
+      <div className="mb-4 space-y-2">
+        <ReviewHistory label="复核历史与待核对记录" />
+        <Link to="/reconciliation" className="inline-flex min-h-9 items-center text-[13px] text-acc hover:underline">查看复核对账与导出</Link>
+      </div>
+
       {isPending ? (
         <ListSkeleton rows={5} />
       ) : isError ? (
@@ -81,7 +108,7 @@ export default function ConflictsPage() {
             <EmptyState
               icon={<Scale size={30} />}
               title={filter === "open" ? "没有待复核的争议" : "没有匹配的争议"}
-              desc={filter === "open" ? "运行 `reno judge` 重新生成聚类与冲突,或先导入更多视频。" : undefined}
+              desc={filter === "open" ? "可点击「更新争议」重新分析已有知识，或先导入更多视频。" : undefined}
             />
           ) : (
             <div className="space-y-3.5">
@@ -104,14 +131,27 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
   // §11.2: select → note → explicit submit; a bare tap never writes
   const [decision, setDecision] = useState<DecisionAction | null>(null);
   const decided = conflict.status.startsWith("decided:");
+  const pendingDecision = useRef<{ signature: string; eventId: string } | null>(null);
+  useEffect(() => {
+    setDecision(null);
+    pendingDecision.current = null;
+  }, [conflict.target_fingerprint]);
 
   const decide = useMutation({
-    mutationFn: (action: DecisionAction) =>
-      postDecision({ conflict_id: conflict.conflict_id, action, note: note.trim() || undefined }),
+    mutationFn: (action: DecisionAction) => {
+      const signature = JSON.stringify({ action, note: note.trim(), fingerprint: conflict.target_fingerprint });
+      if (pendingDecision.current?.signature !== signature)
+        pendingDecision.current = { signature, eventId: taskRequestId() };
+      return postDecision({ conflict_id: conflict.conflict_id, action, note: note.trim() || undefined,
+        target_fingerprint: conflict.target_fingerprint, event_id: pendingDecision.current.eventId });
+    },
     onSuccess: (_d, action) => {
       setEditing(false);
       setDecision(null);
+      pendingDecision.current = null;
       void qc.invalidateQueries({ queryKey: qk.conflicts });
+      void qc.invalidateQueries({ queryKey: ["reviews"] });
+      void qc.invalidateQueries({ queryKey: taskKeys.reports });
       toast.success(`已记录决策:${ACTIONS.find((a) => a.action === action)?.label ?? action}`);
     },
     // failure feedback stays INLINE at the action site (§8.3: one primary
@@ -132,8 +172,11 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
         <span className="font-mono text-[11.5px] text-muted">{conflict.conflict_id}</span>
         <Badge tone="neutral">{CTYPE_LABEL[conflict.ctype] ?? conflict.ctype}</Badge>
         <ConflictStatusBadge status={conflict.status} />
+        <DerivationBadge derivation={conflict.derivation} />
         <span className="ml-auto font-mono text-[11px] text-muted">{fmtDate(conflict.created_at)}</span>
       </header>
+      {conflict.review_stale ? <p className="mb-3 text-[12px] text-st-wait">依据内容已变化，旧决定保留在历史中；请重新核对当前双方观点。</p> : null}
+      <div className="mb-3"><DerivationNotice derivation={conflict.derivation} /></div>
 
       <div className="grid gap-2.5 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
         <Side side={conflict.side_a} tag="A" />
@@ -156,12 +199,13 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
           ) : null}
           {conflict.analysis?.judge_note ? (
             <p className="mt-0.5 min-w-0 break-words">
-              判读:{conflict.analysis.judge_note}
+              {normalizeDerivation(conflict.derivation).state === "active" ? "判读:" : "原分析:"}{conflict.analysis.judge_note}
             </p>
           ) : null}
         </div>
       )}
 
+      {normalizeDerivation(conflict.derivation).state !== "active" ? <p className="mt-3 text-[12px] text-st-wait">仅记录个人意见，不会更新判定依据。原分析与复核历史仍保留。</p> : null}
       {decided && !editing ? (
         <div className="mt-3 flex items-center gap-3">
           <p className="text-[12.5px] text-muted">决策已记录(决策日志只增不改)。</p>
@@ -182,7 +226,7 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
                   key={action}
                   variant={selected ? "default" : tone === "default" ? "soft" : "outline"}
                   size="md"
-                  disabled={decide.isPending}
+                  disabled={decide.isPending || !conflict.target_fingerprint}
                   aria-pressed={selected}
                   onClick={() => setDecision(action)}
                 >
@@ -214,7 +258,7 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
           <div className="mt-2.5 flex items-center gap-3">
             <Button
               size="md"
-              disabled={decision == null || decide.isPending}
+              disabled={decision == null || decide.isPending || !conflict.target_fingerprint}
               onClick={() => decision && decide.mutate(decision)}
             >
               {decide.isPending ? <Loader2 size={14} className="animate-spin" /> : null}
@@ -231,8 +275,10 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
               提交失败({errMessage(decide.error)}),选择与备注已保留,可直接重试。
             </p>
           ) : null}
+          {!conflict.target_fingerprint ? <p className="mt-2 text-[12px] text-muted">当前内容标识尚未确认，请刷新后再保存决定。</p> : null}
         </>
       )}
+      <ReviewHistory kind="conflict" targetId={conflict.conflict_id} />
     </article>
   );
 }

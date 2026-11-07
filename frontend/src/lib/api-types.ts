@@ -3,6 +3,16 @@
 
 export type Modality = "ASR" | "OCR" | "VIS";
 
+export type DerivationState = "active" | "stale" | "missing" | "unknown";
+export interface Derivation {
+  state: DerivationState;
+  reason: string;
+  changed_count: number;
+  missing_count: number;
+}
+export type DerivationCounts = Record<DerivationState, number> & { total?: number };
+export interface DerivationSummary { clusters: DerivationCounts; conflicts: DerivationCounts }
+
 export interface VideoRow {
   video_id: string;
   title: string | null;
@@ -64,6 +74,7 @@ export interface AtomEvidence {
 }
 
 export interface WorkbenchAtom {
+  condition_match?: ConditionMatch;
   id: string;
   category: string | null;
   space: string | null;
@@ -76,6 +87,14 @@ export interface WorkbenchAtom {
   dimension?: string | null;
   evidence_nature?: string | null;
   exceptions?: string[];
+  conditions?: Record<string, unknown>;
+  prices?: AtomPrice[];
+  review_status?: string;
+  review_stale?: boolean;
+  has_conflict?: boolean;
+  has_outdated_conflict?: boolean;
+  source_published_at?: string | null;
+  target_fingerprint?: string;
   parameters: AtomParameter[];
   evidence: AtomEvidence[];
 }
@@ -93,6 +112,9 @@ export interface ConflictSide {
 }
 
 export interface Conflict {
+  derivation?: Derivation;
+  target_fingerprint?: string;
+  review_stale?: boolean;
   conflict_id: string;
   ctype: string;
   status: string; // needs_review | needs_user_decision | decided:<action>
@@ -131,6 +153,9 @@ export interface AtomPrice {
 }
 
 export interface SearchRow {
+  has_conflict?: boolean;
+  has_outdated_conflict?: boolean;
+  condition_match?: ConditionMatch;
   id: string;
   claim: string;
   subject: string | null;
@@ -144,6 +169,10 @@ export interface SearchRow {
   conditions: Record<string, unknown>;
   parameters: AtomParameter[];
   prices: AtomPrice[];
+  exceptions?: string[];
+  review_status?: string;
+  source_published_at?: string | null;
+  target_fingerprint?: string;
   video: string | null;
   video_title: string;
   ms: number;
@@ -153,24 +182,37 @@ export interface SearchRow {
 
 export interface SearchResponse {
   results: SearchRow[];
+  page?: number;
+  page_size?: number;
+  total?: number;
+  has_more?: boolean;
+  kb_revision?: number;
 }
 
 export interface CompareSide {
   item: string;
   total: number;
-  groups: { dimension: string; atoms: SearchRow[] }[];
+  groups: { dimension: string; atoms: SearchRow[]; total?: number; truncated?: boolean }[];
   missing_dimensions: string[];
+  coverage_scope?: "returned_results" | "full_filtered_set";
+  truncated?: boolean;
 }
 
 export interface CompareResponse {
   sides: CompareSide[];
   conflicts: {
+    derivation?: Derivation;
     cluster_id: string;
     topic: string | null;
     linked_conflict: string | null;
     items: string[];
   }[];
   dimensions: string[];
+  kb_revision?: number;
+  context_used?: Record<string, unknown>;
+  context_unknown?: string[];
+  context_signature?: string;
+  per_dimension_limit?: number;
 }
 
 export interface AskHistoryTurn {
@@ -178,7 +220,17 @@ export interface AskHistoryTurn {
   content: string;
 }
 
+export interface ConditionMatch {
+  status: "match" | "mismatch" | "unknown";
+  reason: string;
+  details: { key: string; requested: unknown; source: unknown; status: "match" | "mismatch" | "unknown"; reason: string }[];
+  exceptions_evaluated: boolean;
+}
+
 export interface AskRef {
+  has_conflict?: boolean;
+  has_outdated_conflict?: boolean;
+  condition_match?: ConditionMatch;
   n: number;
   atom_id: string;
   claim: string;
@@ -196,9 +248,14 @@ export interface AskRef {
   conditions: Record<string, unknown>;
   parameters: AtomParameter[];
   prices: AtomPrice[];
+  exceptions?: string[];
+  review_status?: string;
+  source_published_at?: string | null;
+  target_fingerprint?: string;
 }
 
 export interface AskConflictInfo {
+  derivation?: Derivation;
   cluster_id: string;
   topic: string;
   conflict_id: string | null;
@@ -208,6 +265,14 @@ export interface AskResponse {
   answer: string;
   refs: AskRef[];
   conflicts: AskConflictInfo[];
+  degraded?: boolean;
+  generated_at?: string;
+  kb_revision?: number;
+  request_id?: string;
+  context_used?: Record<string, unknown>;
+  context_unknown?: string[];
+  context_signature?: string;
+  retrieval_scope?: string;
 }
 
 export interface FacetsResponse {
@@ -227,18 +292,30 @@ export interface HealthResponse {
   vlm_enabled: boolean;
   atomize_model: string;
   model_presets: string[];
+  node_role?: string;
+  library_id?: string;
 }
 
 export interface ImportResult {
   status: string; // imported | duplicate | ...
   video_id?: string;
+  task_id?: number;
+  request_id?: string;
+  node_role?: "all" | "home" | "cloud";
 }
 
-export interface ImportBatchResult {
+export type ImportBatchResult = {
   imported: number;
   duplicate: number;
   failed: number;
   failed_sample: string[];
-}
+} | {
+  status?: "queued";
+  queued: number;
+  task_ids?: number[];
+  request_id?: string;
+  node_role?: "all" | "home" | "cloud";
+  skipped?: number;
+};
 
 export type DecisionAction = "accept_a" | "accept_b" | "both" | "reject";

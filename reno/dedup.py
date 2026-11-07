@@ -26,17 +26,16 @@ def _atom_view(con, a: dict):
                           f"{a.get('subject') or ''}|{a['claim']}")
 
 
-def candidates(con, sim_threshold: float = 0.22):
-    atoms = db.all_atoms(con)
-    for a in atoms:
-        a["_norm"] = _atom_view(con, a)
+def candidates(con, sim_threshold: float = 0.22, *, atoms=None):
+    atoms = db.all_atoms(con) if atoms is None else atoms
+    normalized = {a["id"]: _atom_view(con, a) for a in atoms}
     pairs = []
     for a, b in combinations(atoms, 2):
         va = a["evidence_refs"][0]["video_id"] if a["evidence_refs"] else None
         vb = b["evidence_refs"][0]["video_id"] if b["evidence_refs"] else None
         if not va or not vb or va == vb:
             continue  # cross-video only; same-video clustering is later work
-        sim = bigram_cosine(a["_norm"], b["_norm"])
+        sim = bigram_cosine(normalized[a["id"]], normalized[b["id"]])
         if sim >= sim_threshold:
             pairs.append({"a": a["id"], "b": b["id"], "a_video": va,
                           "b_video": vb, "a_claim": a["claim"],
@@ -51,8 +50,8 @@ def candidates(con, sim_threshold: float = 0.22):
     return pairs
 
 
-def param_conflict_candidates(con):
-    atoms = db.all_atoms(con)
+def param_conflict_candidates(con, *, atoms=None):
+    atoms = db.all_atoms(con) if atoms is None else atoms
     out = []
     for a, b in combinations(atoms, 2):
         va = a["evidence_refs"][0]["video_id"] if a["evidence_refs"] else None

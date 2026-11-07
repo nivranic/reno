@@ -1,0 +1,102 @@
+{
+  "input_pairs": [
+    {
+      "preservation_copy": {
+        "path": "data/t16-namespace-falsey-budget-binding-qa-r847/evidence-01/objects/01203.raw",
+        "byte_size": 750,
+        "sha256": "6c57ac2203b7fb03a1009f8f3793bed2fdfd27eb6d504c4c3b8178f4fcffb176"
+      },
+      "fixture": {
+        "byte_size": 750,
+        "path": "tests/fixtures/personal_authority_enrollment_binding/namespace-header.json",
+        "sha256": "6c57ac2203b7fb03a1009f8f3793bed2fdfd27eb6d504c4c3b8178f4fcffb176"
+      },
+      "original": {
+        "path": "data/t16-namespace-falsey-budget-binding-qa-r847/targeted-run-01/qa/pytest-temp/test_r841_pending_owned_falsey0/r839-1-absent/data/.reno-personal-authority-namespace-v3-header.json",
+        "byte_size": 750,
+        "sha256": "6c57ac2203b7fb03a1009f8f3793bed2fdfd27eb6d504c4c3b8178f4fcffb176"
+      },
+      "copied_full_raw_and_readback_equal": true
+    },
+    {
+      "preservation_copy": {
+        "path": "data/t16-namespace-falsey-budget-binding-qa-r847/evidence-01/objects/01204.raw",
+        "byte_size": 3655,
+        "sha256": "6199a570a8d316d063d6aafc5c9ef2cea6426a20066212a87bab768a791737ac"
+      },
+      "fixture": {
+        "byte_size": 3655,
+        "path": "tests/fixtures/personal_authority_enrollment_binding/namespace-reservation.json",
+        "sha256": "6199a570a8d316d063d6aafc5c9ef2cea6426a20066212a87bab768a791737ac"
+      },
+      "original": {
+        "path": "data/t16-namespace-falsey-budget-binding-qa-r847/targeted-run-01/qa/pytest-temp/test_r841_pending_owned_falsey0/r839-1-absent/data/.reno-personal-authority-namespace-v3-reservation.json",
+        "byte_size": 3655,
+        "sha256": "6199a570a8d316d063d6aafc5c9ef2cea6426a20066212a87bab768a791737ac"
+      },
+      "copied_full_raw_and_readback_equal": true
+    },
+    {
+      "preservation_copy": {
+        "path": "data/t16-namespace-falsey-budget-binding-qa-r847/evidence-01/objects/01205.raw",
+        "byte_size": 918,
+        "sha256": "6215b60e393af74bb8009646ef505eba586e16cdfecf03fe5430f4c3bc874dde"
+      },
+      "fixture": {
+        "byte_size": 918,
+        "path": "tests/fixtures/personal_authority_enrollment_binding/namespace-root-seal.json",
+        "sha256": "6215b60e393af74bb8009646ef505eba586e16cdfecf03fe5430f4c3bc874dde"
+      },
+      "original": {
+        "path": "data/t16-namespace-falsey-budget-binding-qa-r847/targeted-run-01/qa/pytest-temp/test_r841_pending_owned_falsey0/r839-1-absent/data/.reno-personal-authority-namespace-v3/.reno-personal-authority-namespace-v3-root-seal.json",
+        "byte_size": 918,
+        "sha256": "6215b60e393af74bb8009646ef505eba586e16cdfecf03fe5430f4c3bc874dde"
+      },
+      "copied_full_raw_and_readback_equal": true
+    },
+    {
+      "preservation_copy": {
+        "path": "data/t16-namespace-falsey-budget-binding-qa-r847/evidence-01/objects/01206.raw",
+        "byte_size": 11100,
+        "sha256": "6eb52c9a8d69a0148770a76aaaa641731bd5d2bc3594f2e341ff5ae9c4bdf1f9"
+      },
+      "fixture": {
+        "byte_size": 11100,
+        "path": "tests/fixtures/personal_authority_enrollment_binding/origin-observation.json",
+        "sha256": "6eb52c9a8d69a0148770a76aaaa641731bd5d2bc3594f2e341ff5ae9c4bdf1f9"
+      },
+      "original": {
+        "path": "data/t16-namespace-falsey-budget-binding-qa-r847/targeted-run-01/qa/pytest-temp/test_r841_pending_owned_falsey0/r839-1-absent/data/.reno-personal-authority-origin-v1-observation.json",
+        "byte_size": 11100,
+        "sha256": "6eb52c9a8d69a0148770a76aaaa641731bd5d2bc3594f2e341ff5ae9c4bdf1f9"
+      },
+      "copied_full_raw_and_readback_equal": true
+    },
+    {
+      "preservation_copy": {
+        "path": "data/t16-namespace-falsey-budget-binding-qa-r847/evidence-01/objects/01207.raw",
+        "byte_size": 2806,
+        "sha256": "2fa551826ebb923917cb04b8ea20a79b84dd316edcb910ea2571841b25058531"
+      },
+      "fixture": {
+        "byte_size": 2806,
+        "path": "tests/fixtures/personal_authority_enrollment_binding/origin-reservation.json",
+        "sha256": "2fa551826ebb923917cb04b8ea20a79b84dd316edcb910ea2571841b25058531"
+      },
+      "original": {
+        "path": "data/t16-namespace-falsey-budget-binding-qa-r847/targeted-run-01/qa/pytest-temp/test_r841_pending_owned_falsey0/r839-1-absent/data/.reno-personal-authority-origin-v1-reservation.json",
+        "byte_size": 2806,
+        "sha256": "2fa551826ebb923917cb04b8ea20a79b84dd316edcb910ea2571841b25058531"
+      },
+      "copied_full_raw_and_readback_equal": true
+    }
+  ],
+  "source_preservation_manifest": {
+    "byte_size": 4699830,
+    "path": "data/t16-namespace-falsey-budget-binding-qa-r847/RAW-PRESERVATION-01.json",
+    "sha256": "fedae85dfe32482f392d9623e387dea11d03a625d006fee4b6fa355245ba98a7"
+  },
+  "schema": "reno.enrollment-binding.portable-origin-namespace-fixtures.v1",
+  "subject_codec_executed": false,
+  "scope": "Five prior isolated r847 factory files copied as pure content fixtures; current source/native closure is not asserted"
+}

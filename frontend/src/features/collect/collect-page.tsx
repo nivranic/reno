@@ -8,26 +8,32 @@ import { BookmarkPlus, Check, Copy, ExternalLink, Info } from "lucide-react";
 import { healthQuery, qk } from "@/lib/queries";
 import { postConfigModel } from "@/lib/api";
 import { errMessage } from "@/app/query-utils";
-import { PageHeader, ErrorState } from "@/components/shared/states";
+import { PageHeader, ErrorState, RefreshWarning } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/components/shared/toaster";
+import { TaskStatusPanel } from "./task-status-panel";
+import { SyncStatusPanel } from "./sync-status-panel";
+import { BudgetPanel } from "./budget-panel";
 
-function bookmarkletCode(origin: string) {
+export function bookmarkletCode(origin: string) {
   return (
     "javascript:(async()=>{const links=[...new Set([...document.querySelectorAll('a[href*=\"/video/\"]')]" +
-    ".map(a=>a.href.split('?')[0]))];if(!links.length){alert('reno:本页没有视频链接,请先滚动加载');return;}" +
+    ".map(a=>a.href.split('#')[0]))];if(!links.length){alert('reno:本页没有视频链接,请先滚动加载');return;}" +
     `const r=await fetch('${origin}/api/import-batch',{method:'POST',headers:{'Content-Type':'application/json'},` +
     "body:JSON.stringify({urls:links})});const j=await r.json();" +
-    "alert('reno:已提交 '+links.length+' 个链接\\n新增'+j.imported+' 重复'+j.duplicate+' 失败'+j.failed);})()"
+    "if(!r.ok){alert('reno:提交失败('+r.status+'),请回到reno核对鉴权与服务状态');return;}" +
+    "alert(j.queued!==undefined?'reno:已接收 '+j.queued+' 条链接,尚未确认家庭节点接单':'reno:已提交 '+links.length+' 个链接\\n新增'+j.imported+' 重复'+j.duplicate+' 失败'+j.failed);})()"
   );
 }
 
 export default function CollectPage() {
   const health = useQuery(healthQuery);
+  const cloud = health.data?.node_role === "cloud";
+  const local = !!health.data && !cloud;
   const toast = useToast();
   const qc = useQueryClient();
   const modelMut = useMutation({
@@ -63,17 +69,20 @@ export default function CollectPage() {
     <div className="mx-auto w-full max-w-[820px] px-4 py-5 md:px-6">
       <PageHeader
         title="采集助手"
-        desc="在自己登录的浏览器页面里,把已加载的视频链接提交给本机 reno。不登录、不破解、不模拟客户端。"
+        desc={cloud ? "把浏览器中已加载的视频链接提交到云端，在这里查看家庭节点的领取与完成状态。" : "在自己的浏览器中采集视频链接，查看本地处理进度与家庭同步状态。"}
       />
 
-      {health.isError ? (
+      {health.isError && !health.data ? (
         <div className="mb-4">
           <ErrorState error={health.error} onRetry={() => void health.refetch()} context="服务状态" />
         </div>
       ) : health.data ? (
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-panel border border-line bg-surface px-4 py-3 text-[13px]">
+        <div className="mb-4">
+        {health.isError ? <RefreshWarning onRetry={() => void health.refetch()} /> : null}
+        <div className="flex flex-wrap items-center gap-2 rounded-panel border border-line bg-surface px-4 py-3 text-[13px]">
           <span className="text-muted">服务状态:</span>
-          <StatusChip ok label="reno 在线" />
+          <StatusChip ok={!health.isError} label={health.isError ? "reno 状态待刷新" : "reno 服务可访问"} />
+          {cloud ? <Badge tone="neutral">云端接收节点</Badge> : <>
           <StatusChip ok={health.data.cookies_configured} label={health.data.cookies_configured ? "下载 cookie 已配置" : "下载 cookie 未配置(抖音下载需要)"} />
           <StatusChip ok={health.data.vlm_enabled} label={health.data.vlm_enabled ? "视觉理解开启" : "视觉理解关闭(降级模式)"} />
           <div className="ml-auto flex items-center gap-1.5">
@@ -92,12 +101,18 @@ export default function CollectPage() {
               ))}
             </Select>
           </div>
+          </>}
+        </div>
         </div>
       ) : (
         // reserve the status bar's height while health loads — inserting the
         // ~57px bar after fetch shifted every step card below (CLS)
         <Skeleton className="mb-4 h-[57px] w-full rounded-panel" />
       )}
+
+      <SyncStatusPanel />
+      <BudgetPanel />
+      {local ? <TaskStatusPanel /> : null}
 
       {/* platform tabs (shared Tabs component — same segmented look as
           conflicts filter / workbench mobile tabs) */}
@@ -129,18 +144,18 @@ export default function CollectPage() {
       ) : (
         <StepCard
           n={1}
-          title="打开B站收藏夹页(或用整夹自动导入)"
+          title={local ? "打开B站收藏夹页(或用整夹自动导入)" : "打开B站收藏夹页"}
           desc={
             <>
               打开
               <code className="mx-1 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[12px]">
                 space.bilibili.com/&lt;你的ID&gt;/favlist?fid=&lt;夹ID&gt;
               </code>
-              并滚动加载;或整夹自动:
+              并滚动加载。{local ? <>或整夹自动:
               <code className="mx-1 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[12px]">
                 python -m reno import-favlist "收藏夹完整链接"
               </code>
-              (私密夹需在 config.local.json 配 ytdlp_cookies)。
+              (私密夹需在 config.local.json 配 ytdlp_cookies)。</> : null}
             </>
           }
         />
@@ -149,7 +164,7 @@ export default function CollectPage() {
       <StepCard
         n={2}
         title="安装采集书签(拖到书签栏,或复制代码手动新建)"
-        desc={`书签会把当前页面已加载的视频链接批量提交到 ${origin}。地址在局域网其它设备(如 iPhone)上同样以这里显示的地址为准——不要写 localhost。`}
+        desc={cloud ? `书签会把当前页面已加载的视频链接批量提交到 ${origin}。请使用本页生成的书签，保持接收地址一致。` : `书签会把当前页面已加载的视频链接批量提交到 ${origin}。地址在局域网其它设备(如 iPhone)上同样以这里显示的地址为准——不要写 localhost。`}
       >
         <div className="mt-3 space-y-2.5">
           <a
@@ -179,9 +194,10 @@ export default function CollectPage() {
       <StepCard
         n={3}
         title="在收藏页点书签,提交当前已加载的部分"
-        desc="每次点击只提交「当前已加载」的链接,可分批多次;提交后回到收件箱看队列。"
+        desc="每次点击只提交「当前已加载」的链接，可分批多次；提交后回到本页查看队列与实际进度。"
       />
 
+      {cloud ? <StepCard n={4} title="等待家庭节点领取与处理" desc="链接接收后会保留在云端队列。家庭节点在线时领取任务，在本地下载、提取知识并上传；云端确认发布后才显示完成。" /> : local ? <>
       <StepCard n={4} title="抖音视频下载的前提(一次性)" desc={
         <>
           抖音对无 cookie 的下载请求返回 403(yt-dlp 要求 fresh cookies,
@@ -196,6 +212,7 @@ export default function CollectPage() {
         title="处理节奏"
         desc="单日大批量(几十个视频)会触碰 coding plan 配额;建议分日处理,或在配置中切换 glm-4.5-flash(独立配额池)。每个视频约 1-2 万 token,见 docs/cost-notes.md。"
       />
+      </> : null}
 
       <div className="mt-5 rounded-panel border border-line bg-surface-2/40 p-4 text-[12.5px] leading-relaxed text-muted">
         <p className="mb-1.5 flex items-center gap-1.5 font-medium text-ink-2">
@@ -204,8 +221,8 @@ export default function CollectPage() {
         <ul className="list-disc space-y-1 pl-5">
           <li>书签无响应/报网络错误:确认 reno serve 正在运行,且书签里的地址与当前一致(本页自动生成,误手改会失效)。</li>
           <li>跨源被浏览器拦截:书签运行在 douyin/bilibili 页面上,后端已为这两个来源开 CORS 白名单;其它站点不支持。</li>
-          <li>iPhone/iPad 使用:确保手机与运行 reno 的电脑在同一局域网,书签地址用本页显示的局域网 IP 形式,而不是 localhost。</li>
-          <li>书签采集只拿「链接列表」,真正的下载由 reno 后端完成(抖音需先配好第 4 步的 cookie)。</li>
+          <li>{cloud ? "手机使用：通过当前云端网址访问，家庭节点可在自己的网络中处理任务。" : "iPhone/iPad 使用:确保手机与运行 reno 的电脑在同一局域网,书签地址用本页显示的局域网 IP 形式,而不是 localhost。"}</li>
+          <li>{local ? "书签采集只拿「链接列表」,真正的下载由 reno 后端完成(抖音需先配好第 4 步的 cookie)。" : "书签只提交链接；家庭节点离线时，队列会等待领取，不会显示为已经处理。"}</li>
         </ul>
         <p className="mt-2 flex items-center gap-1">
           <ExternalLink size={12} /> 详细文档见仓库

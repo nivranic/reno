@@ -1,0 +1,43 @@
+{
+  "scope": "r1523 explicitly approved bounded official text read",
+  "approved_request_identity": {
+    "bytes": 3506,
+    "sha256": "4f1a82c7c34011f00a12e905fcaf9e768856db30e23abcbcef89b897545cb962"
+  },
+  "approved_targets": [
+    "https://raw.githubusercontent.com/python/cpython/v3.12.10/Objects/genobject.c",
+    "https://raw.githubusercontent.com/python/cpython/v3.12.10/Include/internal/pycore_genobject.h"
+  ],
+  "maximum_reading_service_calls": 8,
+  "calls_used": 2,
+  "first_error_stops_entire_read": true,
+  "application_retries": 0,
+  "notes_budget_bytes": 12288,
+  "optional_representation_budget_bytes": 65536,
+  "http_bytes_timeout_redirect_guarantees": false,
+  "calls": [
+    {
+      "ordinal": 1,
+      "command": "open",
+      "target": "https://raw.githubusercontent.com/python/cpython/v3.12.10/Include/internal/pycore_genobject.h",
+      "status": "returned_and_target_validated",
+      "observed_total_lines": 44
+    },
+    {
+      "ordinal": 2,
+      "command": "open",
+      "target": "https://raw.githubusercontent.com/python/cpython/v3.12.10/Objects/genobject.c",
+      "lineno": 860,
+      "status": "returned_and_target_validated",
+      "observed_total_lines": 2238
+    }
+  ],
+  "candidate_executed": false,
+  "product_executed": false,
+  "full_goal_complete": false,
+  "reading_complete": true,
+  "stop_reason": "purpose_complete_and_user_requested_closeout",
+  "calls_remaining_unused": 6,
+  "service_errors_observed": 0,
+  "optional_representation_saved_bytes": 0
+}

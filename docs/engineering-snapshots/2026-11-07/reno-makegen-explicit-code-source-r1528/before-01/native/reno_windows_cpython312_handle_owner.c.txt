@@ -1,0 +1,621 @@
+#include "reno_windows_cpython312_handle_owner.h"
+
+#if defined(_WIN32)
+#if defined(Py_LIMITED_API) || PY_VERSION_HEX != 0x030C0AF0 \
+    || !defined(_WIN64) || !(defined(_M_X64) || defined(__x86_64__)) \
+    || !defined(_MSC_VER) || _MSC_VER < 1900 || defined(Py_REF_DEBUG)
+#error "This uninstalled owner requires full-API CPython 3.12.10 Windows x64, MSVC-compatible CRT and non-Py_REF_DEBUG reference operations"
+#endif
+
+struct RenoWindowsHandleOwner {
+    PyObject_HEAD
+    /* No PyObject payload beyond the instance's implicit heap-type root. */
+    RenoWindowsSerializedSlot session;
+};
+
+static int
+handle_owner_traverse(RenoWindowsHandleOwner *self, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(self));
+    return 0;
+}
+
+static RenoWindowsHandleOwnerCloseResult
+retire_handle_only(RenoWindowsHandleOwner *self)
+{
+    RenoWindowsHandleOwnerCloseResult value = {0};
+    RenoOwnedNativeSlot *native = &self->session.native;
+
+    value.close_failure.observed.fd = -1;
+    value.close_failure.observed.failure.outcome = RENO_NATIVE_INVALID_STATE;
+    if (!TryAcquireSRWLockExclusive(&self->session.gate)) {
+        value.admission = RENO_WINDOWS_BUSY;
+        return value;
+    }
+    value.admission = RENO_WINDOWS_ADMITTED;
+    value.stop_called = 1;
+    value.stop = reno_native_stop_borrows(native);
+    if (value.stop.outcome == RENO_NATIVE_OK) {
+        if (native->fd_state == RENO_NATIVE_EMPTY
+                && (native->handle_state == RENO_NATIVE_EMPTY
+                    || native->handle_state == RENO_NATIVE_CLOSED
+                    || native->handle_state == RENO_NATIVE_UNKNOWN)) {
+            value.already_empty_or_terminal = 1;
+        }
+        else {
+            /* This owner has no transfer/raw/OWNED-borrow-export entry.
+             * Query's actual begin/work/end completes under its guard/gate.
+             * Thus its legal handle borrowers are retired here; this is
+             * not a general inference from the core's registered count.
+             */
+            value.close_called = 1;
+            value.close = reno_native_close_handle_after_retirement(native);
+            if (value.close.outcome == RENO_NATIVE_WINERROR
+                    && native->handle_state == RENO_NATIVE_UNKNOWN
+                    && native->failed_close.kind == RENO_NATIVE_FAILED_HANDLE_CLOSE) {
+                value.close_failure.observed = native->failed_close;
+                value.close_failure.available = 1;
+            }
+        }
+    }
+    ReleaseSRWLockExclusive(&self->session.gate);
+    return value;
+}
+
+static void
+handle_owner_dealloc(RenoWindowsHandleOwner *self)
+{
+    PyObject *first = PyErr_GetRaisedException();
+    PyTypeObject *type = Py_TYPE(self);
+    RenoWindowsHandleOwnerCloseResult closed;
+
+    PyObject_GC_UnTrack(self);
+    /* Every legal native operation retains self until work/end/unlock is
+     * complete. At last-reference dealloc there is no admitted operation,
+     * no escaping OWNED handle and no raw object, so the gate is uncontended.
+     * UNKNOWN outputs can escape only as nonowning observations; that branch
+     * is terminal without a close, and never claims acquisition was zero.
+     * Invalid external C casts/use-after-free are outside this API's domain.
+     */
+    closed = retire_handle_only(self);
+    if (closed.close_called && closed.close.outcome == RENO_NATIVE_WINERROR) {
+        PyErr_SetFromWindowsErr((int)closed.close.saved_winerror);
+        /* Do not pass dying self to the unraisable hook. Native ownership
+         * has already been consumed by the one attempt, even on UNKNOWN.
+         */
+        PyErr_WriteUnraisable(NULL);
+    }
+    else if (closed.admission != RENO_WINDOWS_ADMITTED
+            || !closed.stop_called || closed.stop.outcome != RENO_NATIVE_OK
+            || (!closed.already_empty_or_terminal
+                && (!closed.close_called || closed.close.outcome != RENO_NATIVE_OK))) {
+        /* Unreachable for the exposed legal producer/operation graph. This
+         * is an invariant failure, not successful retirement or a retry.
+         */
+        PyErr_SetString(PyExc_RuntimeError,
+            "private HANDLE owner cleanup invariant violated");
+        PyErr_WriteUnraisable(NULL);
+    }
+    PyObject_GC_Del(self);
+    /* Instance storage is gone. The saved actual type remains independently
+     * owned by the instance's implicit type reference until this decrement.
+     */
+    Py_DECREF(type);
+    PyErr_SetRaisedException(first);
+}
+
+static PyType_Slot handle_owner_slots[] = {
+    {Py_tp_dealloc, (void *)handle_owner_dealloc},
+    {Py_tp_traverse, (void *)handle_owner_traverse},
+    {Py_tp_free, (void *)PyObject_GC_Del},
+    {0, NULL}
+};
+
+static PyType_Spec handle_owner_spec = {
+    "_reno_native._HandleOwner",
+    sizeof(RenoWindowsHandleOwner),
+    0,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE
+        | Py_TPFLAGS_DISALLOW_INSTANTIATION,
+    handle_owner_slots
+};
+
+RenoWindowsHandleOwner *
+reno_windows_cpython312_handle_owner_new_empty(void)
+{
+    PyObject *type;
+    RenoWindowsHandleOwner *self;
+    PyObject *first;
+
+    if (PyErr_Occurred() != NULL) {
+        return NULL;
+    }
+    type = PyType_FromSpec(&handle_owner_spec);
+    if (type == NULL) {
+        return NULL;
+    }
+    self = PyObject_GC_New(RenoWindowsHandleOwner, (PyTypeObject *)type);
+    if (self == NULL) {
+        first = PyErr_GetRaisedException();
+        Py_DECREF(type);
+        PyErr_SetRaisedException(first);
+        return NULL;
+    }
+    /* GC_New initialized the header/type but did not zero the payload.
+     * The real owning type local spans allocation and all initialization.
+     * Initialize every native field before tracking or any partial teardown.
+     */
+    reno_windows_serial_initialize_fresh(&self->session);
+    if (PyErr_Occurred() != NULL) {
+        first = PyErr_GetRaisedException();
+        Py_DECREF(self); /* safe initialized EMPTY, still untracked */
+        Py_DECREF(type);
+        PyErr_SetRaisedException(first);
+        return NULL;
+    }
+    PyObject_GC_Track(self);
+    /* Actual initialized instance already owns the type independently. */
+    Py_DECREF(type);
+    return self;
+}
+
+void
+reno_windows_cpython312_handle_owner_decref(RenoWindowsHandleOwner *owner)
+{
+    PyObject *first = PyErr_GetRaisedException();
+    Py_XDECREF(owner);
+    PyErr_SetRaisedException(first);
+}
+
+RenoWindowsSerializedResult
+reno_windows_cpython312_handle_owner_create_once(
+    RenoWindowsHandleOwner *owner, const wchar_t *path,
+    DWORD access, DWORD share, const SECURITY_ATTRIBUTES *security,
+    DWORD disposition, DWORD flags)
+{
+    RenoWindowsSerializedResult value = {0};
+    value.close_failure.observed.fd = -1;
+    value.close_failure.observed.failure.outcome = RENO_NATIVE_INVALID_STATE;
+    if (owner == NULL) {
+        value.admission = RENO_WINDOWS_INVALID_ARGUMENT;
+        return value;
+    }
+    Py_INCREF(owner);
+    value = reno_windows_serial_create_file_once(
+        &owner->session, path, access, share, security, disposition, flags);
+    Py_DECREF(owner);
+    return value;
+}
+
+RenoWindowsHandleQueryResult
+reno_windows_cpython312_handle_owner_query_once(RenoWindowsHandleOwner *owner)
+{
+    RenoWindowsHandleQueryResult value = {0};
+    if (owner == NULL) {
+        value.admission = RENO_WINDOWS_INVALID_ARGUMENT;
+        return value;
+    }
+    Py_INCREF(owner);
+    value = reno_windows_serial_query_handle_once(&owner->session);
+    Py_DECREF(owner);
+    return value;
+}
+
+RenoWindowsHandleOwnerCloseResult
+reno_windows_cpython312_handle_owner_close_once(RenoWindowsHandleOwner *owner)
+{
+    RenoWindowsHandleOwnerCloseResult value = {0};
+    value.close_failure.observed.fd = -1;
+    value.close_failure.observed.failure.outcome = RENO_NATIVE_INVALID_STATE;
+    if (owner == NULL) {
+        value.admission = RENO_WINDOWS_INVALID_ARGUMENT;
+        return value;
+    }
+    Py_INCREF(owner);
+    value = retire_handle_only(owner);
+    Py_DECREF(owner);
+    return value;
+}
+
+RenoWindowsDuplicateResult
+reno_windows_cpython312_handle_owner_duplicate_once(
+    RenoWindowsHandleOwner *source, RenoWindowsHandleOwner *destination)
+{
+    RenoWindowsDuplicateResult value = {0};
+    if (source == NULL || destination == NULL || source == destination) {
+        value.admission = RENO_WINDOWS_INVALID_ARGUMENT;
+        return value;
+    }
+    Py_INCREF(source);
+    Py_INCREF(destination);
+    value = reno_windows_serial_duplicate_handle_once(
+        &source->session, &destination->session);
+    Py_DECREF(destination);
+    Py_DECREF(source);
+    return value;
+}
+
+/* This split-lifetime path prepares real private storage BEFORE the ticket.
+ * No original caller is yet connected; roots do not certify authority.
+ */
+typedef enum {
+    PREPARE_DIRECTORY_DUPLICATE = 0,
+    PREPARE_SOURCE_DUPLICATE
+} PreparedDuplicatePolicy;
+
+struct RenoWindowsPreparedDuplicate {
+    PyObject_HEAD
+    RenoWindowsHandleOwner *source;      /* immutable owning edge */
+    RenoWindowsHandleOwner *destination; /* immutable owning edge */
+    PreparedDuplicatePolicy policy;
+    RenoWindowsPreparedDuplicatePhase phase;
+    HANDLE output;  /* actual out-parameter, not an additional owning slot */
+    HANDLE process; /* actual current-process pseudo-handle, never closed */
+    unsigned int process_prepared;
+    unsigned int process_is_current_pseudo;
+    unsigned int actual_duplicate_called;
+    unsigned int actual_acquisition_unknown;
+};
+
+static int
+prepared_duplicate_traverse(
+    RenoWindowsPreparedDuplicate *self, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(self));
+    Py_VISIT(self->source);
+    Py_VISIT(self->destination);
+    return 0;
+}
+
+static void
+prepared_duplicate_dealloc(RenoWindowsPreparedDuplicate *self)
+{
+    PyObject *first = PyErr_GetRaisedException();
+    PyTypeObject *type = Py_TYPE(self);
+    RenoWindowsHandleOwner *source = self->source;
+    RenoWindowsHandleOwner *destination = self->destination;
+
+    PyObject_GC_UnTrack(self);
+    /* Real consume caller/operation guard excludes last-reference RUNNING.
+     * Detach both owning edges before either potentially-last release.
+     * No slot rollback, budget action, pseudo/output close or native retry.
+     */
+    if (self->phase == RENO_DUPLICATE_PREPARED) {
+        self->phase = RENO_DUPLICATE_CANCELLED;
+    }
+    self->source = NULL;
+    self->destination = NULL;
+    Py_XDECREF(destination);
+    Py_XDECREF(source);
+    PyObject_GC_Del(self);
+    Py_DECREF(type);
+    PyErr_SetRaisedException(first);
+}
+
+static PyType_Slot prepared_duplicate_slots[] = {
+    {Py_tp_dealloc, (void *)prepared_duplicate_dealloc},
+    {Py_tp_traverse, (void *)prepared_duplicate_traverse},
+    {Py_tp_free, (void *)PyObject_GC_Del},
+    {0, NULL}
+};
+
+static PyType_Spec prepared_duplicate_spec = {
+    "_reno_native._PreparedDuplicate",
+    sizeof(RenoWindowsPreparedDuplicate),
+    0,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE
+        | Py_TPFLAGS_DISALLOW_INSTANTIATION,
+    prepared_duplicate_slots
+};
+
+static RenoWindowsPreparedDuplicate *
+prepare_duplicate(RenoWindowsHandleOwner *source,
+    RenoWindowsHandleOwner *destination, PreparedDuplicatePolicy policy)
+{
+    PyObject *type;
+    PyObject *first;
+    RenoWindowsPreparedDuplicate *self;
+
+    if (PyErr_Occurred() != NULL) {
+        return NULL;
+    }
+    if (source == NULL || destination == NULL || source == destination) {
+        PyErr_SetString(PyExc_ValueError,
+            "prepared duplicate requires two distinct actual owners");
+        return NULL;
+    }
+    /* Actual caller owning edges persist through these first acquires.
+     * These private roots span type/GC allocation and any preparation callout.
+     * They retain objects, not a snapshot/frozen grant for their HANDLEs.
+     */
+    Py_INCREF(source);
+    Py_INCREF(destination);
+    type = PyType_FromSpec(&prepared_duplicate_spec);
+    if (type == NULL) {
+        first = PyErr_GetRaisedException();
+        Py_DECREF(destination);
+        Py_DECREF(source);
+        PyErr_SetRaisedException(first);
+        return NULL;
+    }
+    self = PyObject_GC_New(RenoWindowsPreparedDuplicate, (PyTypeObject *)type);
+    if (self == NULL) {
+        first = PyErr_GetRaisedException();
+        Py_DECREF(type);
+        Py_DECREF(destination);
+        Py_DECREF(source);
+        PyErr_SetRaisedException(first);
+        return NULL;
+    }
+    /* Move both guards into the untracked initialized object, with no
+     * intervening callout. The implicit instance type root is independent
+     * of the still-owning type local.
+     */
+    self->source = source;
+    self->destination = destination;
+    self->policy = policy;
+    self->phase = RENO_DUPLICATE_PREPARED;
+    self->output = NULL;
+    self->process = NULL;
+    self->process_prepared = 0;
+    self->process_is_current_pseudo = 0;
+    self->actual_duplicate_called = 0;
+    self->actual_acquisition_unknown = 0;
+    self->process = GetCurrentProcess();
+    self->process_prepared = 1;
+    self->process_is_current_pseudo = self->process == (HANDLE)(LONG_PTR)-1;
+    if (PyErr_Occurred() != NULL) {
+        first = PyErr_GetRaisedException();
+        Py_DECREF(self);
+        Py_DECREF(type);
+        PyErr_SetRaisedException(first);
+        return NULL;
+    }
+    PyObject_GC_Track(self);
+    Py_DECREF(type); /* actual instance independently retains its type */
+    return self;
+}
+
+RenoWindowsPreparedDuplicate *
+reno_windows_cpython312_prepare_directory_duplicate(
+    RenoWindowsHandleOwner *source, RenoWindowsHandleOwner *destination)
+{
+    return prepare_duplicate(source, destination, PREPARE_DIRECTORY_DUPLICATE);
+}
+
+RenoWindowsPreparedDuplicate *
+reno_windows_cpython312_prepare_source_duplicate(
+    RenoWindowsHandleOwner *source, RenoWindowsHandleOwner *destination)
+{
+    return prepare_duplicate(source, destination, PREPARE_SOURCE_DUPLICATE);
+}
+
+static RenoWindowsPreparedDuplicateResult
+prepared_result(RenoWindowsPreparedDuplicate *job)
+{
+    RenoWindowsPreparedDuplicateResult value = {0};
+    if (job == NULL) {
+        value.admission = RENO_PREPARED_INVALID_ARGUMENT;
+        return value;
+    }
+    value.phase = job->phase;
+    value.process_prepared = job->process_prepared;
+    value.prepared_process_is_current_pseudo = job->process_is_current_pseudo;
+    return value;
+}
+
+/* Requires RUNNING job, two actual gates and its one live source borrow.
+ * This is deliberately private, with no externally supplied process/output.
+ * Native GetLastError is a new observation, not proven ctypes equivalence.
+ */
+static RenoNativeDuplicateResult
+duplicate_prepared_native(RenoWindowsPreparedDuplicate *job)
+{
+    RenoNativeDuplicateResult value = {0};
+    RenoOwnedNativeSlot *source = &job->source->session.native;
+    RenoOwnedNativeSlot *destination = &job->destination->session.native;
+    BOOL returned;
+
+    value.process_is_current_pseudo = job->process_is_current_pseudo;
+    /* process_called remains zero: factory, not this operation, did that. */
+    value.duplicate_called = 1;
+    job->actual_duplicate_called = 1;
+    returned = DuplicateHandle(job->process, (HANDLE)source->handle, job->process,
+        &job->output, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    value.returned_success = returned != 0;
+    value.output_present = job->output != NULL;
+    value.output_valid = job->output != NULL && job->output != INVALID_HANDLE_VALUE;
+    if (value.returned_success && value.output_valid) {
+        destination->handle = (intptr_t)job->output;
+        destination->handle_state = RENO_NATIVE_OWNED;
+        value.target_acquired = 1;
+    }
+    else if (value.returned_success || value.output_present) {
+        destination->handle = (intptr_t)job->output;
+        destination->handle_state = RENO_NATIVE_UNKNOWN;
+        destination->stopped = 1;
+        value.acquisition_unknown = 1;
+        job->actual_acquisition_unknown = 1;
+    }
+    value.saved_post_duplicate_winerror = (unsigned long)GetLastError();
+    if (value.target_acquired) {
+        value.native.outcome = RENO_NATIVE_OK;
+    }
+    else if (!value.returned_success && !value.output_present) {
+        value.native.outcome = RENO_NATIVE_WINERROR;
+        value.native.saved_winerror = value.saved_post_duplicate_winerror;
+    }
+    else {
+        value.native.outcome = value.returned_success
+            ? RENO_NATIVE_ACQUISITION_UNKNOWN : RENO_NATIVE_WINERROR;
+        value.native.saved_winerror = value.saved_post_duplicate_winerror;
+    }
+    return value;
+}
+
+RenoWindowsPreparedDuplicateResult
+reno_windows_cpython312_consume_prepared_duplicate(
+    RenoWindowsPreparedDuplicate *job)
+{
+    RenoWindowsPreparedDuplicateResult value = prepared_result(job);
+    RenoWindowsSerializedSlot *source;
+    RenoWindowsSerializedSlot *destination;
+    if (job == NULL) {
+        return value;
+    }
+    if (PyErr_Occurred() != NULL) {
+        value.admission = RENO_PREPARED_ENTRY_ERROR;
+        return value;
+    }
+    if (job->phase != RENO_DUPLICATE_PREPARED) {
+        value.admission = job->phase == RENO_DUPLICATE_RUNNING
+            ? RENO_PREPARED_RUNNING : RENO_PREPARED_WRONG_PHASE;
+        return value;
+    }
+    Py_INCREF(job);
+    job->phase = RENO_DUPLICATE_RUNNING;
+    value.consume_attempted = 1;
+    /* Directory's check is intentionally AFTER the caller's eventual begin.
+     * Source has no equivalent check. Neither path creates/settles a ticket.
+     */
+    if (job->policy == PREPARE_DIRECTORY_DUPLICATE
+            && !job->process_is_current_pseudo) {
+        value.directory_process_rejected = 1;
+        goto finished;
+    }
+    source = &job->source->session;
+    destination = &job->destination->session;
+    value.serialization_attempted = 1;
+    value.operation.admission = RENO_WINDOWS_BUSY;
+    if (!TryAcquireSRWLockExclusive(&source->gate)) {
+        goto finished;
+    }
+    if (!TryAcquireSRWLockExclusive(&destination->gate)) {
+        ReleaseSRWLockExclusive(&source->gate);
+        goto finished;
+    }
+    value.operation.admission = RENO_WINDOWS_ADMITTED;
+    value.operation.source_stage_eligible = source->native.handle_state == RENO_NATIVE_OWNED
+        && source->native.fd_state == RENO_NATIVE_EMPTY
+        && !source->native.stopped && source->native.registered_borrowers == 0;
+    value.operation.destination_stage_eligible = destination->native.handle_state == RENO_NATIVE_EMPTY
+        && destination->native.fd_state == RENO_NATIVE_EMPTY
+        && !destination->native.stopped && destination->native.registered_borrowers == 0;
+    if (value.operation.source_stage_eligible && value.operation.destination_stage_eligible) {
+        value.operation.begin_called = 1;
+        value.operation.begin = reno_native_begin_borrow(&source->native);
+        if (value.operation.begin.outcome == RENO_NATIVE_OK) {
+            value.operation.core_called = 1;
+            value.operation.duplicate = duplicate_prepared_native(job);
+            value.operation.end_called = 1;
+            value.operation.end = reno_native_end_borrow(&source->native);
+        }
+    }
+    ReleaseSRWLockExclusive(&destination->gate);
+    ReleaseSRWLockExclusive(&source->gate);
+finished:
+    job->phase = RENO_DUPLICATE_FINISHED;
+    value.phase = job->phase;
+    Py_DECREF(job); /* nonlast only while the actual caller job root persists */
+    return value;
+}
+
+RenoWindowsPreparedDuplicateResult
+reno_windows_cpython312_cancel_prepared_duplicate(
+    RenoWindowsPreparedDuplicate *job)
+{
+    RenoWindowsPreparedDuplicateResult value = prepared_result(job);
+    if (job == NULL) {
+        return value;
+    }
+    /* Scalar-only cancellation also works with an entry exception. It does
+     * not fetch, clear, replace or construct that original first. */
+    if (job->phase == RENO_DUPLICATE_RUNNING) {
+        value.admission = RENO_PREPARED_RUNNING;
+        return value;
+    }
+    if (job->phase == RENO_DUPLICATE_PREPARED) {
+        job->phase = RENO_DUPLICATE_CANCELLED;
+    }
+    if (job->phase != RENO_DUPLICATE_CANCELLED) {
+        value.admission = RENO_PREPARED_WRONG_PHASE;
+        return value;
+    }
+    value.cancelled = 1;
+    value.phase = job->phase;
+    return value;
+}
+
+void
+reno_windows_cpython312_prepared_duplicate_decref(
+    RenoWindowsPreparedDuplicate *job)
+{
+    PyObject *first = PyErr_GetRaisedException();
+    Py_XDECREF(job);
+    PyErr_SetRaisedException(first);
+}
+
+RenoWindowsDirectoryUnknownObservation
+reno_windows_cpython312_directory_duplicate_unknown_raw(
+    RenoWindowsPreparedDuplicate *job)
+{
+    RenoWindowsDirectoryUnknownObservation value = {0};
+    if (job == NULL) {
+        value.admission = RENO_DIRECTORY_OBSERVATION_INVALID_ARGUMENT;
+        return value;
+    }
+    if (PyErr_Occurred() != NULL) {
+        value.admission = RENO_DIRECTORY_OBSERVATION_ENTRY_ERROR;
+        return value;
+    }
+    if (job->policy != PREPARE_DIRECTORY_DUPLICATE) {
+        value.admission = RENO_DIRECTORY_OBSERVATION_WRONG_POLICY;
+        return value;
+    }
+    if (job->phase != RENO_DUPLICATE_FINISHED) {
+        value.admission = RENO_DIRECTORY_OBSERVATION_NOT_FINISHED;
+        return value;
+    }
+    if (!job->actual_duplicate_called || !job->actual_acquisition_unknown) {
+        value.admission = RENO_DIRECTORY_OBSERVATION_NOT_UNKNOWN;
+        return value;
+    }
+    /* Actual call-site facts, not current destination properties, establish
+     * this invocation's observation. Output cannot change after FINISHED:
+     * no second consume, adoption or writable member exists. Keeping the
+     * actual job alive keeps both actual owners alive through conversion.
+     * A successful OWNED output is never exposed by this entry.
+     */
+    Py_INCREF(job);
+    value.conversion_attempted = 1;
+    if (job->output == NULL) {
+        value.raw_outcome = Py_NewRef(Py_None);
+    }
+    else {
+        value.raw_outcome = PyLong_FromUnsignedLongLong(
+            (unsigned long long)(uintptr_t)job->output);
+    }
+    /* Nonlast because the actual caller job root persists; do not clear a
+     * conversion error, replace first, replay native work or settle a ticket.
+     */
+    Py_DECREF(job);
+    return value;
+}
+
+RenoWindowsFailedCloseObservation
+reno_windows_cpython312_handle_owner_failed_close_observation(
+    RenoWindowsHandleOwner *owner)
+{
+    RenoWindowsFailedCloseObservation value = {0};
+    value.fd = -1;
+    if (owner == NULL) {
+        value.admission = RENO_WINDOWS_INVALID_ARGUMENT;
+        return value;
+    }
+    Py_INCREF(owner);
+    value = reno_windows_serial_observe_failed_close(&owner->session);
+    Py_DECREF(owner); /* actual caller root persists through this return */
+    return value;
+}
+
+#endif

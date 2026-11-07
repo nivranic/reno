@@ -1,0 +1,9 @@
+# scope 借用归还：删除入口修订03
+
+承接01+02，覆盖01中独立custody归还primitive的安排。SOURCE02独审S001指出：独立可调用的custody._return_scope仅检查consume/issuer就可删除，无法保证调用方完成reset来源门。
+
+本修订彻底移除独立删除primitive；custody仅提供_prepare_scope_return，复核原consume/holder/issuer后返回准备cell，不执行删除、不写delete/effect成功flags。真正dict.__delitem__及actual return/error/tb、finally effect/error/tb都内联在原scope_return函数完整来源与轮转历史验证之后。调用方无法调用独立删除函数跳过producer检查。
+
+紧邻删除前再核原scope的同holder lease、root同owner、scope role、issuer就是同scope、当前entry就是cell中原entry；先记attempt，actual return先保存，finally再读effect。有原删除错误时effect错误只作为后继，不替换原错误；无原删除错误时effect错误使整体失败，成功删除事实仍保留且不重试。仅准备cell从不代表已归还；直调底层prepare只能占位并使后续正常路径拒绝。
+
+费用未认证、root/carrier/pending保留、strict禁用和原全部限额不变。SOURCE01 R001及SOURCE02 S001红、旧完整源码与差异均保留，SOURCE03另行双审；尚无运行证据。

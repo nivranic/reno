@@ -1,0 +1,87 @@
+{
+  "scope": "existing local generator, format and join implementations and recorded provenance only",
+  "files": [
+    {
+      "scope": "general",
+      "path": "reno-loader-primitive-consumption-contract-r1526/FINAL-INVESTIGATION.json",
+      "bytes": 3834,
+      "sha256": "59174c555af2867ad7e76635593599cb0ef84e0e52a73f5040a0384ad8738184"
+    },
+    {
+      "scope": "general",
+      "path": "reno-native-v3-call-design-r1523/DRAFT.md",
+      "bytes": 8814,
+      "sha256": "8ea5a01a5cf94f8fcd57a9b607b8368b9283f6b607368d800caac142393871b0"
+    },
+    {
+      "scope": "general",
+      "path": "reno-loader-f4-callsite-handoff-r1445/FRAME-C-READING-SERVICE.txt",
+      "bytes": 6772,
+      "sha256": "d28c04898eafed7d1863af78a5529aca93a5b39bb0a2dd2b2085cb807c29a31e"
+    },
+    {
+      "scope": "general",
+      "path": "reno-loader-body-operands-source-r1524/FINAL-REVIEW.json",
+      "bytes": 13801,
+      "sha256": "7f0c85b54d9b9b055ee5cec3f515880a43eb61f1f632d3c5dedee2dcfa81876e"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-catalog-generator-route-r1126/OFFICIAL-DOWNLOADS-01.json",
+      "bytes": 792,
+      "sha256": "d8cb046d52c50b1bbcfa209efbfa8627d727577d854805c9c5a137e5f536ac3d"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-catalog-generator-route-r1126/cpython-v3.12.10/Objects/genobject.c",
+      "bytes": 78785,
+      "sha256": "7c13a1de31fc8af6e082fc9aa055bcfe980786b4104fec0f7564e40735e44cad"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-private-locals-ingress-r1119/CPYTHON-NEW-SOURCE-01.json",
+      "bytes": 355,
+      "sha256": "0997faf2c0ebaa6b52eead2d597ce6d237c2008354f9ae56dab18f4f0aac036a"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-private-locals-ingress-r1119/cpython-v3.12.10/Objects/abstract.c",
+      "bytes": 79783,
+      "sha256": "abb8e2403b6479b976e900668273a44d29f117ebb021b0f4669f3bf03521766e"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-import-from-route-r1125/IDENTIFIER-SOURCE-DOWNLOAD-01.json",
+      "bytes": 404,
+      "sha256": "f490c6fcc6853422b1087e0a42caf17353fb6d6fef4ecd1651ce9db2f75ae079"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-import-from-route-r1125/cpython-v3.12.10/Objects/unicodeobject.c",
+      "bytes": 467971,
+      "sha256": "74028ecb90344d6f7e503e7bea29f505d04795a2c416309ac9bac4db29539abf"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-combined-admission-design-r1108/cpython-v3.12.10/Include/internal/pycore_frame.h",
+      "bytes": 9255,
+      "sha256": "23d66ba6ef2936ecca96dc427be5e022712ae25c3f4b3df2abd2ca46b1ee5f39"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-combined-admission-design-r1108/cpython-v3.12.10/Python/generated_cases.c.h",
+      "bytes": 195111,
+      "sha256": "579706b9011997eed918fb546bd9382e8416d8cba3f9e87282aa5fa472c08b29"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-bootstrap-context-transport-r1101/cpython-v3.12.10/genobject.c",
+      "bytes": 78785,
+      "sha256": "7c13a1de31fc8af6e082fc9aa055bcfe980786b4104fec0f7564e40735e44cad"
+    }
+  ],
+  "network_calls": 0,
+  "new_candidate_generated": false,
+  "candidate_executed": false,
+  "full_goal_complete": false
+}

@@ -1,0 +1,23 @@
+{
+  "scope": "finite design for explicit private make_gen code input only",
+  "design_identity": {
+    "bytes": 5456,
+    "sha256": "625e552e1d76929159ca065887f52e4c07405effd96dd4721e682c9da5014e25"
+  },
+  "root_design_review_passed": true,
+  "parent_22_sources_and_added_reference_distinguished": true,
+  "before_source_count": 23,
+  "before_total_bytes": 2136818,
+  "expected_generated_outputs": 51,
+  "legacy_three_callers_keep_current_function_code_selection": true,
+  "no_new_reference_or_dynamic_source_guard_planned": true,
+  "private_c_call_argument_and_stack_cost_not_claimed_zero": true,
+  "full_v3_code_view_selection_admitted": false,
+  "source_generation_admitted": false,
+  "source_only_closed_fields": [],
+  "candidate_executed": false,
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "full_goal_complete": false,
+  "goal_status": "active"
+}

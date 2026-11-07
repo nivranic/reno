@@ -1,0 +1,11 @@
+# 正常consume事实：来源门修订02
+
+保留01设计。独立设计复审指出active+claimed+budget同槽不足以排除另一合法group；本节收紧来源门，其他范围不变。
+
+由原scope origin闭包新增专用consume_prepare。该函数显式接budget、strict_origin、group、同一原root lease及原reservation；在原CUSTODY Call内先用原recover/raw记录核唯一origin、原budget/group反向索引、原group constructor cell returned/result身份、cell属于原cells历史、原scope与其budget/group/origin链、原scope lease和root owner一致，之后才准备同reservation的唯一consume cell。foreign在原callee任何_consume_attempted变化前拒绝。它不调用要求构造期active guard/phase=new的base/group_state，也不额外clock、消费或关闭资源。
+
+consume cell固定14位置：group、callee、attempted、result、returned、failure、failure_tb、effect、effect_failure、effect_tb、prepared、source_history、effect_attempted、effect_returned。source_history强存原origin/group constructor cell/scope/root lease，和原root账独立核同。cell在reservation占槽前预建，当前snapshot原八位置保留，第九位置追加该cell的tuple观察。
+
+三个caller只有strict分支改为prepare→attempt→原callee→实际return/error先保存→finally effect。legacy分支原调用保持。原callee导出及函数code/default/closure/cells、effect closure捕获的原类descriptor、新prepare导出和scope局部函数全部加入固定目录，首次调用前完成认证。effect五字段仅为原slot观察，不是资源债务终止证明。
+
+完整Task7仍需正常consume返回之外的scope reset实际效果、业务holder归还及完整资源债务；在最后指定Call内签发permit后先真正leave Call，才可无新Call核唯一原root终止。禁止clear loan账或忽略自身Call loan。未知仍pending，_finish_operation硬拒、strict禁用及所有原限额保持。

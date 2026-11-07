@@ -1,0 +1,48 @@
+{
+  "scope": "independent finite design review of explicit private make_gen code input only",
+  "design_identity": {
+    "bytes": 5456,
+    "sha256": "625e552e1d76929159ca065887f52e4c07405effd96dd4721e682c9da5014e25"
+  },
+  "reviewed_identities": {
+    "ROOT-DESIGN-REVIEW.json": {
+      "bytes": 897,
+      "sha256": "23e6aaba20a4638472ee0bcb1167f47473c5698806092b9674010c36ddad3c21"
+    },
+    "data/t16-h01-catalog-generator-route-r1126/cpython-v3.12.10/Objects/genobject.c": {
+      "bytes": 78785,
+      "sha256": "7c13a1de31fc8af6e082fc9aa055bcfe980786b4104fec0f7564e40735e44cad"
+    }
+  },
+  "independent_design_review_passed": true,
+  "independent_receipt": "c1ee23",
+  "independent_receipt_exit_code": 0,
+  "original_single_definition_and_three_callers_checked": true,
+  "original_func_code_literal_sites": 2,
+  "legacy_three_callers_keep_current_function_code_selection": true,
+  "flags_read_and_postallocation_name_observations_preserved_in_design": true,
+  "parent_22_sources_and_added_reference_distinguished": true,
+  "before_source_count": 23,
+  "before_total_bytes": 2136818,
+  "expected_generated_outputs": 51,
+  "no_new_helper_reference_or_dynamic_guard_planned": true,
+  "source_no_explicit_python_callout_is_limited_evidence": true,
+  "private_argument_and_stack_cost_not_claimed_zero": true,
+  "c_prologue_stack_probe_abi_and_runtime_equivalence_proved": false,
+  "full_v3_code_view_selection_admitted": false,
+  "only_source_tool_preparation_admitted": true,
+  "source_generation_admitted": false,
+  "network_calls": 0,
+  "new_candidate_generated": false,
+  "candidate_executed": false,
+  "c_parsed": false,
+  "c_compiled": false,
+  "source_only_closed_fields": [],
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "actual_abi_build_runtime_proved": false,
+  "full_compat_proved": false,
+  "physical_peak_budget_proved": false,
+  "full_goal_complete": false,
+  "goal_status": "active"
+}

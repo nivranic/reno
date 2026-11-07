@@ -1,0 +1,340 @@
+{
+  "scope": "sealed explicit private make_gen code input source candidate; text evidence only",
+  "source_baseline": "reno-makegen-explicit-code-source-r1528/working-01",
+  "parent_material": "reno-loader-body-operands-source-r1524",
+  "parent_final_identity": {
+    "bytes": 13801,
+    "sha256": "7f0c85b54d9b9b055ee5cec3f515880a43eb61f1f632d3c5dedee2dcfa81876e"
+  },
+  "derivation_investigation": "reno-loader-local-generator-format-contract-r1527/FINAL-INVESTIGATION.json",
+  "derivation_investigation_identity": {
+    "bytes": 4526,
+    "sha256": "6bfecfaab06772c6fb94654172406f10ab8b91e15dd9398dbfccd95444ed600f"
+  },
+  "derivation_final_independent_receipt": "73c73e",
+  "root_design_review_passed": true,
+  "independent_design_review_passed": true,
+  "root_source_review_passed": true,
+  "independent_source_review_passed": true,
+  "root_tool_review_passed": true,
+  "independent_tool_review_passed": true,
+  "root_actual_review_passed": true,
+  "independent_actual_review_passed": true,
+  "root_document_review_passed": true,
+  "independent_document_review_passed": true,
+  "root_design_receipt": "0ba6e4",
+  "independent_design_receipts": [
+    "c1ee23",
+    "fd0b92"
+  ],
+  "root_preparation_and_control_tool_ast_receipt": "2b1ef2",
+  "independent_source_tool_prediction_receipts": [
+    "6d4515",
+    "565b61"
+  ],
+  "independent_preparation_transcription_receipt": "1849ef",
+  "generation_receipt": "102730",
+  "generation_execution_count": 1,
+  "root_actual_document_receipt": "3aeddf",
+  "independent_actual_receipt": "cd3771",
+  "independent_document_receipt": "bc4f76",
+  "independent_document_review_object_receipt": "13ce39",
+  "artifact_identities": {
+    "ACTUAL.md": {
+      "bytes": 3389,
+      "sha256": "49208369e0b41d3df3f7645ff38565ba261eca6017f102f98cad2b33d14e4ea5"
+    },
+    "before-01/native/reno_owned_native_slot.c.txt": {
+      "bytes": 10037,
+      "sha256": "678176324d82abe8f63e21ee72e915911bc92802ac745fdf4ef57ec7fd53787f"
+    },
+    "before-01/native/reno_owned_native_slot.h.txt": {
+      "bytes": 7183,
+      "sha256": "b1bd34cf8fad0f5537979b9fe095bd34a2f47b070410705b532cf178d69fdb59"
+    },
+    "before-01/native/reno_windows_cpython312_audit.c.txt": {
+      "bytes": 10945,
+      "sha256": "42a63d4ccb7babf42d02623b066d098a737b19624f249afdabd63f11edbbf507"
+    },
+    "before-01/native/reno_windows_cpython312_audit.h.txt": {
+      "bytes": 4065,
+      "sha256": "29251f3efdb92eaab6a404fa56a8c5540022a46ebe075ebf95b194f6c719680a"
+    },
+    "before-01/native/reno_windows_cpython312_handle_owner.c.txt": {
+      "bytes": 22542,
+      "sha256": "3e5cdbe8833342b5dd6f27e4f938af63f258566f043a158c85fdaec1bb844a0f"
+    },
+    "before-01/native/reno_windows_cpython312_handle_owner.h.txt": {
+      "bytes": 11538,
+      "sha256": "28e67715cec2fd50919d3d8385aa11ba702ca119aa44facd8b7dab4d381a454e"
+    },
+    "before-01/native/reno_windows_cpython312_owner_factory.c.txt": {
+      "bytes": 1107642,
+      "sha256": "3cefe12fdb068f0d66e4d00eb12d074402892369f469a095da572ac91d469937"
+    },
+    "before-01/native/reno_windows_cpython312_owner_factory.h.txt": {
+      "bytes": 2877,
+      "sha256": "e0c0d2f6d3b225855740a159bb1093af27e5fb93b806830ecb0a561f58dee96e"
+    },
+    "before-01/native/reno_windows_cpython312_result.h.txt": {
+      "bytes": 3456,
+      "sha256": "86c688adb9a546d5d08d855be8ede4195c54f67b1855f2eef0fe516a2c1b7095"
+    },
+    "before-01/native/reno_windows_serialized_slot.c.txt": {
+      "bytes": 15434,
+      "sha256": "4d0f3992c07c59c524db69736ec5d46ef93f4a73126ad7b77376c06cf1c34575"
+    },
+    "before-01/native/reno_windows_serialized_slot.h.txt": {
+      "bytes": 13283,
+      "sha256": "4749bf321614d9dc81fb563655f860e328a7cf258e74253138a7237476e4cb6e"
+    },
+    "before-01/runtime/Include/cpython/pystate.h.txt": {
+      "bytes": 17923,
+      "sha256": "6d2922f8030504e102df2ffaed5893bf56e67710b6a8f9a868aeeb8041ee2e4c"
+    },
+    "before-01/runtime/Include/internal/pycore_call.h.txt": {
+      "bytes": 5080,
+      "sha256": "65137ae1527fda67a34321f2a51c00960e9844e6d53da8f0e2b661532f32c377"
+    },
+    "before-01/runtime/Include/internal/pycore_pystate.h.txt": {
+      "bytes": 5085,
+      "sha256": "0c84d5ebb267f3b236d3890f3892d866bdf9805ec0a24d7f86f6b564cebc7ba5"
+    },
+    "before-01/runtime/Include/internal/pycore_reno_owned_resume.h.txt": {
+      "bytes": 18995,
+      "sha256": "1354a5dacef3e18c21ec5d0ab07ba72761c2c5efd57e9588137b05de7eefedc0"
+    },
+    "before-01/runtime/Include/reno_spec_attr312.h.txt": {
+      "bytes": 48839,
+      "sha256": "61f52764abdb57784c821a1fdfa88dc4e677ba121ea8392e22509bcb6a01f712"
+    },
+    "before-01/runtime/Objects/call.c.txt": {
+      "bytes": 75669,
+      "sha256": "5896d0347aea6d2cc26d4936dd965061fac9dc408e2ca841722982ba46871411"
+    },
+    "before-01/runtime/Objects/classobject.c.txt": {
+      "bytes": 29038,
+      "sha256": "dc9cb862c222e88f6bbe32f4298c90c0e53b412d341c0ba8596b01ed20fc9c13"
+    },
+    "before-01/runtime/Objects/dictobject.c.txt": {
+      "bytes": 350294,
+      "sha256": "eba2cf23c5c084a723ad3274b3a159bd50e2f07ee6cd21e80ba27489c3d75bbc"
+    },
+    "before-01/runtime/Objects/genobject.c.txt": {
+      "bytes": 78785,
+      "sha256": "7c13a1de31fc8af6e082fc9aa055bcfe980786b4104fec0f7564e40735e44cad"
+    },
+    "before-01/runtime/Objects/object.c.txt": {
+      "bytes": 88351,
+      "sha256": "602f1efa10771d5841e82b9fb707fa3087fe7e0151c863cf809564e4890be063"
+    },
+    "before-01/runtime/Python/ceval.c.txt": {
+      "bytes": 120031,
+      "sha256": "19ef73308393c4db92b7aae7ffdd972a0bf98a01ceaa37a3d201ba7f1d497cd2"
+    },
+    "before-01/runtime/Python/pystate.c.txt": {
+      "bytes": 89726,
+      "sha256": "19dc47ab33d394d1de76f94f11b18fec48fdc68ec29067eecf5141a4972c9c83"
+    },
+    "BLOCK-PREVIEW.diff": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "DESIGN-REVIEW.json": {
+      "bytes": 1948,
+      "sha256": "d8821096ecbb2f8e81fd60342f68dc7ecf4d7812c60b6cbe0b275e5b1ca0264f"
+    },
+    "DESIGN.md": {
+      "bytes": 5456,
+      "sha256": "625e552e1d76929159ca065887f52e4c07405effd96dd4721e682c9da5014e25"
+    },
+    "EDITS.json": {
+      "bytes": 1230,
+      "sha256": "5d9f65c5639768e4ab9ca53588e801f05aefd60b794aee1a480d99ed13caf16b"
+    },
+    "FULL-EDITS.diff": {
+      "bytes": 1345,
+      "sha256": "7ab3ae8362818f9e048eb2519abf6d38e2703b18a9693bc290d63c568f163d17"
+    },
+    "INDEPENDENT-ACTUAL-DOCUMENT-REVIEW.json": {
+      "bytes": 2791,
+      "sha256": "8fdb27ca29c540d08a3c318c7eb5fbc0af4c0bb571a7babdaa08c6fe282b6de5"
+    },
+    "INTEGRATION-BLOCK.c.txt": {
+      "bytes": 102779,
+      "sha256": "9c8338a7661f9bb39bfd9f6ae082ec653e9c16691cdf45b076be72b44d04ec03"
+    },
+    "INTEGRATION-INVENTORY.json": {
+      "bytes": 10718,
+      "sha256": "764e80816f68b6daabbf95fb7668e710f432815534fe91d40bf3e70308b849cb"
+    },
+    "NEXT.md": {
+      "bytes": 2879,
+      "sha256": "11df2c7d55f850cd2053dde33bd1af9e2901227a859fae33264561804229afb6"
+    },
+    "PREPARATION-REVIEW.json": {
+      "bytes": 9421,
+      "sha256": "fd9626139e6c0dcf07ce004a3f9ffca5e9e1eb6468a604407167ca778e1d83ba"
+    },
+    "ROOT-ACTUAL-DOCUMENT-REVIEW.json": {
+      "bytes": 1947,
+      "sha256": "73a92e2213ae232d787560d1a3a7a2240907b8fd23391b032eedd2f348cc200c"
+    },
+    "ROOT-DESIGN-REVIEW.json": {
+      "bytes": 897,
+      "sha256": "23e6aaba20a4638472ee0bcb1167f47473c5698806092b9674010c36ddad3c21"
+    },
+    "ROOT-PREPARATION-REVIEW.json": {
+      "bytes": 9421,
+      "sha256": "fd9626139e6c0dcf07ce004a3f9ffca5e9e1eb6468a604407167ca778e1d83ba"
+    },
+    "source_batch.py": {
+      "bytes": 11507,
+      "sha256": "7a376790d98754ab0ef96660482df85a7b4aff2a5801407ec9cdece2c509a28e"
+    },
+    "STATIC-VERIFICATION.json": {
+      "bytes": 17036,
+      "sha256": "1a8e31f4850797f0185befa221232fe1933b1aeeda4229ac280ec1e568975055"
+    },
+    "working-01/native/reno_owned_native_slot.c.txt": {
+      "bytes": 10037,
+      "sha256": "678176324d82abe8f63e21ee72e915911bc92802ac745fdf4ef57ec7fd53787f"
+    },
+    "working-01/native/reno_owned_native_slot.h.txt": {
+      "bytes": 7183,
+      "sha256": "b1bd34cf8fad0f5537979b9fe095bd34a2f47b070410705b532cf178d69fdb59"
+    },
+    "working-01/native/reno_windows_cpython312_audit.c.txt": {
+      "bytes": 10945,
+      "sha256": "42a63d4ccb7babf42d02623b066d098a737b19624f249afdabd63f11edbbf507"
+    },
+    "working-01/native/reno_windows_cpython312_audit.h.txt": {
+      "bytes": 4065,
+      "sha256": "29251f3efdb92eaab6a404fa56a8c5540022a46ebe075ebf95b194f6c719680a"
+    },
+    "working-01/native/reno_windows_cpython312_handle_owner.c.txt": {
+      "bytes": 22542,
+      "sha256": "3e5cdbe8833342b5dd6f27e4f938af63f258566f043a158c85fdaec1bb844a0f"
+    },
+    "working-01/native/reno_windows_cpython312_handle_owner.h.txt": {
+      "bytes": 11538,
+      "sha256": "28e67715cec2fd50919d3d8385aa11ba702ca119aa44facd8b7dab4d381a454e"
+    },
+    "working-01/native/reno_windows_cpython312_owner_factory.c.txt": {
+      "bytes": 1107642,
+      "sha256": "3cefe12fdb068f0d66e4d00eb12d074402892369f469a095da572ac91d469937"
+    },
+    "working-01/native/reno_windows_cpython312_owner_factory.h.txt": {
+      "bytes": 2877,
+      "sha256": "e0c0d2f6d3b225855740a159bb1093af27e5fb93b806830ecb0a561f58dee96e"
+    },
+    "working-01/native/reno_windows_cpython312_result.h.txt": {
+      "bytes": 3456,
+      "sha256": "86c688adb9a546d5d08d855be8ede4195c54f67b1855f2eef0fe516a2c1b7095"
+    },
+    "working-01/native/reno_windows_serialized_slot.c.txt": {
+      "bytes": 15434,
+      "sha256": "4d0f3992c07c59c524db69736ec5d46ef93f4a73126ad7b77376c06cf1c34575"
+    },
+    "working-01/native/reno_windows_serialized_slot.h.txt": {
+      "bytes": 13283,
+      "sha256": "4749bf321614d9dc81fb563655f860e328a7cf258e74253138a7237476e4cb6e"
+    },
+    "working-01/runtime/Include/cpython/pystate.h.txt": {
+      "bytes": 17923,
+      "sha256": "6d2922f8030504e102df2ffaed5893bf56e67710b6a8f9a868aeeb8041ee2e4c"
+    },
+    "working-01/runtime/Include/internal/pycore_call.h.txt": {
+      "bytes": 5080,
+      "sha256": "65137ae1527fda67a34321f2a51c00960e9844e6d53da8f0e2b661532f32c377"
+    },
+    "working-01/runtime/Include/internal/pycore_pystate.h.txt": {
+      "bytes": 5085,
+      "sha256": "0c84d5ebb267f3b236d3890f3892d866bdf9805ec0a24d7f86f6b564cebc7ba5"
+    },
+    "working-01/runtime/Include/internal/pycore_reno_owned_resume.h.txt": {
+      "bytes": 18995,
+      "sha256": "1354a5dacef3e18c21ec5d0ab07ba72761c2c5efd57e9588137b05de7eefedc0"
+    },
+    "working-01/runtime/Include/reno_spec_attr312.h.txt": {
+      "bytes": 48839,
+      "sha256": "61f52764abdb57784c821a1fdfa88dc4e677ba121ea8392e22509bcb6a01f712"
+    },
+    "working-01/runtime/Objects/call.c.txt": {
+      "bytes": 75669,
+      "sha256": "5896d0347aea6d2cc26d4936dd965061fac9dc408e2ca841722982ba46871411"
+    },
+    "working-01/runtime/Objects/classobject.c.txt": {
+      "bytes": 29038,
+      "sha256": "dc9cb862c222e88f6bbe32f4298c90c0e53b412d341c0ba8596b01ed20fc9c13"
+    },
+    "working-01/runtime/Objects/dictobject.c.txt": {
+      "bytes": 350294,
+      "sha256": "eba2cf23c5c084a723ad3274b3a159bd50e2f07ee6cd21e80ba27489c3d75bbc"
+    },
+    "working-01/runtime/Objects/genobject.c.txt": {
+      "bytes": 78846,
+      "sha256": "03c6f81f803c0abbc1e8dc1aa225c1b453d710b076822638771d08c8e9b9e1cc"
+    },
+    "working-01/runtime/Objects/object.c.txt": {
+      "bytes": 88351,
+      "sha256": "602f1efa10771d5841e82b9fb707fa3087fe7e0151c863cf809564e4890be063"
+    },
+    "working-01/runtime/Python/ceval.c.txt": {
+      "bytes": 120031,
+      "sha256": "19ef73308393c4db92b7aae7ffdd972a0bf98a01ceaa37a3d201ba7f1d497cd2"
+    },
+    "working-01/runtime/Python/pystate.c.txt": {
+      "bytes": 89726,
+      "sha256": "19dc47ab33d394d1de76f94f11b18fec48fdc68ec29067eecf5141a4972c9c83"
+    }
+  },
+  "fixed_count": 62,
+  "exact_directory_files_including_this_final": 63,
+  "latest_uninstalled_caller_material": "reno-loader-native-parent-observation-publication-r1507/CALLER-EDITS.json",
+  "caller_material_identity": {
+    "bytes": 76433,
+    "sha256": "d19ef9b061c95eefc81ced380369cb50a88a8e362fe7fe54a68434d366ff3059"
+  },
+  "working_source_count": 23,
+  "working_source_bytes": 2136879,
+  "parent_source_count": 22,
+  "parent_source_bytes": 2058033,
+  "added_reference_source": "data/t16-h01-catalog-generator-route-r1126/cpython-v3.12.10/Objects/genobject.c",
+  "added_reference_identity": {
+    "bytes": 78785,
+    "sha256": "7c13a1de31fc8af6e082fc9aa055bcfe980786b4104fec0f7564e40735e44cad"
+  },
+  "changed_source": "runtime/Objects/genobject.c.txt",
+  "modified_reference_byte_delta": 61,
+  "augmented_before_source_bytes": 2136818,
+  "working_byte_delta_from_parent_22_sources": 78846,
+  "inherited_bool_count": 122,
+  "inherited_true_count": 48,
+  "inherited_false_count": 74,
+  "same_live_native_c_caller_policy_retained": true,
+  "legacy_three_current_code_callers_flags_names_origin_preserved_as_text": true,
+  "explicit_parameter_is_not_full_v3_code_selection_admission": true,
+  "c_prologue_stack_probe_abi_and_runtime_equivalence_proved": false,
+  "full_v3_code_view_selection_admitted": false,
+  "actual_frame_allocation_safety_or_compat_proved": false,
+  "pycore_genobject_header_contract_proved": false,
+  "actual_target_opcode_sequence_proved": false,
+  "matching_target_build_and_layout_proved": false,
+  "source_only_closed_fields": [],
+  "candidate_executed": false,
+  "reference_python_executed": false,
+  "reference_generator_executed": false,
+  "c_parsed": false,
+  "c_preprocessed": false,
+  "c_compiled": false,
+  "product_executed": false,
+  "network_calls": 0,
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "actual_abi_build_runtime_proved": false,
+  "full_compat_proved": false,
+  "physical_peak_budget_proved": false,
+  "full_goal_complete": false,
+  "goal_status": "active"
+}

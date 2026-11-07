@@ -1,0 +1,106 @@
+{
+  "scope": "sealed bounded existing-local generator, format and join implementation investigation; no implementation admission",
+  "source_baseline": "reno-loader-body-operands-source-r1524/working-01",
+  "source_baseline_final_identity": {
+    "bytes": 13801,
+    "sha256": "7f0c85b54d9b9b055ee5cec3f515880a43eb61f1f632d3c5dedee2dcfa81876e"
+  },
+  "current_complete_baseline_identity_receipt": "d9de5d",
+  "current_baseline_working_sources": 22,
+  "current_baseline_working_bytes": 2058033,
+  "prior_primitive_contract": "reno-loader-primitive-consumption-contract-r1526/FINAL-INVESTIGATION.json",
+  "prior_primitive_final_identity": {
+    "bytes": 3834,
+    "sha256": "59174c555af2867ad7e76635593599cb0ef84e0e52a73f5040a0384ad8738184"
+  },
+  "prior_primitive_final_independent_receipt": "456c95",
+  "root_investigation_review_passed": true,
+  "independent_investigation_review_passed": true,
+  "initial_root_review_receipt": "5841c9",
+  "corrected_root_review_receipt": "97f1ee",
+  "independent_review_object_receipt": "60392b",
+  "independent_initial_full_document_read_receipt": "0fcfab",
+  "independent_corrected_full_document_and_exact_diff_receipt": "424d48",
+  "independent_input_identity_and_provenance_receipt": "3c6595",
+  "independent_generator_return_and_frame_copy_read_receipt": "2cbc83",
+  "independent_format_and_join_read_receipt": "557d74",
+  "artifact_identities": {
+    "IMPLEMENTATION-NOTES-01.md": {
+      "bytes": 8995,
+      "sha256": "6edd2e5d8bf90b219e85116b2d07cdce2482a3cfe90e44998ffbb9ab46a14722"
+    },
+    "IMPLEMENTATION-NOTES.md": {
+      "bytes": 9125,
+      "sha256": "4f26089de0218c24b46899e75cfe3629281a362e4f4f9b9630b06fab2dc4df2d"
+    },
+    "INPUT-IDENTITIES.json": {
+      "bytes": 3271,
+      "sha256": "0c8f47fd49ded5573b097e7b6306b2cee7e53a8ca393d6741800f3f7361454f7"
+    },
+    "REVIEW.json": {
+      "bytes": 3040,
+      "sha256": "067ab90bcc574e7b91d23796f021a0abc2338e7bea5a8603197b3beb37794f47"
+    },
+    "ROOT-REVIEW-01.json": {
+      "bytes": 1837,
+      "sha256": "b45b3c7ea8146fa9de82891b3613ef46907a299e3cd8b3e3838eadba32b4e1f8"
+    },
+    "ROOT-REVIEW.json": {
+      "bytes": 2220,
+      "sha256": "45c472c5cb564cf5e17f450a1b6b8200a955513a4083c09e7961f21fbc741f5b"
+    }
+  },
+  "fixed_count": 6,
+  "exact_directory_files_including_this_final": 7,
+  "preserved_initial_summary_defect": {
+    "receipt": "557d74",
+    "reason": "single nonexact join item bypasses separator preparation; initial summary omitted this branch",
+    "preserved_notes": "IMPLEMENTATION-NOTES-01.md",
+    "preserved_root_review": "ROOT-REVIEW-01.json",
+    "correction_receipt": "97f1ee",
+    "independent_correction_review_receipt": "60392b"
+  },
+  "file_search_receipts": [
+    "6fb8de",
+    "1493a2"
+  ],
+  "project_file_search_exit_code": 1,
+  "project_file_search_had_denials_and_truncation": true,
+  "general_file_search_exit_code": 1,
+  "general_file_search_had_no_matches": true,
+  "search_not_claimed_exhaustive": true,
+  "existing_permissions_not_changed": true,
+  "all_13_listed_input_identities_match": true,
+  "two_genobject_copies_byte_identical": true,
+  "existing_local_implementations_remove_makecoro_implementation_absence_gap": true,
+  "makecoro_flags_makegen_capacity_and_actual_frame_copy_views_distinguished": true,
+  "format_exact_unicode_and_unicode_subclass_routes_distinguished": true,
+  "join_borrows_items_and_single_nonexact_separator_exception_recorded": true,
+  "same_live_native_c_caller_policy_retained": true,
+  "pending_network_request_not_executed": true,
+  "legal_code_mutation_counterexample_executed": false,
+  "actual_frame_allocation_safety_or_compat_proved": false,
+  "pycore_genobject_header_contract_proved": false,
+  "actual_target_opcode_sequence_proved": false,
+  "matching_target_build_and_layout_proved": false,
+  "full_first_pending_release_semantics_closed": false,
+  "full_v3_design_or_implementation_admitted": false,
+  "upstream_commit_or_http_authentication_proved": false,
+  "network_calls": 0,
+  "new_candidate_generated": false,
+  "candidate_executed": false,
+  "reference_python_executed": false,
+  "reference_generator_executed": false,
+  "c_parsed": false,
+  "c_preprocessed": false,
+  "c_compiled": false,
+  "product_executed": false,
+  "source_only_closed_fields": [],
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "actual_abi_build_runtime_proved": false,
+  "full_compat_proved": false,
+  "physical_peak_budget_proved": false,
+  "full_goal_complete": false,
+  "goal_status": "active"
+}

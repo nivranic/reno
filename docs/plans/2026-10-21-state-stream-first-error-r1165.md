@@ -1,0 +1,11 @@
+# State流式读写与既有锁流首错保留
+
+r1165已应用State四个函数的首错保留：_read_bytes、_write及_existing_lock_stream的原with body失败后，关闭再次失败不会覆盖原对象；_observation_stream两平台和_existing_lock_stream Windows原校验失败时，原一次close再失败也不覆盖首错。保留真正enter结果、原with特殊方法查找与一次退出、truthy异常抑制、未知exit首错及原临时文件清理/发布顺序。双故障重抛增加一处本层raise帧，不宣称traceback身份完全不变；没有新增异常链、frames、locals或notes观察。
+
+唯一新q1165、单普通pytest child实际30Fake/90phase通过，耗时0.718秒，退出0。read8/write8/existing6/POSIX观察3/Windows准备5覆盖操作首错、关闭和临时清理多错、取消、entry失败、正常退出错误、合法抑制、yield两侧校验及caller异常。实际四个State函数和storage_source.file_signature配Fake后端；无真实State文件、SQL、native锁/rename或原诊断重放，不把进程普通模块/DLL导入称为零OS操作。此前绿例未重跑，不跨批累计为本次通过数。
+
+双份源码/控制审查、最终manifest与结果独审后，仅应用1产品+1新测试并逐字节读回。产品129271B/SHA 6801d2b946d3a1494b6638ece052aa0dfe1ef451d772dd723a00ff6630bb3486；新测试14816B/SHA e6a143940daac83a70d64bdfea8381dea0486a87bb4902f66de339ed3b4bbdd9。保CRLF与完整逆像，r1163/r1164修复保留。27完整输入601360B、22模块（含本次实际延迟storage_source及其顶层闭包），不声称全deferred运行图。准入准备744867+runner651465=1396332B，小于1415389B上界及2MiB；control8KiB为静态包络非实测。原30case、单child、20/25/共享cleanup10秒、parent360/matrix1680/max2、stdout8192+1与report32768保持；无timeout/cleanup/overflow/reader/monitor失败。
+
+保全55同+同一State文件显式迁移/18严格缺；原State→r1163→r1164→r1165逐链核对。c973原字节、r1106完整159、八旧seal56/78/108/63/53/81/48/62及两旧测试保持。raw3四before/七缺、mirror四before/一缺仍保持且未安装；旧封存和历史manifest未改写。当前源码基底为r1158+r1157 GC+r1161目录关闭+r1163 replace+r1164 exclusive+r1165 stream首错修复；正常库、服务、dist、既有权限/settings/Git未主动操作，服务实际载入版本未验。
+
+本批不证明q1162实际SYNC_STATE_STORAGE_ERROR或request发布失败的原因/恢复。fdopen失败接管域仍未确认，不追加数字close；CloseHandle返回false不声称释放成功或重试；media/RP1内部边界未改。完整H01 source/caller/state/lifetime/COMPAT、B001/B002 open2、H02下游、H03实际pending及全部writer暂停恢复、H04/H06与可撤销分享、条件T15/生产云仍有工程工作。P06七历史身份无备份，不再问。r920/r964一次诊断已耗尽；普通开发及同一只读复审继续授权。Goal active未完，并非只剩验收。

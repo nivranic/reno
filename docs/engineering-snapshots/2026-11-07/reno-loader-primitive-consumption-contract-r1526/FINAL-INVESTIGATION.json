@@ -1,0 +1,98 @@
+{
+  "scope": "sealed bounded generated-handler consumption, error handoff and normal-entry investigation; no implementation admission",
+  "source_baseline": "reno-loader-body-operands-source-r1524/working-01",
+  "source_baseline_final_identity": {
+    "bytes": 13801,
+    "sha256": "7f0c85b54d9b9b055ee5cec3f515880a43eb61f1f632d3c5dedee2dcfa81876e"
+  },
+  "source_baseline_independent_seal_receipt": "c6e73f",
+  "current_complete_baseline_identity_receipt": "d9de5d",
+  "current_baseline_working_sources": 22,
+  "current_baseline_working_bytes": 2058033,
+  "prior_body_effect_investigation": "reno-loader-body-effect-contract-r1525/FINAL-INVESTIGATION.json",
+  "prior_body_effect_final_identity": {
+    "bytes": 2616,
+    "sha256": "03857ec72f39bb256d0c7430a9dd1cd7e0b605926fd1e0b356beeffaede27423"
+  },
+  "root_investigation_review_passed": true,
+  "root_entry_review_passed": true,
+  "independent_investigation_review_passed": true,
+  "root_review_receipt": "cbc188",
+  "root_entry_review_receipt": "0f235b",
+  "independent_review_object_receipt": "10ed3e",
+  "independent_full_document_read_receipts": [
+    "3521de",
+    "c37100"
+  ],
+  "independent_input_identity_and_r1250_receipt": "a4f0b2",
+  "independent_generated_handler_read_receipt": "7043d6",
+  "independent_owner_cleanup_error_labels_and_dealloc_receipt": "dc2751",
+  "independent_reference_macros_and_error_api_receipts": [
+    "659f0d",
+    "3ce97e"
+  ],
+  "independent_repr_entry_read_receipt": "c37100",
+  "artifact_identities": {
+    "CONSUMPTION-CONTRACT.md": {
+      "bytes": 11300,
+      "sha256": "81de64bacc07d1ff05be32b7f9edbf15a405155558814846ab8f8665da34f8b6"
+    },
+    "ENTRY-PRECONDITIONS.md": {
+      "bytes": 3832,
+      "sha256": "3a2fad88c8e46bc991b9ef3b85d4032d99538f9944ce3a52ab69439c02b00939"
+    },
+    "INPUT-IDENTITIES.json": {
+      "bytes": 3044,
+      "sha256": "9b11fe0afcbf666d3a116076a64387703ba272cf0e821a501ead932ef05749ee"
+    },
+    "REVIEW.json": {
+      "bytes": 2948,
+      "sha256": "2fe1c085a37bcd78c18ed7a27c04aa073068453e90c4350794891f2b01129ed3"
+    },
+    "ROOT-ENTRY-REVIEW.json": {
+      "bytes": 1313,
+      "sha256": "2bedf7dfcd7fbcaaba55e2945bd82de956f52c396808adbc8e52d5fc81c1f02e"
+    },
+    "ROOT-REVIEW.json": {
+      "bytes": 1900,
+      "sha256": "b252437acf75c443a1030b059f0a45144829ebb850dc7cea15126fb7947951bf"
+    }
+  },
+  "fixed_count": 6,
+  "exact_directory_files_including_this_final": 7,
+  "preserved_auxiliary_read_probe": {
+    "receipt": "8ed44c",
+    "exec_exit_code": 0,
+    "rg_reported_guessed_adr_path_missing": true,
+    "actual_named_contract_read_receipt": "3468b6",
+    "not_source_or_generator_failure": true
+  },
+  "all_12_listed_input_identities_match": true,
+  "listed_generated_handler_release_order_recorded_as_text": true,
+  "normal_entry_and_failed_pending_release_distinguished": true,
+  "owner_cleanup_not_assumed_equivalent_to_primitive_pending_release": true,
+  "same_live_native_c_caller_policy_retained": true,
+  "actual_target_opcode_sequence_proved": false,
+  "matching_macro_and_build_identity_proved": false,
+  "full_first_pending_release_semantics_closed": false,
+  "all_result_indicator_legal_domains_closed": false,
+  "implementation_admitted": false,
+  "full_v3_layout_and_generator_contract_closed": false,
+  "network_calls": 0,
+  "new_candidate_generated": false,
+  "candidate_executed": false,
+  "reference_python_executed": false,
+  "reference_generator_executed": false,
+  "c_parsed": false,
+  "c_preprocessed": false,
+  "c_compiled": false,
+  "product_executed": false,
+  "source_only_closed_fields": [],
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "actual_abi_build_runtime_proved": false,
+  "full_compat_proved": false,
+  "physical_peak_budget_proved": false,
+  "full_goal_complete": false,
+  "goal_status": "active"
+}

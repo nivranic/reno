@@ -2,12 +2,17 @@
  * each turn re-retrieves; history only gives the model follow-up context.
  * Assistant answers are Markdown with [n] citations; cited refs render as
  * chips that deep-link into the video workbench at the evidence timestamp. */
-import { useRef, useState } from "react";
-import { Link } from "react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowUp, Loader2, MessagesSquare, ShieldAlert } from "lucide-react";
-import { postAsk } from "@/lib/api";
-import type { AskConflictInfo, AskHistoryTurn, AskRef } from "@/lib/api-types";
+import { useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowUp, Loader2, MessagesSquare } from "lucide-react";
+import type { AskRef } from "@/lib/api-types";
+import { clearAskSession, patchAsk, submitAsk, useReadingSession } from "@/lib/reading-session";
+import { useReadingScroll } from "@/lib/url-state";
+import { EvidenceLink } from "@/components/shared/evidence-link";
+import { KnowledgeDetails } from "@/components/shared/knowledge-details";
+import { ProjectContextBar } from "@/components/shared/project-context-bar";
+import { SaveDecisionButton } from "@/features/decisions/decision-dialog";
+import { conditionsEqual, conditionsText } from "@/features/project/project-context-editor";
 import { videosQuery } from "@/lib/queries";
 import { PageHeader, ErrorState, EmptyState } from "@/components/shared/states";
 import { MarkdownView } from "@/components/shared/markdown-view";
@@ -15,11 +20,7 @@ import { NatureBadge } from "@/components/shared/knowledge-tags";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
-
-interface Turn extends AskHistoryTurn {
-  refs?: AskRef[];
-  conflicts?: AskConflictInfo[];
-}
+import { RelationNotices } from "@/components/shared/derivation-notice";
 
 const SUGGESTIONS = [
   "卫生间淋浴区防水要做多高？",
@@ -41,7 +42,7 @@ function citedNs(answer: string): number[] {
   return ns;
 }
 
-function RefChips({ refs, cited }: { refs: AskRef[]; cited: number[] }) {
+function RefChips({ refs, cited, expanded, onExpand }: { refs: AskRef[]; cited: number[]; expanded: boolean; onExpand: (open: boolean) => void }) {
   const byN = new Map(refs.map((r) => [r.n, r]));
   const shown = cited.map((n) => byN.get(n)).filter(Boolean) as AskRef[];
   if (shown.length === 0) return null;
@@ -62,9 +63,9 @@ function RefChips({ refs, cited }: { refs: AskRef[]; cited: number[] }) {
     // refs without a video render as a static chip, not a dead "#" link
     // that stays keyboard-focusable (pointer-events-none only blocks mouse)
     return linkable && r.video ? (
-      <Link key={r.n} to={`/videos/${r.video}?t=${r.ms}`} className={cls}>
+      <EvidenceLink key={r.n} to={`/videos/${encodeURIComponent(r.video)}?t=${r.ms}`} className={cls}>
         {inner}
-      </Link>
+      </EvidenceLink>
     ) : (
       <span key={r.n} className={cls}>
         {inner}
@@ -72,57 +73,56 @@ function RefChips({ refs, cited }: { refs: AskRef[]; cited: number[] }) {
     );
   };
   return (
-    <div className="mt-2.5 flex flex-wrap gap-1.5">
-      <span className="text-[11px] leading-6 text-muted">引用来源:</span>
-      {shown.map((r) => chip(r, true))}
+    <div className="mt-2.5 space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        <span className="text-[11px] leading-6 text-muted">引用来源:</span>
+        {shown.map((r) => chip(r, true))}
+      </div>
+      <details open={expanded} onToggle={(event) => { if (event.currentTarget.open !== expanded) onExpand(event.currentTarget.open); }}>
+        <summary className="cursor-pointer text-[12px] text-muted">查看引用的适用条件与例外</summary>
+        {shown.map((ref) => <section key={ref.n} className="mt-2">
+          <p className="text-[12.5px] text-ink">[{ref.n}] {ref.claim}</p>
+          <KnowledgeDetails knowledge={ref} compact />
+        </section>)}
+      </details>
     </div>
   );
 }
 
 export default function AskPage() {
-  const [turns, setTurns] = useState<Turn[]>([]);
-  const [input, setInput] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const { ask, storageNotice } = useReadingSession();
+  const { turns, draft: input, error } = ask;
+  const pending = ask.status === "submitting";
   const listRef = useRef<HTMLDivElement>(null);
+  useReadingScroll("ask", listRef, ask.session_id);
   // shared (cached) videos query — only used for the live KB size in the
   // empty state; polling stays adaptive/off when no jobs are active
   const { data: kb } = useQuery(videosQuery);
-
-  const mut = useMutation({
-    mutationFn: ({ question, history }: { question: string; history: AskHistoryTurn[] }) =>
-      postAsk(question, history),
-    onSuccess: (res) => {
-      setTurns((t) => [
-        ...t,
-        { role: "assistant", content: res.answer, refs: res.refs, conflicts: res.conflicts },
-      ]);
-      setError(null);
-      scrollToEnd();
-    },
-    onError: (e) => setError(e instanceof Error ? e.message : String(e)),
-  });
 
   // jsdom (tests) lacks Element.scrollTo — optional-call keeps it quiet there.
   const scrollToEnd = () =>
     requestAnimationFrame(() => {
       const el = listRef.current;
-      el?.scrollTo?.({ top: el.scrollHeight, behavior: "smooth" });
+      if (el) el.scrollTop = el.scrollHeight;
     });
 
   const send = (text?: string) => {
     const question = (text ?? input).trim();
-    if (!question || mut.isPending) return;
-    setTurns((t) => [...t, { role: "user", content: question }]);
-    setInput("");
-    const history: AskHistoryTurn[] = turns.slice(-4).map(({ role, content }) => ({ role, content }));
-    mut.mutate({ question, history });
+    if (!question || pending) return;
+    void submitAsk(question);
     scrollToEnd();
   };
+  const previousStatus = useRef(ask.status);
+  useEffect(() => {
+    if (previousStatus.current === "submitting" && !pending) scrollToEnd();
+    previousStatus.current = ask.status;
+  }, [ask.status, pending]);
 
   return (
     <div className="mx-auto flex h-[calc(100vh-3rem)] w-full max-w-[900px] flex-col px-4 py-5 supports-[height:100svh]:h-[calc(100svh-3rem)] md:px-6">
       <PageHeader
         title="知识库问答"
+        actions={<Button variant="outline" size="sm" onClick={clearAskSession}>清空会话</Button>}
         desc={
           <>
             回答基于已入库的知识原子,引用可跳转到视频对应时间点;涉及争议的主题会并列双方观点
@@ -130,8 +130,12 @@ export default function AskPage() {
         }
       />
 
-      <div ref={listRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4">
-        {turns.length === 0 && !mut.isPending && (
+      <ProjectContextBar value={ask.context} onChange={(context) => patchAsk({ context })} />
+
+      <p className="mb-2 text-[11px] text-muted">本标签页暂存，可清空 · 最长 24 小时 / 最近 20 条消息；浏览器恢复标签页时可能保留。</p>
+      {(storageNotice || ask.notice) && <p role="status" className="mb-2 text-[12px] text-st-wait">{storageNotice || ask.notice}</p>}
+      <div ref={listRef} data-reading-scroll="ask" className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4">
+        {turns.length === 0 && !pending && (
           <EmptyState
             icon={<MessagesSquare size={30} />}
             title="向装修知识库提问"
@@ -158,49 +162,44 @@ export default function AskPage() {
           />
         )}
 
-        {turns.map((t, i) => (
-          <div key={i} className={cn("flex", t.role === "user" ? "justify-end" : "justify-start")}>
+        {turns.map((t) => (
+          <div key={t.id} data-reading-anchor={t.id} className={cn("flex", t.role === "user" ? "justify-end" : "justify-start")}>
             {t.role === "user" ? (
               <div className="max-w-[85%] whitespace-pre-wrap rounded-panel rounded-br-sm bg-acc-soft px-3.5 py-2.5 text-[13.5px] leading-relaxed text-ink">
                 {t.content}
               </div>
             ) : (
               <div className="max-w-[92%] rounded-panel rounded-bl-sm border border-line bg-surface px-4 py-3">
-                {t.conflicts && t.conflicts.length > 0 && (
-                  <div className="mb-2 flex items-center gap-1.5 rounded-ctl border border-st-review-line bg-st-review-bg px-2.5 py-1.5 text-[11.5px] text-st-review">
-                    <ShieldAlert size={13} />
-                    <span>
-                      本回答涉及 {t.conflicts.length} 个有分歧的主题(
-                      {t.conflicts.map((c) => c.topic).join("、")}),双方观点已并列 ·{" "}
-                      <Link to="/conflicts" className="underline underline-offset-2">
-                        去复核
-                      </Link>
-                    </span>
-                  </div>
-                )}
+                {t.response?.degraded && <p className="mb-2 text-[12px] text-st-wait">本次为检索降级结果，未生成模型回答。</p>}
+                {t.response?.generated_at && <p className="mb-2 text-[11px] text-muted">生成于 {t.response.generated_at} · 知识版本 {t.response.kb_revision ?? "未知"}</p>}
+                <p className="mb-2 text-[11px] text-muted">本回答使用：{conditionsText(t.context?.context_snapshot ?? {})}{!conditionsEqual(t.context?.context_snapshot, ask.context?.context_snapshot) ? "（本次条件已修改，旧回答未重算）" : ""}</p>
+                {t.response?.conflicts && <RelationNotices relations={t.response.conflicts.map((row) => ({ ...row, id: row.cluster_id }))} snapshotLabel="回答生成时" />}
                 <MarkdownView md={t.content} className="text-[13.5px]" />
-                {t.refs && <RefChips refs={t.refs} cited={citedNs(t.content)} />}
+                {t.response?.refs && <RefChips refs={t.response.refs} cited={citedNs(t.content)} expanded={ask.expandedRefs[t.id] ?? false} onExpand={(open) => patchAsk({ expandedRefs: { ...ask.expandedRefs, [t.id]: open } })} />}
+                <div className="mt-3"><SaveDecisionButton seed={() => ({ title: turns[Math.max(0, turns.findIndex((turn) => turn.id === t.id) - 1)]?.content.slice(0, 100) ?? "待决问题", question: turns[Math.max(0, turns.findIndex((turn) => turn.id === t.id) - 1)]?.content, context_snapshot: t.context?.context_snapshot ?? {}, content_snapshot: { kind: "answer", text: t.content }, evidence: (t.response?.refs ?? []).map((ref) => ({ target_kind: "atom", target_id: ref.atom_id, target_fingerprint: ref.target_fingerprint ?? "", label: ref.claim })) })} /></div>
               </div>
             )}
           </div>
         ))}
 
-        {mut.isPending && (
+        {pending && (
           <div className="flex items-center gap-2 text-[12.5px] text-muted">
             <Loader2 size={14} className="animate-spin" />
             正在检索知识库并生成回答…
           </div>
         )}
 
+        {ask.status === "interrupted" && <div role="status" className="space-y-2 text-[12.5px] text-st-wait">
+          <p>上次请求已中断，未自动重新调用模型。</p>
+          <Button variant="outline" size="sm" onClick={() => void submitAsk(turns.at(-1)?.content, true)}>重新发送</Button>
+        </div>}
+
         {error && (
           <ErrorState
             error={new Error(error)}
             onRetry={() => {
               const last = [...turns].reverse().find((t) => t.role === "user");
-              if (last) {
-                setTurns((t) => t.slice(0, t.findIndex((x) => x === last)));
-                send(last.content);
-              }
+              if (last) void submitAsk(last.content, true);
             }}
             context="问答"
           />
@@ -214,8 +213,8 @@ export default function AskPage() {
             placeholder="问点什么…(Enter 发送,Shift+Enter 换行)"
             rows={2}
             value={input}
-            disabled={mut.isPending}
-            onChange={(e) => setInput(e.target.value)}
+            maxLength={12000}
+            onChange={(e) => patchAsk({ draft: e.target.value })}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
@@ -227,11 +226,11 @@ export default function AskPage() {
           <Button
             size="icon"
             aria-label="发送问题"
-            disabled={!input.trim() || mut.isPending}
+            disabled={!input.trim() || pending}
             onClick={() => void send()}
             className="shrink-0"
           >
-            {mut.isPending ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={16} />}
+            {pending ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={16} />}
           </Button>
         </div>
         <p className="mt-1.5 text-[10.5px] text-muted">

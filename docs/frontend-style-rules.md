@@ -16,6 +16,7 @@
 - Select 下拉箭头用 `--ctl-arrow` token（亮/暗各一套内联 SVG data-URI，类 `.select-arrow`），
   主题跟随自动切换；禁止页面再写 inline `background-image` 覆写。
 - 暗色是独立设计（`.dark` 变量整套重设），新组件写完必须在暗色下过一遍。
+- 原生日期/时间选择器与滚动条随主题设置 `color-scheme`（`:root` 为 light、`.dark` 为 dark），避免暗色现场表单的日历按钮仍用黑色。
 
 ## 2. 控件高度档位
 

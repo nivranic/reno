@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { flushSync } from "react-dom";
 import { RouterProvider } from "react-router";
 import { Providers } from "./app/providers";
 import { router } from "./app/router";
@@ -15,7 +16,7 @@ async function bootstrap() {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <Providers>
-        <RouterProvider router={router} />
+        <RouterProvider router={router} flushSync={(update) => { flushSync(update); return undefined; }} />
       </Providers>
     </StrictMode>,
   );

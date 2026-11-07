@@ -1,0 +1,13 @@
+# State原始异常保留修复与未闭边界
+
+r1163已修复并应用Windows State `_replace` 的原始异常覆盖缺陷：原finally内close再失败会取代fstat、身份校验、get_handle/native或错误映射的原始错误及取消。现在操作失败仅一次close尝试、保原始异常；操作成功后close失败仍上报。只改此控制流，不改ABI/flags/RootDirectory/路径权限或sanitizer，无fallback、重试或异常观察。它是可独立证明的缺陷，尚不是q1162 SYNC_STATE_STORAGE_ERROR或r1159/r1160 PUBLICATION_FAILED的已证根因。
+
+完整两源与同一只读代理源码/精确输入复审后，仅全新q1163一个普通pytest child运行13纯Fake用例：13通过、39phase全pass、约0.640秒，exit0；无timeout、cleanup、输出溢出、reader或monitor失败，reader已join。覆盖恰好一次close、open失败无close、三原操作错及有/无次级close失败、负NTSTATUS、身份拒绝、BaseException取消与公开sanitizer原IO分类。测试正文无真实描述符、State/SQL、改名或来源门替换；正常DLL导入仍发生，不称native成功或真实写入恢复。
+
+完整产品候选126953B/SHA a1ed0a10a049056b6f78e23b026d6ba63db77ec9973abfd6ab20cf5d1667b55c，原126583B/ac218d…046b2，唯一370B改动及CRLF正逆像保持；测试5041B。21模块顶层相对导入闭包与辅助输入共26份584788B；manifest5713B/SHA486cca44bef7924fef484d7998a26f402a5918ce8842506f7a7121d77e8d1789，非完整deferred图。worker pin590501B，generator726096B+runner624943B=1351039B<1379573B上界<2MiB；8KiB产品control为静态包络非计量。child20/parent25/共享cleanup10、parent360/matrix1680/max2及<=30cases保持。结果及精确应用独审后只应用1产品+1新测试，逐字节读回；服务未重启，现有进程载入状态未验证。
+
+保护表历史56项中现55同及sync_state一个显式迁移，18严格缺；c973原字节、r1106 SOURCE02完整159、六旧封存56/78/108/63/53/81均保持。旧manifest引用的live sync_state不再等旧hash，不回写历史包或重放。RP1固定模块/extra/捕获图未发现本_replace或文件字节pin，无需放宽来源门；这不冒认所有延迟运行图全覆盖，后续须新进程正常import。raw3四live before/七新目标和r1162镜像候选五份未安装状态均保持。
+
+当前源码基底为r1158+r1157 GC+r1161目录关闭+r1163 State原始异常修复；raw3持久包和镜像候选仍未安装。真实State及request发布失败仍未知；本次不触发旧case重跑，不预置State绕fixture，不切换fallback。r920/r964单次诊断授权耗尽，不新增native微诊断、profiler/body marker、frames/locals/notes或隐藏异常链。普通开发和同一只读代理授权持续，无新用户许可待答；正常库/服务/dist/既有权限/settings/Git未主动操作。
+
+后继优先利用现有源码及结果完成原State的读、update/_write、fd取得与退出路径静态合同核对。若无新可证缺陷，继续可独立推进的产品开发，不以猜测改native或扩大诊断。H01完整source/caller/state/生命周期/COMPAT及B001/B002 open2、H02下游、H03现代pending真实落点/占位/全部writer暂停恢复、永久分享撤销、条件T15与生产云仍待。P06七历史源身份用户无备份，不再问。不是只剩验收，Goal active未完成。

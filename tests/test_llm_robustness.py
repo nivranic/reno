@@ -66,6 +66,7 @@ def iso_llm(tmp_path_factory):
     mp.setattr(config, "DATA", tmp / "data")
     mp.setattr(config, "FRAME_CACHE", tmp / "frames")
     mp.setattr(config, "ORIG", tmp / "media" / "originals")
+    db.initialize()
     con = db.connect()
     con.execute(
         "INSERT INTO video_asset (video_id, title, duration_ms, content_sha256,"

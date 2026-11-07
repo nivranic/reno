@@ -85,7 +85,6 @@ export const searchQuery = (q: string, filters: SearchFilters) =>
   queryOptions({
     queryKey: qk.search(q, filters),
     queryFn: ({ signal }) => searchAtoms(q, filters, signal),
-    enabled: q.trim().length > 0,
     retry: 1,
   });
 

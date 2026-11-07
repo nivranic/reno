@@ -1,0 +1,72 @@
+{
+  "scope": "independent bounded generated-handler consumption, error handoff and normal-entry text review only",
+  "reviewed_identities": {
+    "CONSUMPTION-CONTRACT.md": {
+      "bytes": 11300,
+      "sha256": "81de64bacc07d1ff05be32b7f9edbf15a405155558814846ab8f8665da34f8b6"
+    },
+    "INPUT-IDENTITIES.json": {
+      "bytes": 3044,
+      "sha256": "9b11fe0afcbf666d3a116076a64387703ba272cf0e821a501ead932ef05749ee"
+    },
+    "ROOT-REVIEW.json": {
+      "bytes": 1900,
+      "sha256": "b252437acf75c443a1030b059f0a45144829ebb850dc7cea15126fb7947951bf"
+    },
+    "ENTRY-PRECONDITIONS.md": {
+      "bytes": 3832,
+      "sha256": "3a2fad88c8e46bc991b9ef3b85d4032d99538f9944ce3a52ab69439c02b00939"
+    },
+    "ROOT-ENTRY-REVIEW.json": {
+      "bytes": 1313,
+      "sha256": "2bedf7dfcd7fbcaaba55e2945bd82de956f52c396808adbc8e52d5fc81c1f02e"
+    }
+  },
+  "independent_investigation_review_passed": true,
+  "independent_full_document_read_receipts": [
+    "3521de",
+    "c37100"
+  ],
+  "independent_input_identity_and_r1250_receipt": "a4f0b2",
+  "independent_generated_handler_read_receipt": "7043d6",
+  "independent_owner_cleanup_error_labels_and_dealloc_receipt": "dc2751",
+  "independent_reference_macros_and_error_api_receipts": [
+    "659f0d",
+    "3ce97e"
+  ],
+  "independent_repr_entry_read_receipt": "c37100",
+  "all_12_listed_input_identities_match": true,
+  "listed_generated_handler_release_order_checked_as_text": true,
+  "build_string_descending_piece_consumption_recorded": true,
+  "format_and_attr_inputs_consumed_before_result_classification_recorded": true,
+  "error_labels_shrink_already_consumed_inputs_recorded": true,
+  "pending_indicator_move_differs_from_owner_settlement_recorded": true,
+  "original_r1250_gate_scope_and_compat_boundaries_preserved": true,
+  "normal_entry_and_failed_pending_release_distinguished": true,
+  "repr_signal_recursion_slot_and_nonexact_unicode_checks_recorded": true,
+  "debug_repr_assertion_not_at_all_early_returns_recorded": true,
+  "same_live_native_c_caller_policy_retained": true,
+  "selected_generated_handler_facts_are_not_actual_target_opcode_proof": true,
+  "actual_target_opcode_sequence_proved": false,
+  "matching_macro_and_build_identity_proved": false,
+  "full_first_pending_release_semantics_closed": false,
+  "all_result_indicator_legal_domains_closed": false,
+  "implementation_admitted": false,
+  "full_v3_layout_and_generator_contract_closed": false,
+  "network_calls": 0,
+  "new_candidate_generated": false,
+  "candidate_executed": false,
+  "reference_python_executed": false,
+  "c_parsed": false,
+  "c_preprocessed": false,
+  "c_compiled": false,
+  "product_executed": false,
+  "source_only_closed_fields": [],
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "actual_abi_build_runtime_proved": false,
+  "full_compat_proved": false,
+  "physical_peak_budget_proved": false,
+  "full_goal_complete": false,
+  "goal_status": "active"
+}

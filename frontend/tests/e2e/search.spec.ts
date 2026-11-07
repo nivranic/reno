@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./qa-fixtures";
 
 test.describe("search -> deep link round trip (real backend)", () => {
   test("search, jump to detail, back restores query and results", async ({ page }) => {

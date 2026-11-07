@@ -1,0 +1,81 @@
+{
+  "scope": "local generated-handler release and pending indicator contracts only",
+  "files": [
+    {
+      "scope": "general",
+      "path": "reno-loader-body-effect-contract-r1525/FINAL-INVESTIGATION.json",
+      "bytes": 2616,
+      "sha256": "03857ec72f39bb256d0c7430a9dd1cd7e0b605926fd1e0b356beeffaede27423"
+    },
+    {
+      "scope": "general",
+      "path": "reno-loader-body-operands-source-r1524/FINAL-REVIEW.json",
+      "bytes": 13801,
+      "sha256": "7f0c85b54d9b9b055ee5cec3f515880a43eb61f1f632d3c5dedee2dcfa81876e"
+    },
+    {
+      "scope": "general",
+      "path": "reno-loader-body-operands-source-r1524/working-01/native/reno_windows_cpython312_owner_factory.c.txt",
+      "bytes": 1107642,
+      "sha256": "3cefe12fdb068f0d66e4d00eb12d074402892369f469a095da572ac91d469937"
+    },
+    {
+      "scope": "general",
+      "path": "reno-loader-body-operands-source-r1524/working-01/runtime/Python/ceval.c.txt",
+      "bytes": 120031,
+      "sha256": "19ef73308393c4db92b7aae7ffdd972a0bf98a01ceaa37a3d201ba7f1d497cd2"
+    },
+    {
+      "scope": "general",
+      "path": "reno-loader-body-operands-source-r1524/working-01/runtime/Objects/object.c.txt",
+      "bytes": 88351,
+      "sha256": "602f1efa10771d5841e82b9fb707fa3087fe7e0151c863cf809564e4890be063"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-combined-admission-design-r1108/CPYTHON-SOURCES-02.json",
+      "bytes": 3414,
+      "sha256": "72c8fb8111985c11a7496d00deca8c500ee0bdb59a99665ff971f44fb880cf1d"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-combined-admission-design-r1108/cpython-v3.12.10/Python/generated_cases.c.h",
+      "bytes": 195111,
+      "sha256": "579706b9011997eed918fb546bd9382e8416d8cba3f9e87282aa5fa472c08b29"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-native-root-handoff-r1112/cpython-v3.12.10/Include/object.h",
+      "bytes": 37155,
+      "sha256": "68b97095c521fcb3fab7193e166870b0c040c8f19ac50efb42088364862503a7"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-native-root-handoff-r1112/cpython-v3.12.10/Python/errors.c",
+      "bytes": 55402,
+      "sha256": "d38cf667e13fb9f298a278759daf6117167f45a08d2c5bae7f279d9ba86a2454"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-construction-error-primitives-r1250/ERROR-CONTRACT-01.json",
+      "bytes": 7866,
+      "sha256": "78d05f2039480a903d9a5040f8fda9db6bf19744926082b82e4661b0b925a738"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-construction-error-primitives-r1250/CURRENT-STATUS-01.md",
+      "bytes": 3184,
+      "sha256": "e8569173fc21a5cf67ce44b5518a2f96efe1169152bd691fc32591c6d826c425"
+    },
+    {
+      "scope": "project",
+      "path": "data/t16-h01-construction-error-primitives-r1250/ROOT-REVIEW-01.md",
+      "bytes": 2716,
+      "sha256": "120ed6054495e592b26f3815db372516fd09f99720fd885836ba34c392e6e085"
+    }
+  ],
+  "network_calls": 0,
+  "new_candidate_generated": false,
+  "candidate_executed": false,
+  "full_goal_complete": false
+}

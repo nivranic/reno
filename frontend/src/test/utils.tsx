@@ -2,6 +2,7 @@
  * providers — mirrors production composition without network flakiness. */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router";
+import { flushSync } from "react-dom";
 import { render, type RenderOptions } from "@testing-library/react";
 import { ThemeProvider } from "@/app/theme";
 import { ToastProvider } from "@/components/shared/toaster";
@@ -26,7 +27,10 @@ export function renderWithApp(
   const client = makeTestQueryClient();
   return {
     client,
-    ...render(<RouterProvider router={router} />, {
+    ...render(<RouterProvider router={router} flushSync={(callback) => {
+      flushSync(callback);
+      return undefined;
+    }} />, {
       ...opts,
       wrapper: ({ children }) => (
         <ThemeProvider>

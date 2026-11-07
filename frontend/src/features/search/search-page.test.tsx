@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SearchPage from "./search-page";
 import { renderWithApp } from "@/test/utils";
@@ -34,20 +34,25 @@ describe("SearchPage (MSW-backed)", () => {
 
   it("does not commit the query while an IME composition is active", async () => {
     const user = userEvent.setup();
+    const searched: string[] = [];
+    server.use(http.get("/api/search", ({ request }) => {
+      searched.push(new URL(request.url).searchParams.get("q") ?? "");
+      return HttpResponse.json({ results: [], total: 0, has_more: false });
+    }));
     renderWithApp(<SearchPage />);
     const input = screen.getByLabelText("搜索知识原子") as HTMLInputElement;
     // CompositionEvent defaults to bubbles:false — React would never see it
-    input.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+    fireEvent.compositionStart(input);
     await user.type(input, "防水");
     // composition still active: even past the debounce window nothing searches
     await new Promise((r) => setTimeout(r, 600));
     expect(input.value).toBe("防水");
-    expect(screen.queryByText(/条结果/)).not.toBeInTheDocument();
+    expect(searched).toEqual([""]);
     // ending the composition lets the debounced commit run
     input.value = "防水";
-    input.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true }));
+    fireEvent.compositionEnd(input);
     await waitFor(() => {
-      expect(screen.getByText(/条结果/)).toBeInTheDocument();
+      expect(searched).toEqual(["", "防水"]);
     });
   });
 

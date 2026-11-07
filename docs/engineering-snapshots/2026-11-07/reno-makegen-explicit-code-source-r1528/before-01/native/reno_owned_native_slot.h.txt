@@ -1,0 +1,174 @@
+#ifndef RENO_OWNED_NATIVE_SLOT_H
+#define RENO_OWNED_NATIVE_SLOT_H
+
+#include <stddef.h>
+#include <stdint.h>
+
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <sys/types.h>
+#endif
+
+/* Internal C primitives, not a Python extension or an authority interface.
+ *
+ * Storage belongs to the real native owner and must outlive all calls. Every
+ * access requires the owner's serialization; these fields are not atomics.
+ * The initializer is only for fresh storage. Copying/reinitializing a live
+ * slot would duplicate or discard ownership and is forbidden.
+ *
+ * Callers retain the original argument, audit, signal, source, and lifetime
+ * contracts. These primitives do not establish those contracts themselves.
+ */
+typedef enum {
+    RENO_NATIVE_EMPTY = 0,
+    RENO_NATIVE_OWNED,
+    RENO_NATIVE_TRANSFERRED,
+    RENO_NATIVE_ATTEMPTED,
+    RENO_NATIVE_CLOSED,
+    RENO_NATIVE_UNKNOWN
+} RenoNativeResourceState;
+
+typedef enum {
+    RENO_NATIVE_OK = 0,
+    RENO_NATIVE_INVALID_ARGUMENT,
+    RENO_NATIVE_INVALID_STATE,
+    RENO_NATIVE_BUSY,
+    RENO_NATIVE_STOPPED,
+    RENO_NATIVE_COUNTER_OVERFLOW,
+    RENO_NATIVE_ERRNO,
+    RENO_NATIVE_WINERROR,
+    RENO_NATIVE_ACQUISITION_UNKNOWN
+} RenoNativeOutcome;
+
+typedef struct {
+    RenoNativeOutcome outcome;
+    int saved_errno;
+    unsigned long saved_winerror;
+} RenoNativeResult;
+
+typedef enum {
+    RENO_NATIVE_NO_FAILED_CLOSE = 0,
+    RENO_NATIVE_FAILED_HANDLE_CLOSE,
+    RENO_NATIVE_FAILED_FD_CLOSE
+} RenoNativeFailedCloseKind;
+
+/* Historical, nonowning facts written ONLY after the actual closer fails.
+ * kind NONE means every other field is unavailable. Even a retained number
+ * may name an already-closed/reused resource; it grants no borrow/close/retry.
+ * This embedded record is not an authority grant or caller-source proof.
+ */
+typedef struct {
+    RenoNativeFailedCloseKind kind;
+    int fd;          /* valid only FAILED_FD_CLOSE */
+    intptr_t handle; /* valid only FAILED_HANDLE_CLOSE */
+    RenoNativeResult failure; /* valid only kind != NONE */
+} RenoNativeFailedCloseObservation;
+
+#define RENO_NATIVE_FAILED_CLOSE_OBSERVATION_INITIALIZER \
+    { RENO_NATIVE_NO_FAILED_CLOSE, -1, (intptr_t)0, \
+      { RENO_NATIVE_INVALID_STATE, 0, 0 } }
+
+typedef struct {
+    RenoNativeResourceState fd_state;
+    RenoNativeResourceState handle_state;
+    int fd;
+    intptr_t handle;
+    size_t registered_borrowers;
+    unsigned int stopped;
+    RenoNativeFailedCloseObservation failed_close;
+} RenoOwnedNativeSlot;
+
+#define RENO_OWNED_NATIVE_SLOT_INITIALIZER \
+    { RENO_NATIVE_EMPTY, RENO_NATIVE_EMPTY, -1, (intptr_t)0, 0, 0, \
+      RENO_NATIVE_FAILED_CLOSE_OBSERVATION_INITIALIZER }
+
+#if defined(_WIN32)
+/* No numeric HANDLE escapes. Native BOOL/output classification and the
+ * actual last-error observation remain separate from owning-slot commit.
+ */
+typedef struct {
+    RenoNativeResult native;
+    unsigned int process_called;
+    unsigned int process_is_current_pseudo;
+    unsigned int duplicate_called;
+    unsigned int returned_success;
+    unsigned int output_present;
+    unsigned int output_valid;
+    unsigned int target_acquired;
+    unsigned int acquisition_unknown;
+    unsigned long saved_post_duplicate_winerror; /* only duplicate_called */
+} RenoNativeDuplicateResult;
+
+/* Fixed original same-process parameters: 0, FALSE, DUPLICATE_SAME_ACCESS.
+ * No CLOSE_SOURCE, external source HANDLE, or adoption of an observed value.
+ * Requires serialization of both distinct slots and this invocation's one
+ * live source HANDLE borrow. The destination must be genuinely fresh EMPTY.
+ * Successful output is installed before any post-call API or Python work.
+ * FALSE+NULL leaves EMPTY; all other non-success output combinations mark
+ * destination UNKNOWN/stopped. In that state destination.handle retains the
+ * actual output only as a nonowning observation for the original debt path;
+ * it grants no borrow/closer/reuse. The actual caller's original unknown-
+ * acquire/accounting transport is still required, not a retry/close.
+ */
+RenoNativeDuplicateResult reno_native_duplicate_handle_once(
+    RenoOwnedNativeSlot *source, RenoOwnedNativeSlot *destination);
+
+/* Argument preparation, original audits, and path/security provenance precede
+ * this call. No Python callback or allocation occurs inside the primitive.
+ * A failed call leaves no newly owned HANDLE. A successful call installs the
+ * actual HANDLE before returning to any Python-facing caller.
+ */
+RenoNativeResult reno_native_create_file_once(
+    RenoOwnedNativeSlot *slot, const wchar_t *path, DWORD access, DWORD share,
+    const SECURITY_ATTRIBUTES *security, DWORD disposition, DWORD flags);
+
+/* Requires the same CRT descriptor table consumed by the actual io runtime.
+ * A different/static CRT is not an admissible substitute. On success the
+ * native fd is recorded and HANDLE ownership is moved without a callout.
+ */
+RenoNativeResult reno_native_handle_to_fd_once(
+    RenoOwnedNativeSlot *slot, int crt_flags);
+
+/* The retirement/serialization preconditions of the fd closer below also
+ * apply to every actual HANDLE borrower. A zero registered count alone does
+ * not prove that native HANDLE queries or asynchronous work have ended.
+ * Failure keeps the active handle slot cleared/UNKNOWN and records the
+ * actual closing value/error separately in failed_close, without ownership.
+ */
+RenoNativeResult reno_native_close_handle_after_retirement(
+    RenoOwnedNativeSlot *slot);
+#else
+/* Exactly one native openat attempt. Effective flags/mode/dirfd lifetime,
+ * inheritance policy, original audit and EINTR/signal behavior belong to the
+ * actual caller adapter. This is not a replacement implementation of os.open.
+ */
+RenoNativeResult reno_native_openat_once(
+    RenoOwnedNativeSlot *slot, int directory_fd, const char *path,
+    int effective_flags, mode_t mode);
+#endif
+
+/* A borrow registers exactly one currently owned HANDLE or fd. The owning
+ * side cannot transfer or close until that successful begin has exactly one
+ * matching end, after the actual native work has finished. Stop permits end.
+ * A registered count is useful only when every actual borrower uses the
+ * protocol and retains the real owner. Zero is not proof about unregistered
+ * raw/buffer/native operations. Stop rejects new registered borrows but does
+ * not wait, retire raw objects, or itself establish drain.
+ */
+RenoNativeResult reno_native_begin_borrow(RenoOwnedNativeSlot *slot);
+RenoNativeResult reno_native_end_borrow(RenoOwnedNativeSlot *slot);
+RenoNativeResult reno_native_stop_borrows(RenoOwnedNativeSlot *slot);
+
+/* Caller precondition, in addition to the checked count/stop states: every
+ * actual raw/buffer/native borrower is reliably retired and cannot use this
+ * fd. There is deliberately no public "mark retired" setter or proof flag.
+ * Calling this before that condition holds is outside this primitive's
+ * contract. No automatic retry is permitted after a close attempt.
+ * Failure keeps active fd=-1/UNKNOWN; failed_close records the actual
+ * attempted fd and error as nonowning debt observations, not a reopened fd.
+ */
+RenoNativeResult reno_native_close_fd_after_retirement(
+    RenoOwnedNativeSlot *slot);
+
+#endif

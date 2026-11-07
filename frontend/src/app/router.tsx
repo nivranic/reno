@@ -10,8 +10,15 @@ const SearchPage = lazy(() => import("@/features/search/search-page"));
 const ComparePage = lazy(() => import("@/features/compare/compare-page"));
 const AskPage = lazy(() => import("@/features/ask/ask-page"));
 const ConflictsPage = lazy(() => import("@/features/conflicts/conflicts-page"));
+const ReconciliationPage = lazy(() => import("@/features/reconciliation/reconciliation-page"));
 const ReportsPage = lazy(() => import("@/features/reports/reports-page"));
 const CollectPage = lazy(() => import("@/features/collect/collect-page"));
+const ProjectPage = lazy(() => import("@/features/project/project-page"));
+const DecisionsPage = lazy(() => import("@/features/decisions/decisions-page"));
+const DecisionDetailPage = lazy(() => import("@/features/decisions/decision-detail-page"));
+const SourcesPage = lazy(() => import("@/features/sources/sources-page"));
+const ChecksPage = lazy(() => import("@/features/checks/checks-page"));
+const CheckDetailPage = lazy(() => import("@/features/checks/check-detail-page"));
 
 export const router = createBrowserRouter([
   {
@@ -25,8 +32,15 @@ export const router = createBrowserRouter([
       { path: "compare", element: <ComparePage /> },
       { path: "ask", element: <AskPage /> },
       { path: "conflicts", element: <ConflictsPage /> },
+      { path: "reconciliation", element: <ReconciliationPage /> },
       { path: "reports", element: <ReportsPage /> },
       { path: "collect", element: <CollectPage /> },
+      { path: "project", element: <ProjectPage /> },
+      { path: "decisions", element: <DecisionsPage /> },
+      { path: "decisions/:cardId", element: <DecisionDetailPage /> },
+      { path: "sources", element: <SourcesPage /> },
+      { path: "checks", element: <ChecksPage /> },
+      { path: "checks/:instanceId", element: <CheckDetailPage /> },
     ],
   },
 ]);

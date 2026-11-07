@@ -1,0 +1,9 @@
+# directory consumer 源码修订03
+
+SOURCE01仅静态检查，未执行，保留其S001–S003及Root漏审。修订如下：
+
+- S001：新consumer不再经通用trace_new完成初始化后才关联channel。原raw allocator的专用_DirectoryConsumer分支先核原wrapper发行的channel，actual allocation后立即channel[0]=value，设置原channel slot及原五元raw记录中的channel mirror，随后才进行原put和其他槽初始化。partial记录从分配点即能关联实际inner outcome；其他raw class沿原分支。
+- S002：channel固定16槽，原15槽顺序保持，第16槽为预建later错误列表。begin_failure/check_failure的ps观察若再失败，将phase/error/tb存入later，原门错误仍裸raise；不因记录器错误替换原首错。actual inner outcome仍由原wrapper直接写前15槽，不由reader或finish补签。
+- S003：reader直接raise闭包捕获的原错误类；捕获原type/len/id/dict.get/dict.__delitem__/Call checker、enter/leave和resource lookup。新拒绝不依赖可替成返回None的动态_fail。原lifecycle相关globals、原_fail函数和错误class、builtin缺省位置一并加入resources固定目录；normal inner动态读取的原依赖也核绑定。弱locator仍不强持channel、locks、Call或owner。
+
+独立源码审确认后再执行新模型；仍无loan删除、physical/fee完成权、root释放或strict激活。原两次fresh、marker/body、filesystem和inner finally顺序保持，wrapper自身真实退出仍由后继核验。

@@ -1,0 +1,72 @@
+{
+  "scope": "sealed bounded local body effect investigation; no implementation admission",
+  "source_baseline": "reno-loader-body-operands-source-r1524/working-01",
+  "source_baseline_final_identity": {
+    "bytes": 13801,
+    "sha256": "7f0c85b54d9b9b055ee5cec3f515880a43eb61f1f632d3c5dedee2dcfa81876e"
+  },
+  "source_baseline_final_independent_receipt": "c6e73f",
+  "root_investigation_review_passed": true,
+  "independent_investigation_review_passed": true,
+  "root_review_receipt": "151602",
+  "python_ast_receipt": "4cdf82",
+  "independent_review_object_receipt": "8634e8",
+  "independent_full_document_read_receipt": "79cd1b",
+  "independent_input_identity_and_python_ast_receipt": "68daf5",
+  "independent_primitive_read_receipts": [
+    "900564",
+    "478dc4"
+  ],
+  "independent_native_policy_crosscheck_receipt": "4e4a40",
+  "artifact_identities": {
+    "DRAFT.md": {
+      "bytes": 9151,
+      "sha256": "e09dc3e213a0573f901cc49ca6eaef58c36eb1935fed318d6a25eb3771b37277"
+    },
+    "INPUT-IDENTITIES.json": {
+      "bytes": 2092,
+      "sha256": "a6a5d50e8a524c7b80862e1c34906fd8d8aa7d2baff54563bfed789cfbd54e84"
+    },
+    "REVIEW.json": {
+      "bytes": 2026,
+      "sha256": "798bba88727ef2647cd04bbecf0af8a88b2af8e6b8d57b26b9cb3ce36d3ade07"
+    },
+    "ROOT-REVIEW.json": {
+      "bytes": 1569,
+      "sha256": "1bae3193f8f75e47206c203e918051c5ad5bbbd02cd48e89f40a2ac6523e9ba8"
+    }
+  },
+  "fixed_count": 4,
+  "exact_directory_files_including_this_final": 5,
+  "preserved_auxiliary_read_failure": {
+    "receipt": "b24afd",
+    "exit_code": 1,
+    "reason": "generated_cases text was absent at guessed reference directory; existing bytecodes input path found in r1521 identity index",
+    "correction_receipts": [
+      "b26c5d",
+      "48418e"
+    ]
+  },
+  "source_expression_and_primitive_facts_distinguished": true,
+  "same_live_native_c_caller_policy_retained": true,
+  "actual_target_opcode_sequence_proved": false,
+  "dec_ref_inputs_expansion_proved": false,
+  "first_pending_release_semantics_closed": false,
+  "implementation_admitted": false,
+  "v3_layout_and_generator_contract_closed": false,
+  "network_calls": 0,
+  "new_candidate_generated": false,
+  "candidate_executed": false,
+  "reference_python_executed": false,
+  "c_parsed": false,
+  "c_compiled": false,
+  "product_executed": false,
+  "source_only_closed_fields": [],
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "actual_abi_build_runtime_proved": false,
+  "full_compat_proved": false,
+  "physical_peak_budget_proved": false,
+  "full_goal_complete": false,
+  "goal_status": "active"
+}

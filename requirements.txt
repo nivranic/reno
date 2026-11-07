@@ -20,3 +20,5 @@ pyyaml==6.0.3
 yt-dlp==2026.8.19
 rapidocr-onnxruntime==1.4.4
 pytest==9.1.1
+# IANA zoneinfo data, including Windows where no system database is available.
+tzdata==2026.4

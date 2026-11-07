@@ -1,0 +1,821 @@
+#ifndef RENO_SPEC_ATTR312_H
+#define RENO_SPEC_ATTR312_H
+
+#include "Python.h"
+
+#if defined(Py_LIMITED_API) || PY_VERSION_HEX != 0x030C0AF0
+#error "The private storage probe requires matching full-API CPython 3.12.10"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Original-order, no-callout INSTANCE observation, not attribute resolution.
+ * All inputs are normal lawful matching 3.12.10 allocations under current GIL,
+ * original code/layout lifetimes and empty indicator. obj has its actual
+ * independent binder root; original_class comes from independently owned T0
+ * roots under the caller's continuous metadata lease, NEVER current obj type.
+ * name is exact Unicode held by independent original code/co_names or its own
+ * guard. Keys/values belong to that same actual storage and stay live without
+ * callback. These premises are not established by pointer or enum checks.
+ * No NEW/release/materialization/dynamic hash/eq/getter/cache/allocation or value output.
+ * ABSENT only means no instance value; Py_None is PRESENT, not absent.
+ * NEEDS_EQ_SOURCE stops BEFORE an unknown comparison on the actual probe path;
+ * HASH_PREPARATION_REQUIRED does not invoke hash or authorize permanent refusal.
+ * Other pending forms preserve the indicator and require the original domain.
+ * Consume only in this no-callout span; after a callback observe anew. Neither
+ * the result nor this new declaration admits source/dispatch/export/ABI/build.
+ */
+typedef enum RenoLoader312InstanceProbe {
+    RENO_LOADER312_SOURCE_OR_BRIDGE_PENDING = 0,
+    RENO_LOADER312_INSTANCE_ABSENT = 1,
+    RENO_LOADER312_INSTANCE_PRESENT = 2,
+    RENO_LOADER312_NEEDS_EQ_SOURCE = 3,
+    RENO_LOADER312_HASH_PREPARATION_REQUIRED = 4
+} RenoLoader312InstanceProbe;
+
+PyAPI_FUNC(RenoLoader312InstanceProbe) _PyReno_Loader312_InstanceProbe(
+    PyObject *obj, PyTypeObject *original_class, PyObject *name);
+
+/* Same-runtime raw storage bridge, not a public dict lookup. Actual key/value
+ * pairing, index/EMPTY/uniqueness and allocated spans are independent premises.
+ * No pointer escapes and no normal lookup's ref/error/eq effects are simulated.
+ */
+PyAPI_FUNC(RenoLoader312InstanceProbe) _PyReno_Loader312_KeysProbe(
+    PyDictKeysObject *keys, PyDictValues *values, PyObject *name);
+
+typedef enum RenoSpecAttr312Probe {
+    RENO_SPEC_ATTR312_ERROR = -1,        /* existing pending indicator */
+    RENO_SPEC_ATTR312_NEEDS_COMPAT = 0,
+    RENO_SPEC_ATTR312_KEY_DOMAIN_OK = 1
+} RenoSpecAttr312Probe;
+
+/* Private matching-runtime API in the original object.c TU. Caller holds
+ * obj, ORIGINAL expected_class and exact Unicode name continuously, with
+ * current GIL/thread, lawful normal CPython objects, actual allocated spans,
+ * matching full headers/build/code lifetime and no intervening callout.
+ * expected_class must not be manufactured from current output obj's type.
+ * instance_present points to this actual caller's live private automatic int;
+ * no address/object borrow escapes. It is zeroed on entry, and is consumable
+ * only on KEY_DOMAIN_OK: 1 means that actual instance slot is non-NULL,
+ * including Py_None; 0 means no instance value, NOT whole-attribute missing.
+ * No attribute/descriptor/hash/eq/ref/materialization/allocation/cache effect.
+ * Presence is an observation, not getter return, namespace, original epoch,
+ * full M/S1/getter or ABI admission. ERROR preserves existing pending error;
+ * unknown forms retain NEEDS_COMPAT. New export/import/link/load remains open.
+ */
+PyAPI_FUNC(RenoSpecAttr312Probe) _PyReno_SpecAttr312_InstanceDomain(
+    PyObject *obj, PyTypeObject *expected_class, PyObject *name,
+    int *instance_present);
+
+/* obj/ORIGINAL expected_class and the actual GenericGetDict NEW are held
+ * independently by the caller. In a matching lawful allocated layout this
+ * reads the CURRENT backing slot and compares it to that held prepared_dict,
+ * then checks ALL potential keys. No GetDictPtr/materialization/ref/hash/eq,
+ * pointer export, callback or expected-from-current assignment. KEY_DOMAIN_OK
+ * means this exact backing identity and key domain only, not source/M/ABI or
+ * complete installation. ERROR preserves pending; other forms retain COMPAT.
+ */
+PyAPI_FUNC(RenoSpecAttr312Probe) _PyReno_SpecAttr312_PreparedDictDomain(
+    PyObject *obj, PyTypeObject *expected_class, PyObject *prepared_dict);
+
+/* Private raw original-backing relation; existing PreparedDictDomain and
+ * PreparedUnwatchedDictDomain retain their exact contracts and bodies.
+ * Caller continuously holds the ORIGINAL loader/class/materialized dict
+ * independently, with lawful normal allocated SAME-class layout/tag/slot,
+ * matching full headers/build/GIL and normal-primitive/S1 premises. Original
+ * class provenance is not reconstructed from current Py_TYPE(loader).
+ * Lawful dict subclasses are accepted for this slot-identity classification;
+ * no dict keys/value prefix or subclass mapping hook is consumed here.
+ * Mutation consumers retain independent source/key/value/permit gates;
+ * legacy RAW/unwatched operations retain their exact-dict domains.
+ * No materialization/getattr/hash/eq/alloc/ref/watcher or pointer output.
+ *
+ * DIFFERENT means an actual lawful current slot holds another object or NULL,
+ * or lawful managed tagged values/empty-values replaced the materialized dict.
+ * It does not authenticate who changed it, nor grant a write to either dict.
+ * No key domain is scanned: SAME is not a key/storage/M/ABI admission.
+ * Recognized type-change/no-slot paths return NEEDS_COMPAT. Unknown/unadmitted
+ * layout/tag/span remains outside these premises, not certified by any enum
+ * and not proof of DIFFERENT. ERROR preserves the actual pending indicator.
+ * Consume the observation before a callback; make it anew after notification.
+ */
+typedef enum RenoSpecAttr312BackingRelation {
+    RENO_SPEC_ATTR312_BACKING_ERROR = -1,
+    RENO_SPEC_ATTR312_BACKING_NEEDS_COMPAT = 0,
+    RENO_SPEC_ATTR312_BACKING_SAME = 1,
+    RENO_SPEC_ATTR312_BACKING_DIFFERENT = 2
+} RenoSpecAttr312BackingRelation;
+
+PyAPI_FUNC(RenoSpecAttr312BackingRelation)
+_PyReno_SpecAttr312_OriginalBackingRelation(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary);
+
+/* Same original inputs and raw lifetime/build/GIL contract as PreparedDictDomain.
+ * Additionally requires an exact dict with zero CURRENT watcher bits. Consume
+ * in the same no-callout span; it does not authenticate a later no-callback
+ * setter, the allocator/reference/error envelope or M/S1. ERROR preserves the
+ * pending indicator; watched/other forms retain NEEDS_COMPAT. New symbol's
+ * actual export/import/link/build and runtime admission remain open.
+ */
+PyAPI_FUNC(RenoSpecAttr312Probe) _PyReno_SpecAttr312_PreparedUnwatchedDictDomain(
+    PyObject *obj, PyTypeObject *expected_class, PyObject *prepared_dict);
+
+/* Private same-runtime conditional deletion, not a general DelItem wrapper.
+ * All original loader/class/dict/key/bound operands are independently held
+ * from the real producer; expected_bound is NEVER enrolled from current.
+ * Actual layouts/spans, normal dict uniqueness/hash/index/order invariants,
+ * code/build/ABI/GIL and lawful primitive behavior are independent premises.
+ *
+ * permit is ONLY the original private owner raw body with a live private ctx,
+ * covered continuously by actual module and Record guards. It may read that
+ * State mode and SAME Record cancellation, and lock cancellation into CLEAR.
+ * It must not allocate, release/acquire refs, call Python, touch the dict,
+ * construct an error, yield the GIL or escape ctx. It returns 1 only for
+ * existing RESTORE and !cancelled; it never creates RESTORE permission.
+ * Both its exact body and the real caller/ctx provenance require admission.
+ * An arbitrary function pointer/current pointer comparison does not prove it.
+ */
+typedef struct RenoSpecAttr312RestoreContext RenoSpecAttr312RestoreContext;
+typedef int (*RenoSpecAttr312RestorePermit)(RenoSpecAttr312RestoreContext *private_context);
+
+typedef enum RenoSpecAttr312DeleteOutcome {
+    RENO_SPEC_ATTR312_DELETE_ERROR = -1,
+    RENO_SPEC_ATTR312_DELETE_NEEDS_COMPAT = 0,
+    RENO_SPEC_ATTR312_DELETE_UNCHANGED = 1,
+    RENO_SPEC_ATTR312_DELETE_CANCELLED = 2,
+    RENO_SPEC_ATTR312_DELETE_DELETED = 3
+} RenoSpecAttr312DeleteOutcome;
+
+typedef struct RenoSpecAttr312DeletedOwned {
+    PyObject *key_owned;
+    PyObject *value_owned;
+} RenoSpecAttr312DeletedOwned;
+
+/* removed is the caller's distinct live private automatic output, both slots
+ * NULL and not aliased with input/first/ctx owning storage. No output address
+ * escapes. Non-DELETED outcomes leave BOTH slots NULL. DELETED MOVES the
+ * dictionary's real value owning and, for combined tables, real key owning;
+ * split keys stay in the shared table, so key_owned remains NULL. No NEW or
+ * DECREF occurs in the mutation segment; equal pointers are separate debts.
+ * Caller must keep all guards, preserve/adopt actual first and settle every
+ * output before dropping guards; later cleanup errors do not erase the effect.
+ *
+ * ERROR preserves actual pending error. NEEDS_COMPAT includes changed backing,
+ * watched/unsupported storage or an uncached key hash, and grants no blind
+ * DelItem fallback. UNCHANGED means missing/non-expected current value only,
+ * not RESTORED, valid permission, or an absent cancellation obligation.
+ * CANCELLED means the raw permit refused: no dict/version/owning mutation,
+ * but permit may have monotonically locked State CLEAR. DELETED means this
+ * operation really removed the expected value, not complete retirement.
+ * Actual native consumer/normal RESTORE producer/export/link/build remain open.
+ */
+PyAPI_FUNC(RenoSpecAttr312DeleteOutcome)
+_PyReno_SpecAttr312_ConditionalUnwatchedDelete(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary,
+    PyObject *original_key, PyObject *expected_bound,
+    RenoSpecAttr312RestorePermit permit, RenoSpecAttr312RestoreContext *private_context,
+    RenoSpecAttr312DeletedOwned *removed);
+
+/* Separate notifying operation: the original unwatched API/contract above is
+ * unchanged. Same original independent roots, private raw permit/ctx, caller
+ * output separation, actual module/Record guards, lawful layouts/GIL/build
+ * and matching-normal-primitive/S1 premises apply throughout all callouts.
+ * No caller may synthesize expected_bound from the current dictionary.
+ */
+typedef struct RenoSpecAttr312DeleteNotice {
+    unsigned char notification_started; /* at least one actual callback begun */
+    unsigned int callbacks_started;      /* bounded by DICT_MAX_WATCHERS */
+} RenoSpecAttr312DeleteNotice;
+
+/* This private operation requires no pending error at entry; otherwise ERROR
+ * preserves it without notifying. That is NOT a requirement imposed on the
+ * original generic dict watcher API, which may run with an existing error.
+ * notice is a distinct private live scalar output, initially all zero, not
+ * aliased with removed/input/ctx/first storage. No address escapes the call.
+ * A known DIFFERENT lawful backing returns UNCHANGED before key-domain work,
+ * and is observed anew after notification inside fresh commit. Unknown forms
+ * retain NEEDS_COMPAT; ERROR/actual cancellation still take precedence.
+ * Zero watcher bits on a matched SAME-backing candidate delegate to the old
+ * unchanged unwatched operation.
+ * Otherwise: pure original-root candidate check, one bounded notification
+ * pass, then a NEW raw search and conditional owning MOVE at the final gate.
+ * No table/entry/value-storage borrow crosses notification. Initial watcher
+ * bits select slots; each selected slot uses the THEN-current callback, just
+ * as _PyDict_SendEvent. Newly added bits wait for future events. The commit
+ * preserves CURRENT watcher bits, not the original snapshot. This operation
+ * consumes a global version only on its actual delete; callback effects are
+ * independent. It neither calls _PyDict_NotifyEvent nor clears watcher bits.
+ *
+ * After every callback/format allocation/NewRef/unraisable report/context
+ * release, the SAME raw permit observes cancellation. Cancellation stops new
+ * callbacks, but an already negative callback's original reporting/cleanup
+ * chain finishes naturally. Only its final escaping indicator is ERROR;
+ * a reported watcher error is not captured early as an escaping first.
+ *
+ * DELETED and removed ownings mean the same actual deletion as the old API.
+ * Non-DELETED leaves removed NULL. On this NEW API, CANCELLED, UNCHANGED,
+ * NEEDS_COMPAT or ERROR may follow already begun notifications; notice must
+ * survive to the caller even on failure/cancellation. They never undo those
+ * notifications or callback effects. No operation-owned delete/version MOVE
+ * occurs unless DELETED. Post-notification unsupported backing/key/storage
+ * forms retain NEEDS_COMPAT and caller debts; a known DIFFERENT lawful backing
+ * is UNCHANGED. Neither licenses a second notification, retry or blind generic
+ * fallback in this attempt. Complete unsupported and
+ * previous-present continuations, actual parent and runtime remain open.
+ */
+PyAPI_FUNC(RenoSpecAttr312DeleteOutcome)
+_PyReno_SpecAttr312_ConditionalNotifyingDelete(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary,
+    PyObject *original_key, PyObject *expected_bound,
+    RenoSpecAttr312RestorePermit permit, RenoSpecAttr312RestoreContext *private_context,
+    RenoSpecAttr312DeletedOwned *removed, RenoSpecAttr312DeleteNotice *notice);
+
+/* Separate same-runtime conditional replacement for previous_present=1.
+ * Original loader/class/dict/key/installed_bound/previous are independently
+ * held from the real producer throughout; previous==Py_None is a VALUE.
+ * Same private typed raw permit, actual module/Record guards, lawful full
+ * layouts/GIL/build and matching-normal-reference/GC/S1 premises apply.
+ * This is not SetItem, insertion or a public provenance/adoption interface.
+ */
+typedef enum RenoSpecAttr312ReplaceOutcome {
+    RENO_SPEC_ATTR312_REPLACE_ERROR = -1,
+    RENO_SPEC_ATTR312_REPLACE_NEEDS_COMPAT = 0,
+    RENO_SPEC_ATTR312_REPLACE_UNCHANGED = 1,
+    RENO_SPEC_ATTR312_REPLACE_CANCELLED = 2,
+    RENO_SPEC_ATTR312_REPLACE_REPLACED = 3
+} RenoSpecAttr312ReplaceOutcome;
+
+typedef struct RenoSpecAttr312ReplaceOwned {
+    PyObject *old_value_owned;
+    PyObject *extra_previous_owned;
+    unsigned char tracking_effect_observed;
+    unsigned char notification_pass_completed;
+} RenoSpecAttr312ReplaceOwned;
+
+/* owned is distinct private automatic storage, initially ALL zero; notice is
+ * the existing distinct watcher-fact output, initially zero. No address may
+ * escape or alias input/ctx/first/owning slots. Every enum may leave a real
+ * extra_previous_owned NEW to settle. REPLACED alone MOVES the actual old
+ * dict value to old_value_owned and transfers extra_previous_owned into its
+ * existing value slot, NULLing that extra. No key owning is moved or released.
+ * Caller must settle both output occurrences on EVERY return under all guards.
+ * Original six detached inputs remain separately owned by the actual parent.
+ *
+ * Fresh candidate first; acquire the extra previous; prepare tracking with
+ * every possibly calling predicate OUTSIDE raw frames and with actual pending
+ * plus SAME-record permit after each return. A fresh preparation frame may
+ * raw-track the dict BEFORE the once-only MODIFIED notification, matching the
+ * tracking-before-notify order of insertdict. Actual tracking is a separate
+ * fact; it is never a value restore effect or rolled back on later failure.
+ * Even previous==expected may need this tracking preparation, but does NOT
+ * notify or change value/version. Normal empty pending is required at entry.
+ *
+ * Notification uses event=MODIFIED, key=original_key, value=original_previous.
+ * notification_pass_completed is set only after its normal completion (also
+ * for zero bits/all NULL callbacks), never inferred from callbacks_started.
+ * Negative watcher reporting/cleanup finishes naturally before actual first
+ * selection. Cancellation stops later callbacks but not mandatory settlement.
+ *
+ * Final raw frame rechecks original backing/full-key/current==bound from new
+ * views. Current raw-known GC cases retain their rules. If currently untracked
+ * with opaque tp_is_gc, an actually completed preparation decision may be used
+ * ONLY when the SAME API proves no intervening callout: original zeroed notice,
+ * callbacks_started still zero, shared notifier's increment-before-callback
+ * and callback-gated reporting, matching raw prepare/permit/domain/indicator.
+ * Private known/result scalars distinguish observed false from initial zero;
+ * no table/entry/slot crosses a callout or becomes a write certificate.
+ * Otherwise retain explicit NEEDS_COMPAT with phase/tracking/notice facts.
+ * Never reuse a predicate across an actual callback, add a predicate call or
+ * repeat notification. That actual-callback opaque continuation and full
+ * generic key/hash/storage remain open; notification pass alone is no witness.
+ *
+ * Final permit precedes all noncalling GC-chain/version/value-owning writes.
+ * Preserve CURRENT watcher bits. No resize, used/key/hash/dk-version/order
+ * change, DECREF or second notify occurs in this commit. Non-REPLACED may
+ * already have predicate/GC/notification effects; REPLACED may later fail in
+ * consumer cleanup. Neither C0 nor an enum means complete retirement. Actual
+ * module/guard provenance, M/S1/GC/layout/build/export/load remain unadmitted.
+ */
+PyAPI_FUNC(RenoSpecAttr312ReplaceOutcome)
+_PyReno_SpecAttr312_ConditionalNotifyingReplace(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary,
+    PyObject *original_key, PyObject *expected_bound, PyObject *original_previous,
+    RenoSpecAttr312RestorePermit permit, RenoSpecAttr312RestoreContext *private_context,
+    RenoSpecAttr312ReplaceOwned *owned, RenoSpecAttr312DeleteNotice *notice);
+
+/* Designated SAME active GENERAL-query completion branches use CURRENT
+ * initialized allocation capacity before original key-change control. A
+ * changed entry key (including a removed tail now beyond nentries) takes
+ * original RESTART. The SAME current key consumes original cmp/current
+ * data without requiring the old probe to still map that entry. Tokens
+ * certify no former allocation, lifetime, source or permission. Actual
+ * current allocation/layout/GIL/normal primitives remain independent.
+ * Strict post/key-owned certificates and final writers keep their own
+ * gates. SAME active selected writers may resolve a changed probe through
+ * CURRENT entry metadata/index, then pass a private scalar position to the
+ * original independent consumer; no former lifetime or permit is inferred.
+ * No original comparison, API stage or notification is replayed.
+ *
+ * Additional private operation for the real missing-previous consumer.
+ * The original raw APIs and their contracts above remain available unchanged.
+ * Same independent original roots, actual module/Record/class guards, typed
+ * raw permit/context, lawful full layout/GIL/build and matching normal
+ * reference/hash/compare/cleanup/S1 premises precede EVERY input read.
+ */
+typedef struct RenoSpecAttr312GenericDeleteProgress {
+    unsigned char notification_pass_entered;
+    unsigned char notification_pass_completed;
+    unsigned char comparison_started;
+} RenoSpecAttr312GenericDeleteProgress;
+
+/* progress is distinct private automatic zeroed scalar storage, disjoint
+ * from all inputs/ctx/notice/owning outputs; no address escapes. The whole
+ * operation remains on this SAME active caller C stack. Inputs and removed
+ * owning outputs retain the original independent occurrence contracts.
+ * Lawful dict-subclass storage uses the standard dict prefix; actual full
+ * GC/keys/value/layout premises remain independent. No subtype mapping
+ * hook is dispatched. Query is original exact Unicode; GENERAL entries may
+ * be arbitrary lawful
+ * keys. Compute an uncached query hash at most once, never once per restart.
+ * Each actual generic comparison has INCREF -> whole RichCompareBool ->
+ * mandatory DECREF. Do not fetch/clear a transient comparison indicator or
+ * select escaping first before that natural chain finishes. ERROR without
+ * actual indicator remains an unadmitted contract violation, not a new first.
+ *
+ * Pre-DECREF fresh current entry owning of the SAME still-live comparison key
+ * can prove the original release nonlast under the separately matched full
+ * reference/statistics envelope. It adds no reference or delayed destructor.
+ * Old address tokens alone never certify allocation/ABA/key lifetime.
+ * Strict post retains NEEDS_COMPAT after a lost lifetime certificate. A SAME
+ * active DELETE continuation may separately finish this original query
+ * from CURRENT lawful geometry and its actual cmp/probe. Its selected result
+ * is DATA, never former key identity or permission to delete. No repeated
+ * comparison, API reentry or temporary-key lifetime extension occurs.
+ * Independent expected bound and final source/value/permit checks still hold.
+ * Final deletion also retains original QUERY-hash -> actual index position;
+ * current entry hash is separate metadata, not query/old-key authentication.
+ * Other unsupported domains retain COMPAT. Real post KEY_CHANGED follows
+ * the original hash-probe restart; no finite termination for arbitrary
+ * mutating/nonreturning equality or complete generic compatibility is claimed.
+ *
+ * Notification occurs once. Independent entered/completed facts distinguish
+ * NOT_STARTED, a partially entered pass and PASS_COMPLETED. A completed pass
+ * includes zero bits/all NULL callbacks; callback count is NOT a phase.
+ * Actual callbacks/reporting require a subsequent explicitly observable
+ * cancellable lookup; no-callback paths reuse only uninterrupted scalars.
+ * Final raw frame rechecks actual backing/storage/entry/key/value==bound
+ * and all delete metadata, then final permit precedes CURRENT bits/version
+ * and real owning MOVE. No compare/hash/resize/DECREF/notify occurs there.
+ * Caller settles removed key owning BEFORE removed value owning on every
+ * return, matching ordinary DEL's visible key-destructor order, and observes
+ * actual first/cancellation after each release. It preserves actual notice/
+ * progress and all six original debts/guards for complete COMPAT handling.
+ * This does not complete REPLACE, the normal RESTORE producer/drainer,
+ * M/S1/ABI/export/build/load or the full goal.
+ */
+PyAPI_FUNC(RenoSpecAttr312DeleteOutcome)
+_PyReno_SpecAttr312_ConditionalGenericNotifyingDelete(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary,
+    PyObject *original_key, PyObject *expected_bound,
+    RenoSpecAttr312RestorePermit permit, RenoSpecAttr312RestoreContext *private_context,
+    RenoSpecAttr312DeletedOwned *removed, RenoSpecAttr312DeleteNotice *notice,
+    RenoSpecAttr312GenericDeleteProgress *progress);
+
+/* Additional previous-present wrapper. Existing raw REPLACE and generic
+ * DELETE declarations and layouts remain unchanged. This REPLACE wrapper
+ * has its own original-query selected-data and independent GC/final-consumer
+ * duties. Original RAW delegation retains its exact-dict domain; lawful
+ * dict-subclass storage instead selects GENERIC, including Unicode keys.
+ * Same independently original roots/guards, typed raw permit, lawful full
+ * layouts/GIL/build and matching reference/hash/compare/GC/statistics/S1.
+ */
+typedef enum RenoSpecAttr312ReplaceRoute {
+    RENO_SPEC_ATTR312_REPLACE_ROUTE_NONE = 0,
+    RENO_SPEC_ATTR312_REPLACE_ROUTE_RAW = 1,
+    RENO_SPEC_ATTR312_REPLACE_ROUTE_GENERIC = 2
+} RenoSpecAttr312ReplaceRoute;
+
+typedef struct RenoSpecAttr312GenericReplaceProgress {
+    RenoSpecAttr312ReplaceRoute route;
+    unsigned char notification_pass_entered;
+    unsigned char notification_pass_completed;
+    unsigned char comparison_started;
+    unsigned char gc_probe_entered;
+    unsigned char gc_probe_completed;
+    unsigned char gc_probe_tracking_needed;
+    unsigned char post_gc_probe_comparison_started;
+} RenoSpecAttr312GenericReplaceProgress;
+
+/* progress is distinct private zeroed automatic scalar storage, disjoint
+ * from all inputs/ctx/notice/owned/first storage; no address escapes. All
+ * original six inputs and module/Record/independent class guards stay on
+ * this SAME active parent C stack. Settle BOTH real owned outputs on EVERY
+ * return, even COMPAT/UNCHANGED/ERROR/CANCELLED, under all original guards.
+ *
+ * RAW delegates the original exact-dict/full-Unicode/cached-hash operation
+ * unchanged,
+ * preserving its existing opaque GC support. On that route these NEW phase/
+ * probe/comparison fields are UNKNOWN, not observed false. Existing owned's
+ * completed/tracking fields and notice remain valid. NONE means no route
+ * selected, not permission or complete retirement. Only GENERIC authenticates
+ * these new entered/completed/comparison facts, including zero-callback pass.
+ *
+ * GENERIC retains original hash-probe/natural comparison-key release and
+ * one query hash total. Strict post retains its key-lifetime certificate gate;
+ * a SAME active original-query continuation may separately finish its actual
+ * CURRENT result from lawful geometry and original cmp/probe. Tokens never
+ * certify former key allocation. No repeated comparison, API reentry or key
+ * lifetime extension occurs. Selected data and current entry hash metadata
+ * provide neither GC tracking-known nor source/previous/final write permit.
+ * Current tracked/raw-known GC retains its rules. Untracked opaque previous
+ * may run its original whole _MAY_BE_TRACKED primitive ONCE, outside raw
+ * views, followed by actual pending/permit checks and one explicitly observable
+ * fresh generic lookup. gc_probe_entered/completed mean whole primitive entered/
+ * RETURNED, not tp_is_gc callback entry or successful error/cancel admission;
+ * gc_probe_tracking_needed is its observed result, not a write permission.
+ * post_gc_probe_comparison_started describes ONLY that fresh lookup; cumulative
+ * comparison_started ORs every phase. Only a real completed/admitted probe plus
+ * FOUND with no post-probe comparison supplies private uninterrupted known.
+ * After actual comparison discard BOTH true/false decisions; only CURRENT
+ * tracked/raw-known GC may then continue, otherwise COMPAT before notification.
+ * Actual notification callbacks invalidate known; post-callout commit keeps
+ * any completed notification/tracking facts when it must retain COMPAT.
+ * Extra previous NEW is separately matched no-callout, never permission to
+ * keep a stale raw view. Tracking precedes same-value/no-notify and MODIFIED.
+ * Actual notification callbacks require one observable post-notification
+ * lookup; zero notification callbacks add no post-notification lookup.
+ * The independent post-probe lookup above still applies. Never repeat
+ * notification or use cached GC decisions across callbacks/comparisons.
+ * Fresh final current/witnessed GC checks,
+ * final permit and CURRENT bits/version precede actual value owning MOVEs.
+ * No used/key/hash/order/dk-version change or release occurs in commit.
+ *
+ * Same-token lifetime unknown, generic opaque GC and other unsupported
+ * storage/complete compatibility/normal producer-drainer remain open. The
+ * existing full M/S1/build/export/load and full-goal limits still apply.
+ */
+PyAPI_FUNC(RenoSpecAttr312ReplaceOutcome)
+_PyReno_SpecAttr312_ConditionalGenericNotifyingReplace(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary,
+    PyObject *original_key, PyObject *expected_bound, PyObject *original_previous,
+    RenoSpecAttr312RestorePermit permit, RenoSpecAttr312RestoreContext *private_context,
+    RenoSpecAttr312ReplaceOwned *owned, RenoSpecAttr312DeleteNotice *notice,
+    RenoSpecAttr312GenericReplaceProgress *progress);
+
+/* Initial installation over an OBSERVED PRESENT previous instance value.
+ * This is a distinct operation, not a RESTORE permit/API with reversed args.
+ * Original loader/class/materialized dict/query/previous and the SAME
+ * factory-produced bound are independently held under the real module,
+ * entered interval and candidate Record guards on this active caller stack.
+ * previous==Py_None is a VALUE. NULL previous is not admitted here; absent
+ * insertion remains a separate operation. Generic means lawful GENERAL
+ * keys in lawful dict storage, including subclasses with matching standard
+ * prefix/GC/keys/value layouts; this does not dispatch mapping overrides.
+ * Actual full layouts/spans/uniqueness/hash/reference/statistics/GIL/build/S1
+ * and matching primitive bodies are independent premises, not enum proofs.
+ *
+ * permit is ONLY the actual private installation raw body with its original
+ * live context and independent source roots. With an EMPTY indicator it checks
+ * CURRENT active generation/source/candidate eligibility, monotonically refusing
+ * an observed cancelled attempt. With an ACTUAL pending comparison/reporting
+ * error it may return 1 for mandatory temporary settlement after checking SAME
+ * attempt cancellation/eligibility only; this is NOT a source/write certificate.
+ * Runtime business frames reject pending BEFORE lookup/track/value mutation;
+ * after natural reporting clears it, the same permit checks full source anew.
+ * It cannot allocate, acquire/release refs, run Python, compute hash/equality,
+ * construct/clear/fetch errors, mutate dicts, yield GIL or escape ctx. Raw reads
+ * of independently rooted source dictionaries are allowed. It NEVER creates
+ * RESTORE permission or changes generation exit mode. A whole bridge with
+ * descriptor NEW/release is not a raw permit. Actual producer/full source/
+ * layout/ABI admission and complete selector adoption remain required.
+ */
+typedef struct RenoSpecAttr312InstallContext RenoSpecAttr312InstallContext;
+typedef int (*RenoSpecAttr312InstallPermit)(RenoSpecAttr312InstallContext *private_context);
+
+typedef enum RenoSpecAttr312InstallOutcome {
+    RENO_SPEC_ATTR312_INSTALL_ERROR = -1,
+    RENO_SPEC_ATTR312_INSTALL_NEEDS_COMPAT = 0,
+    RENO_SPEC_ATTR312_INSTALL_UNCHANGED = 1,
+    RENO_SPEC_ATTR312_INSTALL_CANCELLED = 2,
+    RENO_SPEC_ATTR312_INSTALL_INSTALLED = 3
+} RenoSpecAttr312InstallOutcome;
+
+typedef struct RenoSpecAttr312InstallOwned {
+    PyObject *old_value_owned;
+    PyObject *extra_bound_owned;
+    unsigned char tracking_effect_observed;
+} RenoSpecAttr312InstallOwned;
+
+typedef struct RenoSpecAttr312InstallProgress {
+    unsigned char notification_pass_entered;
+    unsigned char notification_pass_completed;
+    unsigned char comparison_started;
+    unsigned char post_notification_comparison_started;
+    unsigned char effect_committed;
+} RenoSpecAttr312InstallProgress;
+
+/* All outputs are distinct private initially-zero automatic storage, separate
+ * from inputs/context/first/each other. No address escapes. old_value_owned
+ * MOVES the real dict owning only on INSTALLED; extra_bound_owned is a real
+ * additional NEW, retained on every other outcome once acquired. Caller must
+ * settle BOTH occurrences on EVERY return while all original guards remain.
+ * Equal pointers are distinct debts. Input/output ownings are not released
+ * here; temporary comparison/reporting releases occur at their original stages.
+ *
+ * The replacement is the SAME real exact PyMethod factory product bound to
+ * original_loader, not a value derived from the current dict. Expected current
+ * is original_previous. Its full inner/function/Record/source provenance is
+ * an actual native caller/permit obligation, not established by type checks.
+ * Hash query once if uncached; arbitrary GENERAL key comparisons use whole
+ * RichCompareBool and the natural comparison-key DECREF before selecting any
+ * escaping error/cancellation. Current independent key owning may prove that
+ * release nonlast. Strict post retains COMPAT when lifetime is lost; equal
+ * tokens never certify the former allocation. A SAME active original-query
+ * result continuation may separately transport selected CURRENT data without
+ * repeated comparison, API reentry or key lifetime extension. Current entry
+ * hash is metadata, not the original query hash or a write certificate.
+ * The independent consumer rechecks actual factory bound/source/slot/value
+ * and FINAL typed permit; a selected-result bit supplies none of those proofs.
+ *
+ * Fresh prepare tracks the actual dict for the exact PyMethod value
+ * before same-value/no-notify selection. MODIFIED reports the NEW bound once.
+ * Entered/completed and actual callbacks are separate facts; a zero-callback
+ * pass is complete. Only actual callback starts require a new observable
+ * lookup. Fresh final backing/key/current==original_previous and final permit
+ * precede current-bit/version/owning MOVEs. No old raw view crosses a callout.
+ * No resize, used/key/hash/order/dk-version write, release or second notify.
+ *
+ * UNCHANGED includes absent/replaced current or changed backing and same-value
+ * no-op; it is not proof of successful installation/ownership/publication.
+ * Every outcome preserves real notice/comparison/tracking/phase effects.
+ * INSTALLED/effect_committed describe this actual value MOVE only, before
+ * caller cleanup; they do not prove fresh post-cleanup current, ACTIVE/link,
+ * store_returned, full selector, native adoption, export/ABI/build or runtime.
+ * No blind setter, second notify or retry follows COMPAT in this attempt.
+ */
+PyAPI_FUNC(RenoSpecAttr312InstallOutcome)
+_PyReno_SpecAttr312_ConditionalInstallExisting(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary,
+    PyObject *original_key, PyObject *original_previous, PyObject *actual_bound,
+    RenoSpecAttr312InstallPermit permit, RenoSpecAttr312InstallContext *private_context,
+    RenoSpecAttr312InstallOwned *owned, RenoSpecAttr312DeleteNotice *notice,
+    RenoSpecAttr312InstallProgress *progress);
+
+/* A NEW preparation-stage observation, never a replay of the producer's
+ * completed original lookup. Same independently held original loader/class/
+ * dict/query/expected previous, actual guards, lawful full layouts/GIL/
+ * reference/hash/compare/cleanup/S1 and private typed permit provenance as
+ * initial installation. expected_previous is present, including Py_None;
+ * it is not enrolled from this current observation. No value/key borrow escapes.
+ */
+typedef enum RenoSpecAttr312ObserveOutcome {
+    RENO_SPEC_ATTR312_OBSERVE_ERROR = -1,
+    RENO_SPEC_ATTR312_OBSERVE_NEEDS_COMPAT = 0,
+    RENO_SPEC_ATTR312_OBSERVE_UNCHANGED = 1,
+    RENO_SPEC_ATTR312_OBSERVE_CANCELLED = 2,
+    RENO_SPEC_ATTR312_OBSERVE_MATCHED = 3
+} RenoSpecAttr312ObserveOutcome;
+
+typedef struct RenoSpecAttr312ObserveProgress {
+    unsigned char hash_entered;
+    unsigned char hash_returned;
+    unsigned char lookup_entered;
+    unsigned char lookup_returned;
+    unsigned char comparison_started;
+} RenoSpecAttr312ObserveProgress;
+
+/* progress is distinct initially-zero private automatic scalar storage; no
+ * address escapes. Hash once when actually uncached; whole generic comparison
+ * and its natural temporary-key release finish before selecting any escaping
+ * error/cancel. A SAME active readonly continuation may finish this ACTUAL
+ * original query from fresh lawful GENERAL geometry and the original cmp/probe.
+ * Tokens are original control conditions, not former key allocation identity.
+ * No repeated comparison, API reentry or temporary-key lifetime extension.
+ * Other unsupported geometry/storage retains explicit COMPAT.
+ *
+ * MATCHED means this operation's actual value identity equals independently
+ * held original expected_previous, with SAME backing and the typed raw source
+ * permit in this no-callout span. It never enrolls a new original previous,
+ * certifies the former key, predicts another query or supplies future write
+ * permission. UNCHANGED includes absent/different value or changed backing;
+ * Py_None is present. Actual progress is retained on EVERY outcome.
+ * No value owning output, track/notify/version/value write or constructor.
+ * Temporary key refs are still real. Pending remains settlement-only, never
+ * business work; ERROR without actual indicator is an unadmitted contract.
+ * Caller still owes full source/product/registry/selection, subsequent actual
+ * INSTALL/RESTORE consumption gates, debts and budget/build/runtime admission.
+ */
+PyAPI_FUNC(RenoSpecAttr312ObserveOutcome)
+_PyReno_SpecAttr312_ObserveInstallPrevious(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary,
+    PyObject *actual_query, PyObject *expected_previous,
+    RenoSpecAttr312InstallPermit permit, RenoSpecAttr312InstallContext *private_context,
+    RenoSpecAttr312ObserveProgress *progress);
+
+/* A NEW post-local-cleanup observation of the SAME actual constructor bound
+ * independently held by the installing child's mutation tuple, never enrolled
+ * from current. The real caller provides its typed INSTALL registration permit.
+ * This API's private readonly route may finish the SAME original query after
+ * whole comparison/natural key release, using fresh lawful GENERAL reads and
+ * actual cmp/probe control, without certifying former key allocation identity.
+ *
+ * MATCHED is this actual query value identity==actual_bound with current SAME
+ * backing/source in this no-callout span. Caller still needs complete source,
+ * Record/whole-registry and final registration gates; another callback ends
+ * observation authority. It is not a dict STORE/RESTORE permit, a future query
+ * guarantee or proof of original entry-key identity. No owning output, track,
+ * notification, version/value write, constructor or registry link occurs here.
+ * Pending is settlement-only; progress/error/cancel use the original contract.
+ * Layout/GIL/reference/ABI/S1 and complete selection remain independent.
+ */
+PyAPI_FUNC(RenoSpecAttr312ObserveOutcome)
+_PyReno_SpecAttr312_ObserveInstallBound(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary,
+    PyObject *actual_query, PyObject *actual_bound,
+    RenoSpecAttr312InstallPermit permit, RenoSpecAttr312InstallContext *private_context,
+    RenoSpecAttr312ObserveProgress *progress);
+
+/* Conditional initial installation from OBSERVED ABSENCE, not unknown NULL
+ * history and not RESTORE. Same independently held loader/class/dict/
+ * exact Unicode query and actual constructor PyMethod bound, original module/
+ * entered/candidate guards, full layouts/GIL/normal primitive/reference/ABI/S1
+ * premises and private typed INSTALL permit as the existing-value operation.
+ * Native absent input producer/permit/caller adoption remains separate.
+ */
+typedef enum RenoSpecAttr312AbsentStorage {
+    RENO_SPEC_ATTR312_ABSENT_STORAGE_NONE = 0,
+    RENO_SPEC_ATTR312_ABSENT_STORAGE_EMPTY = 1,
+    RENO_SPEC_ATTR312_ABSENT_STORAGE_NEW_KEY = 2,
+    RENO_SPEC_ATTR312_ABSENT_STORAGE_SPLIT_VALUE = 3
+} RenoSpecAttr312AbsentStorage;
+
+typedef struct RenoSpecAttr312AbsentInstallOwned {
+    PyObject *extra_key_owned;
+    PyObject *extra_bound_owned;
+    unsigned char tracking_effect_observed;
+} RenoSpecAttr312AbsentInstallOwned;
+
+typedef struct RenoSpecAttr312AbsentInstallProgress {
+    RenoSpecAttr312AbsentStorage initial_storage;
+    RenoSpecAttr312AbsentStorage notification_storage;
+    unsigned char hash_entered;
+    unsigned char hash_returned;
+    unsigned char initial_lookup_entered;
+    unsigned char initial_lookup_returned;
+    unsigned char comparison_started;
+    unsigned char empty_keys_allocation_entered;
+    unsigned char empty_keys_allocation_returned;
+    unsigned char empty_keys_released;
+    unsigned char resize_entered;
+    unsigned char resize_returned;
+    unsigned char resize_effect_observed;
+    unsigned char prepared_lookup_entered;
+    unsigned char prepared_lookup_returned;
+    unsigned char prepared_comparison_started;
+    unsigned char notification_pass_entered;
+    unsigned char notification_pass_completed;
+    unsigned char post_notification_lookup_entered;
+    unsigned char post_notification_lookup_returned;
+    unsigned char post_notification_comparison_started;
+    unsigned char effect_committed;
+} RenoSpecAttr312AbsentInstallProgress;
+
+/* All output/context/notice/progress storage is private, distinct, initially
+ * zero and never escapes. Both extra NEWs are real independent occurrences:
+ * NEW_KEY/EMPTY move key and bound into dictionary storage; SPLIT_VALUE moves
+ * only bound and leaves extra_key for caller settlement on EVERY outcome.
+ * No input/output owning is released here. Unattached internally allocated
+ * EMPTY keys are naturally released on every exit before selecting escaping
+ * error; that raw allocation/free still requires matching allocator admission.
+ *
+ * GENERAL lookup keeps whole RichCompareBool and natural temporary-key release.
+ * Stable EMPTY preserves allocate -> ADDED -> attach -> track -> insert order.
+ * Other tables preserve lookup -> track -> required resize -> ADDED/MODIFIED.
+ * A new key is ADDED, an existing split key with NULL value is MODIFIED; None
+ * or any other actual value blocks the operation without comparing values.
+ * Resize is a REAL table-preparation effect even when no value is installed.
+ * After each actual allocation/resize or the original notification callback,
+ * resuming business requires a NEW explicit observation, never replay of the
+ * producer's original completed lookup. No borrowed entry/table/slot view is
+ * reused across callout; detached EMPTY keys remain privately owned throughout.
+ * New real capacity deficits continue within this SAME API activation. Existing
+ * prepared/resize progress bits are cumulative ever facts, not counts, current
+ * authority or evidence that a new preparation occurred; comparison bits OR.
+ * The original notification pass occurs at most once. initial_storage and
+ * notification_storage retain their original HISTORY. Each later fresh
+ * observation of actual absence may choose CURRENT EMPTY/NEW_KEY/SPLIT_VALUE
+ * storage and required preparation, including a changed event category.
+ * It never rewrites or repeats the actual past event. Detached EMPTY keys
+ * remain held until EMPTY commit or the sole final cleanup. Current full
+ * source/backing/absence/storage/product/permit still precede the value MOVE.
+ * Other COMPAT continuation and physical budget remain open.
+ *
+ * Pending permits mandatory settlement only, never business track/value write.
+ * Final same backing/absence/storage plus current full permit precede raw
+ * key/hash/index/order/used/dk-version/value/version updates. Return INSTALLED
+ * and effect_committed describe this value installation only; caller cleanup,
+ * fresh source/current/full selection, ACTIVE/link, native/ABI/build/runtime
+ * admission and owning settlement remain independent. No RESTORE mode change.
+ */
+PyAPI_FUNC(RenoSpecAttr312InstallOutcome)
+_PyReno_SpecAttr312_ConditionalInstallAbsent(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary,
+    PyObject *original_key, PyObject *actual_bound,
+    RenoSpecAttr312InstallPermit permit, RenoSpecAttr312InstallContext *private_context,
+    RenoSpecAttr312AbsentInstallOwned *owned, RenoSpecAttr312DeleteNotice *notice,
+    RenoSpecAttr312AbsentInstallProgress *progress);
+
+/* Read-only selection has its OWN typed policy. It may observe lawful current
+ * storage when related records already exist; an INSTALL permit rejecting all
+ * associations cannot authorize that selection. A real private native caller
+ * continuously owns original loader/class/dict/query, module/entered and
+ * source roots. original_class is the independently retained T0 loader class,
+ * never F0's finder class, a current-derived expected or a clearable payload.
+ * Lawful dict-subclass standard storage is included; full matching dict
+ * prefix/keys/value layouts remain independent premises. No subclass
+ * __getitem__/__missing__ or mapping setter is dispatched by this read.
+ * Full layouts/GIL/normal refs/S1 and actual caller provenance precede use.
+ */
+typedef struct RenoSpecAttr312SelectionContext RenoSpecAttr312SelectionContext;
+typedef int (*RenoSpecAttr312SelectionPermit)(RenoSpecAttr312SelectionContext *);
+
+typedef enum RenoSpecAttr312SelectionOutcome {
+    RENO_SPEC_ATTR312_SELECTION_ERROR = -1,
+    RENO_SPEC_ATTR312_SELECTION_NEEDS_COMPAT = 0,
+    RENO_SPEC_ATTR312_SELECTION_BACKING_CHANGED = 1,
+    RENO_SPEC_ATTR312_SELECTION_CANCELLED = 2,
+    RENO_SPEC_ATTR312_SELECTION_OBSERVED = 3
+} RenoSpecAttr312SelectionOutcome;
+
+typedef struct RenoSpecAttr312SelectionOwned {
+    PyObject *current_owned;
+    unsigned char observed;
+    unsigned char present;
+} RenoSpecAttr312SelectionOwned;
+
+/* All outputs/progress/context are private distinct automatic storage, output
+ * and progress initially zero; no address escapes. The raw permit neither
+ * allocates/releases/raises nor changes storage, candidate, registry or mode.
+ * It rereads CURRENT complete source when empty; pending allows mandatory
+ * natural comparison-key settlement only, never starting a new lookup or
+ * capturing a current value. No INSTALL/RESTORE authority is granted here.
+ *
+ * This is a NEW explicit current observation, never replay of a completed
+ * producer lookup. Hash once when uncached; preserve complete GENERAL
+ * RichCompareBool and its natural temporary-key release before interpreting
+ * result/error/cancellation. Tokens control the ORIGINAL query's probe only;
+ * they never prove former table/key allocation identity or lifetime. A SAME
+ * active-call continuation may complete the ACTUAL original query result from
+ * fresh lawful root/geometry/entry reads after the comparison and release.
+ * It neither repeats comparison nor certifies the former key allocation.
+ * Unsupported read geometry/other domains retain explicit COMPAT.
+ *
+ * A final same-backing/current-source raw span captures the ACTUAL query value
+ * NEW, or genuine empty-probe/split-NULL absence. Py_None is present. observed=0
+ * means no completed capture; observed=1/present=0 is actual observed absence;
+ * observed=1/present=1 owns this operation's actual value, even if Py_None.
+ * ERROR/CANCELLED after acquisition retain that output and its actual history.
+ * Caller must settle current_owned on EVERY return, including failed outcomes.
+ * No output owning is released here; equal pointers never cancel an input debt.
+ *
+ * OBSERVED is not a source enrollment, historical previous, former entry-key
+ * identity, guarantee of another lookup's result, reuse/installation permit or
+ * complete selection. Native still owes fresh whole association and its own
+ * full source/product gates. INSTALL/RESTORE keep their INDEPENDENT final
+ * key/value/permit/notification/effect duties, never inferred from this output.
+ * Later callbacks invalidate authority while the actual owning remains history.
+ * No dictionary track/notify/resize/version/value write, constructor, link or
+ * restore occurs. Complete native adoption, other compatibility, ABI/build/
+ * runtime and reference/allocation/stack/physical/time budgets remain separate.
+ */
+PyAPI_FUNC(RenoSpecAttr312SelectionOutcome)
+_PyReno_SpecAttr312_ObserveSelectionCurrent(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary,
+    PyObject *actual_query, RenoSpecAttr312SelectionPermit permit,
+    RenoSpecAttr312SelectionContext *private_context,
+    RenoSpecAttr312SelectionOwned *owned, RenoSpecAttr312ObserveProgress *progress);
+
+/* NEW absence-only preparation observation under the private INSTALL typed
+ * preparation permit, not the present-previous API with a guessed NULL value.
+ * Same independently held original roots and initially-zero private progress
+ * as ObserveInstallPrevious. MATCHED means genuine current absence in the
+ * final same-backing/no-callout span: EMPTY, a real empty probe, or a split key
+ * with NULL value. Every actual nonNULL value, including Py_None, is present.
+ * Whole comparison and natural key release finish before outcome selection.
+ * No value owning output, allocation of keys, tracking, notification, resize,
+ * store or registry work occurs. Current comparison/phase effects remain in
+ * progress, and native five-station adoption remains a separate obligation.
+ */
+PyAPI_FUNC(RenoSpecAttr312ObserveOutcome)
+_PyReno_SpecAttr312_ObserveInstallAbsent(PyObject *original_loader,
+    PyTypeObject *original_class, PyObject *original_dictionary,
+    PyObject *actual_query, RenoSpecAttr312InstallPermit permit,
+    RenoSpecAttr312InstallContext *private_context,
+    RenoSpecAttr312ObserveProgress *progress);
+
+#ifdef __cplusplus
+}
+#endif
+#endif

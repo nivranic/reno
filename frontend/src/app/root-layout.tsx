@@ -5,10 +5,13 @@
  * the drawer keeps every entry reachable everywhere. */
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useSearchParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   BookmarkPlus,
   FileText,
   Inbox,
+  House,
+  ListChecks,
   Menu,
   MessagesSquare,
   Monitor,
@@ -20,23 +23,28 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { setToken } from "@/lib/api";
+import { apiGet, setToken, TOKEN_KEY } from "@/lib/api";
+import { initializeReadingNamespace, interruptReadingRequests, readingNamespaceUnavailable, resetReadingSessions } from "@/lib/reading-session";
+import { captureReadingPositions, clearReadingPositions, useReadingScroll } from "@/lib/url-state";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { PersonalDraftArchive } from "@/features/project/personal-draft-archive";
 import { useTheme } from "./theme";
 
 const NAV = [
+  { to: "/project", label: "我的装修", icon: House, end: false },
   { to: "/", label: "收件箱", icon: Inbox, end: true },
   { to: "/ask", label: "知识问答", icon: MessagesSquare, end: false },
   { to: "/search", label: "搜索", icon: Search, end: false },
   { to: "/compare", label: "对比", icon: Scale, end: false, bottom: false },
   { to: "/conflicts", label: "争议复核", icon: ShieldAlert, end: false },
+  { to: "/reconciliation", label: "复核对账", icon: ListChecks, end: false, bottom: false },
   { to: "/collect", label: "采集助手", icon: BookmarkPlus, end: false, bottom: false },
   { to: "/reports", label: "报告", icon: FileText, end: false },
 ];
 // §4.1: the phone bottom bar carries the primary pages; 采集助手 stays in the
 // drawer and the import flow (auxiliary entry), not as a fake nav page
-const BOTTOM_NAV = NAV.filter((n) => n.to !== "/collect");
+const BOTTOM_NAV = NAV.filter((n) => n.bottom !== false && n.to !== "/collect");
 
 export const IS_MOCK = import.meta.env.MODE === "mock";
 
@@ -110,9 +118,53 @@ function SidebarInner() {
 }
 
 export function RootLayout() {
+  const queryClient = useQueryClient();
+  const [readingReady, setReadingReady] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
   const [params] = useSearchParams();
+  const mainScrollKey = `main:${location.pathname}`;
+  useReadingScroll(mainScrollKey, mainRef, readingReady ? "ready" : "loading");
+  useEffect(() => {
+    let active = true;
+    let identityRequest = 0;
+    const controller = new AbortController();
+    const initialize = async () => {
+      const request = ++identityRequest;
+      try {
+        const capabilities = await apiGet<{ library_id: string }>("/api/capabilities", controller.signal);
+        if (!active || request !== identityRequest) return;
+        if (!capabilities.library_id) throw new Error("missing library identity");
+        if (initializeReadingNamespace(capabilities.library_id)) { queryClient.clear(); clearReadingPositions(); }
+      } catch {
+        if (active && request === identityRequest) readingNamespaceUnavailable();
+      } finally {
+        if (active && request === identityRequest) setReadingReady(true);
+      }
+    };
+    const identityChanged = () => {
+      ++identityRequest;
+      resetReadingSessions(); clearReadingPositions(); queryClient.clear();
+      setReadingReady(false);
+      void initialize();
+    };
+    const storedIdentityChanged = (event: StorageEvent) => { if (event.key === TOKEN_KEY || event.key === null) identityChanged(); };
+    void initialize();
+    window.addEventListener("reno-token-changed", identityChanged);
+    window.addEventListener("storage", storedIdentityChanged);
+    window.addEventListener("focus", initialize);
+    window.addEventListener("beforeunload", interruptReadingRequests);
+    window.addEventListener("pagehide", interruptReadingRequests);
+    return () => {
+      active = false; controller.abort();
+      window.removeEventListener("reno-token-changed", identityChanged);
+      window.removeEventListener("storage", storedIdentityChanged);
+      window.removeEventListener("focus", initialize);
+      window.removeEventListener("beforeunload", interruptReadingRequests);
+      window.removeEventListener("pagehide", interruptReadingRequests);
+    };
+  }, [queryClient]);
   // LAN/mobile deployments with auth_token: any 401 from the API opens the
   // token gate; saving reloads so every query re-fires with the new token
   const [tokenPrompt, setTokenPrompt] = useState(false);
@@ -177,7 +229,9 @@ export function RootLayout() {
   }
 
   return (
-    <div className="flex h-dvh overflow-hidden">
+    <div className="flex h-dvh overflow-hidden" onClickCapture={(event) => {
+      if ((event.target as HTMLElement).closest("a")) captureReadingPositions();
+    }}>
       {/* desktop sidebar */}
       <aside className="hidden w-56 shrink-0 flex-col border-r border-line bg-surface md:flex">
         <SidebarInner />
@@ -221,16 +275,19 @@ export function RootLayout() {
               Mock 演示环境
             </span>
           ) : null}
+          <PersonalDraftArchive />
           <ThemeToggle />
         </header>
 
         {/* pages control their own width: reading pages max-w, workbench full.
             bottom nav height is measured, not assumed (§15.1 text-zoom growth) */}
         <main
+          ref={mainRef}
+          data-reading-scroll={mainScrollKey}
           className="min-w-0 flex-1 overflow-y-auto overscroll-contain pb-[var(--reno-bottom-occupy,0px)] md:pb-0"
           style={navHidden ? { paddingBottom: 0 } : undefined}
         >
-          <Outlet />
+          {readingReady ? <Outlet /> : <p role="status" className="p-5 text-sm text-muted">正在读取知识库身份…</p>}
         </main>
 
         {!navHidden ? <BottomNav /> : null}

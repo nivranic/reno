@@ -1,0 +1,2156 @@
+#include "Python.h"
+#include "pycore_call.h"          // _PyObject_CallNoArgsTstate()
+#include "pycore_ceval.h"         // _Py_EnterRecursiveCallTstate()
+#include "pycore_dict.h"          // _PyDict_FromItems()
+#include "pycore_frame.h"         // _PyInterpreterFrame layout for query
+#include "pycore_object.h"        // _PyCFunctionWithKeywords_TrampolineCall()
+#include "pycore_pyerrors.h"      // _PyErr_Occurred()
+#include "pycore_pystate.h"       // _PyThreadState_GET()
+#include "pycore_reno_owned_resume.h"
+#include "pycore_tuple.h"         // _PyTuple_ITEMS()
+
+#include <limits.h>
+
+
+/* Primitive query: complete immutable description, with mandatory metadata
+   from an independently trusted build.  An unconfigured source cannot build
+   this port; it does not provide a default digest or a runtime stub. */
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 201112L
+#  error "owned resume query requires the recorded C11 toolchain contract"
+#endif
+#if !defined(RENO_OWNED_RESUME_BUILD_METADATA_VERSION) || \
+    !defined(RENO_OWNED_RESUME_BUILD_ARCH) || \
+    !defined(RENO_OWNED_RESUME_BUILD_OS) || \
+    !defined(RENO_OWNED_RESUME_BUILD_BYTE_ORDER) || \
+    !defined(RENO_OWNED_RESUME_BUILD_CALL_ABI) || \
+    !defined(RENO_OWNED_RESUME_BUILD_FEATURE_BITS) || \
+    !defined(RENO_OWNED_RESUME_BUILD_SHA256_0) || \
+    !defined(RENO_OWNED_RESUME_BUILD_SHA256_1) || \
+    !defined(RENO_OWNED_RESUME_BUILD_SHA256_2) || \
+    !defined(RENO_OWNED_RESUME_BUILD_SHA256_3) || \
+    !defined(RENO_OWNED_RESUME_BUILD_SHA256_4) || \
+    !defined(RENO_OWNED_RESUME_BUILD_SHA256_5) || \
+    !defined(RENO_OWNED_RESUME_BUILD_SHA256_6) || \
+    !defined(RENO_OWNED_RESUME_BUILD_SHA256_7)
+#  error "owned resume query requires every trusted build metadata word"
+#endif
+
+#define RENO_QUERY_CHECK_U32(value) \
+    _Static_assert(((value) & UINT32_C(0)) == UINT32_C(0), \
+                   "query value must be an integer constant expression"); \
+    _Static_assert((value) >= 0, "query value must not be negative"); \
+    _Static_assert((value) <= UINT32_MAX, "query value must fit uint32_t");
+
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_METADATA_VERSION)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_ARCH)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_OS)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_BYTE_ORDER)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_CALL_ABI)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_FEATURE_BITS)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_SHA256_0)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_SHA256_1)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_SHA256_2)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_SHA256_3)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_SHA256_4)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_SHA256_5)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_SHA256_6)
+RENO_QUERY_CHECK_U32(RENO_OWNED_RESUME_BUILD_SHA256_7)
+
+_Static_assert(RENO_OWNED_RESUME_BUILD_METADATA_VERSION == 1,
+               "unsupported build metadata schema");
+_Static_assert(CHAR_BIT == 8 && sizeof(uint32_t) == 4 &&
+               UINT32_MAX == UINT32_C(0xffffffff), "unsupported uint32_t ABI");
+_Static_assert(RENO_OWNED_RESUME_ABI_MAJOR == 1 &&
+               RENO_OWNED_RESUME_ABI_MINOR == 1 &&
+               RENO_OWNED_RESUME_PHASE_VERSION == 2 &&
+               RENO_OWNED_RESUME_PROTOCOL_VERSION == 3,
+               "query must be reviewed for a changed record protocol");
+
+#if defined(_M_ARM64EC)
+#  error "ARM64EC is not a native Win-ARM64 query ABI"
+#endif
+#if ((defined(_M_IX86) || defined(__i386__)) + \
+     (defined(_M_X64) || defined(__x86_64__)) + \
+     (defined(_M_ARM64) || defined(__aarch64__))) != 1
+#  error "query requires one explicitly supported native architecture"
+#endif
+#if defined(_M_IX86) || defined(__i386__)
+#  define RENO_QUERY_NATIVE_ARCH UINT32_C(1)
+#elif defined(_M_X64) || defined(__x86_64__)
+#  define RENO_QUERY_NATIVE_ARCH UINT32_C(2)
+#elif defined(_M_ARM64) || defined(__aarch64__)
+#  define RENO_QUERY_NATIVE_ARCH UINT32_C(3)
+#endif
+
+#if (defined(_WIN32) + defined(__linux__) + \
+     (defined(__APPLE__) && defined(__MACH__))) != 1
+#  error "query requires one explicitly supported operating system"
+#endif
+#if defined(_WIN32)
+#  define RENO_QUERY_NATIVE_OS UINT32_C(1)
+#elif defined(__linux__)
+#  define RENO_QUERY_NATIVE_OS UINT32_C(2)
+#elif defined(__APPLE__) && defined(__MACH__)
+#  if !defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__)
+#    error "query requires a recorded macOS target, not another Apple OS"
+#  endif
+#  define RENO_QUERY_NATIVE_OS UINT32_C(3)
+#endif
+
+#if defined(_WIN32)
+#  if RENO_QUERY_NATIVE_ARCH == 1
+#    define RENO_QUERY_NATIVE_CALL_ABI UINT32_C(1)
+#  elif RENO_QUERY_NATIVE_ARCH == 2
+#    define RENO_QUERY_NATIVE_CALL_ABI UINT32_C(2)
+#  elif RENO_QUERY_NATIVE_ARCH == 3
+#    define RENO_QUERY_NATIVE_CALL_ABI UINT32_C(5)
+#  endif
+#else
+#  if !defined(__GNUC__) && !defined(__clang__)
+#    error "query calling-convention spelling needs a recorded compiler port"
+#  endif
+#  if RENO_QUERY_NATIVE_ARCH == 2
+#    define RENO_QUERY_NATIVE_CALL_ABI UINT32_C(3)
+#  elif RENO_QUERY_NATIVE_ARCH == 3
+#    define RENO_QUERY_NATIVE_CALL_ABI UINT32_C(4)
+#  else
+#    error "this query format has no SysV-x86 calling-convention identifier"
+#  endif
+#endif
+
+_Static_assert(RENO_OWNED_RESUME_BUILD_ARCH == RENO_QUERY_NATIVE_ARCH &&
+               RENO_OWNED_RESUME_BUILD_OS == RENO_QUERY_NATIVE_OS &&
+               RENO_OWNED_RESUME_BUILD_CALL_ABI == RENO_QUERY_NATIVE_CALL_ABI,
+               "trusted metadata and actual target/call spelling must agree");
+_Static_assert((RENO_QUERY_NATIVE_ARCH == 1 && sizeof(void *) == 4) ||
+               ((RENO_QUERY_NATIVE_ARCH == 2 || RENO_QUERY_NATIVE_ARCH == 3) &&
+                sizeof(void *) == 8), "unsupported pointer width, including x32");
+
+#if !defined(PY_BIG_ENDIAN) || !defined(PY_LITTLE_ENDIAN)
+#  error "query requires the actual CPython byte-order configuration"
+#endif
+_Static_assert((PY_BIG_ENDIAN == 0 || PY_BIG_ENDIAN == 1) &&
+               (PY_LITTLE_ENDIAN == 0 || PY_LITTLE_ENDIAN == 1) &&
+               PY_BIG_ENDIAN + PY_LITTLE_ENDIAN == 1,
+               "byte-order configuration must be complementary");
+#define RENO_QUERY_ACTUAL_BYTE_ORDER \
+    (PY_BIG_ENDIAN ? UINT32_C(2) : UINT32_C(1))
+_Static_assert(RENO_OWNED_RESUME_BUILD_BYTE_ORDER == RENO_QUERY_ACTUAL_BYTE_ORDER,
+               "trusted metadata and actual byte order must agree");
+#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
+    defined(__ORDER_LITTLE_ENDIAN__)
+_Static_assert((__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ ||
+                __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) &&
+               ((__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) == PY_BIG_ENDIAN),
+               "compiler and CPython byte order must agree");
+#endif
+_Static_assert((RENO_QUERY_NATIVE_OS != 1 && RENO_QUERY_NATIVE_ARCH != 1 &&
+                RENO_QUERY_NATIVE_ARCH != 2) || PY_LITTLE_ENDIAN == 1,
+               "Windows and x86 query profiles require little endian");
+
+#ifdef Py_STATS
+#  define RENO_QUERY_STATS_BIT UINT32_C(1)
+#else
+#  define RENO_QUERY_STATS_BIT UINT32_C(0)
+#endif
+#ifdef Py_REF_DEBUG
+#  define RENO_QUERY_REF_DEBUG_BIT UINT32_C(2)
+#else
+#  define RENO_QUERY_REF_DEBUG_BIT UINT32_C(0)
+#endif
+#ifdef Py_TRACE_REFS
+#  define RENO_QUERY_TRACE_REFS_BIT UINT32_C(4)
+#else
+#  define RENO_QUERY_TRACE_REFS_BIT UINT32_C(0)
+#endif
+#ifdef Py_GIL_DISABLED
+#  define RENO_QUERY_GIL_DISABLED_BIT UINT32_C(8)
+#else
+#  define RENO_QUERY_GIL_DISABLED_BIT UINT32_C(0)
+#endif
+#ifdef Py_LIMITED_API
+#  define RENO_QUERY_LIMITED_API_BIT UINT32_C(16)
+#else
+#  define RENO_QUERY_LIMITED_API_BIT UINT32_C(0)
+#endif
+#define RENO_QUERY_ACTUAL_FEATURE_BITS \
+    (RENO_QUERY_STATS_BIT | RENO_QUERY_REF_DEBUG_BIT | RENO_QUERY_TRACE_REFS_BIT | \
+     RENO_QUERY_GIL_DISABLED_BIT | RENO_QUERY_LIMITED_API_BIT)
+_Static_assert(RENO_OWNED_RESUME_BUILD_FEATURE_BITS <= UINT32_C(0x1f) &&
+               RENO_OWNED_RESUME_BUILD_FEATURE_BITS == RENO_QUERY_ACTUAL_FEATURE_BITS,
+               "trusted metadata and actual features must agree");
+_Static_assert((RENO_QUERY_ACTUAL_FEATURE_BITS & UINT32_C(0x18)) == 0,
+               "this source profile requires the full API with the GIL");
+
+/* The one index/value list drives every bound check and table initializer.
+   Member size expressions are unevaluated; member-type alignment follows the
+   selected private header.  None of these expressions is a measured expected. */
+#define RENO_QUERY_DESCRIPTION_WORDS(X) \
+    X(0, UINT32_C(0x524e4f31)) \
+    X(1, UINT32_C(1)) \
+    X(2, UINT32_C(256)) \
+    X(3, RENO_OWNED_RESUME_ABI_MAJOR) \
+    X(4, RENO_OWNED_RESUME_ABI_MINOR) \
+    X(5, UINT32_C(32)) \
+    X(6, UINT32_C(7)) \
+    X(7, UINT32_C(1)) \
+    X(8, RENO_QUERY_ACTUAL_FEATURE_BITS) \
+    X(9, UINT32_C(0x1f)) \
+    X(10, UINT32_C(1)) \
+    X(11, UINT32_C(1)) \
+    X(12, RENO_OWNED_RESUME_PHASE_VERSION) \
+    X(13, RENO_OWNED_RESUME_PROTOCOL_VERSION) \
+    X(14, UINT32_C(0)) \
+    X(15, UINT32_C(0)) \
+    X(16, RENO_OWNED_RESUME_BUILD_ARCH) \
+    X(17, RENO_OWNED_RESUME_BUILD_OS) \
+    X(18, RENO_QUERY_ACTUAL_BYTE_ORDER) \
+    X(19, RENO_OWNED_RESUME_BUILD_CALL_ABI) \
+    X(20, CHAR_BIT) \
+    X(21, UINT32_C(32)) \
+    X(22, sizeof(uint32_t)) \
+    X(23, _Alignof(uint32_t)) \
+    X(24, sizeof(size_t)) \
+    X(25, _Alignof(size_t)) \
+    X(26, sizeof(void *)) \
+    X(27, _Alignof(void *)) \
+    X(28, sizeof(vectorcallfunc)) \
+    X(29, _Alignof(vectorcallfunc)) \
+    X(30, sizeof(Py_ssize_t)) \
+    X(31, _Alignof(Py_ssize_t)) \
+    X(32, sizeof(RenoOwnedResumeRecordV1)) \
+    X(33, _Alignof(RenoOwnedResumeRecordV1)) \
+    X(34, sizeof(RenoOwnedResumeMoveOutV1)) \
+    X(35, _Alignof(RenoOwnedResumeMoveOutV1)) \
+    X(36, sizeof(PyThreadState)) \
+    X(37, _Alignof(PyThreadState)) \
+    X(38, offsetof(PyThreadState, reno_owned_resume_request)) \
+    X(39, sizeof(((PyThreadState *)0)->reno_owned_resume_request)) \
+    X(40, _Alignof(void *)) \
+    X(41, sizeof(PyInterpreterState)) \
+    X(42, _Alignof(PyInterpreterState)) \
+    X(43, sizeof(_PyRuntimeState)) \
+    X(44, _Alignof(_PyRuntimeState)) \
+    X(45, sizeof(_PyInterpreterFrame)) \
+    X(46, _Alignof(_PyInterpreterFrame)) \
+    X(47, UINT32_C(0)) \
+    X(48, offsetof(RenoOwnedResumeRecordV1, abi_major)) \
+    X(49, sizeof(((RenoOwnedResumeRecordV1 *)0)->abi_major)) \
+    X(50, _Alignof(uint32_t)) \
+    X(51, offsetof(RenoOwnedResumeRecordV1, abi_minor)) \
+    X(52, sizeof(((RenoOwnedResumeRecordV1 *)0)->abi_minor)) \
+    X(53, _Alignof(uint32_t)) \
+    X(54, offsetof(RenoOwnedResumeRecordV1, phase)) \
+    X(55, sizeof(((RenoOwnedResumeRecordV1 *)0)->phase)) \
+    X(56, _Alignof(uint32_t)) \
+    X(57, offsetof(RenoOwnedResumeRecordV1, failure_reason)) \
+    X(58, sizeof(((RenoOwnedResumeRecordV1 *)0)->failure_reason)) \
+    X(59, _Alignof(uint32_t)) \
+    X(60, offsetof(RenoOwnedResumeRecordV1, function_site_executed)) \
+    X(61, sizeof(((RenoOwnedResumeRecordV1 *)0)->function_site_executed)) \
+    X(62, _Alignof(uint32_t)) \
+    X(63, offsetof(RenoOwnedResumeRecordV1, frame_site_executed)) \
+    X(64, sizeof(((RenoOwnedResumeRecordV1 *)0)->frame_site_executed)) \
+    X(65, _Alignof(uint32_t)) \
+    X(66, offsetof(RenoOwnedResumeRecordV1, saved_old_top_valid)) \
+    X(67, sizeof(((RenoOwnedResumeRecordV1 *)0)->saved_old_top_valid)) \
+    X(68, _Alignof(uint32_t)) \
+    X(69, offsetof(RenoOwnedResumeRecordV1, locals_mode)) \
+    X(70, sizeof(((RenoOwnedResumeRecordV1 *)0)->locals_mode)) \
+    X(71, _Alignof(uint32_t)) \
+    X(72, offsetof(RenoOwnedResumeRecordV1, storage_bytes)) \
+    X(73, sizeof(((RenoOwnedResumeRecordV1 *)0)->storage_bytes)) \
+    X(74, _Alignof(size_t)) \
+    X(75, offsetof(RenoOwnedResumeRecordV1, nargsf)) \
+    X(76, sizeof(((RenoOwnedResumeRecordV1 *)0)->nargsf)) \
+    X(77, _Alignof(size_t)) \
+    X(78, offsetof(RenoOwnedResumeRecordV1, positional)) \
+    X(79, sizeof(((RenoOwnedResumeRecordV1 *)0)->positional)) \
+    X(80, _Alignof(size_t)) \
+    X(81, offsetof(RenoOwnedResumeRecordV1, keyword_count)) \
+    X(82, sizeof(((RenoOwnedResumeRecordV1 *)0)->keyword_count)) \
+    X(83, _Alignof(size_t)) \
+    X(84, offsetof(RenoOwnedResumeRecordV1, values_owned_count)) \
+    X(85, sizeof(((RenoOwnedResumeRecordV1 *)0)->values_owned_count)) \
+    X(86, _Alignof(size_t)) \
+    X(87, offsetof(RenoOwnedResumeRecordV1, raw_bytes)) \
+    X(88, sizeof(((RenoOwnedResumeRecordV1 *)0)->raw_bytes)) \
+    X(89, _Alignof(size_t)) \
+    X(90, offsetof(RenoOwnedResumeRecordV1, frame_slots)) \
+    X(91, sizeof(((RenoOwnedResumeRecordV1 *)0)->frame_slots)) \
+    X(92, _Alignof(size_t)) \
+    X(93, offsetof(RenoOwnedResumeRecordV1, old_chunk_top)) \
+    X(94, sizeof(((RenoOwnedResumeRecordV1 *)0)->old_chunk_top)) \
+    X(95, _Alignof(size_t)) \
+    X(96, offsetof(RenoOwnedResumeRecordV1, actual_tstate)) \
+    X(97, sizeof(((RenoOwnedResumeRecordV1 *)0)->actual_tstate)) \
+    X(98, _Alignof(PyThreadState *)) \
+    X(99, offsetof(RenoOwnedResumeRecordV1, actual_callable)) \
+    X(100, sizeof(((RenoOwnedResumeRecordV1 *)0)->actual_callable)) \
+    X(101, _Alignof(PyObject *)) \
+    X(102, offsetof(RenoOwnedResumeRecordV1, function_owned)) \
+    X(103, sizeof(((RenoOwnedResumeRecordV1 *)0)->function_owned)) \
+    X(104, _Alignof(PyObject *)) \
+    X(105, offsetof(RenoOwnedResumeRecordV1, locals_owned)) \
+    X(106, sizeof(((RenoOwnedResumeRecordV1 *)0)->locals_owned)) \
+    X(107, _Alignof(PyObject *)) \
+    X(108, offsetof(RenoOwnedResumeRecordV1, pending_owned)) \
+    X(109, sizeof(((RenoOwnedResumeRecordV1 *)0)->pending_owned)) \
+    X(110, _Alignof(PyObject *)) \
+    X(111, offsetof(RenoOwnedResumeRecordV1, kwnames)) \
+    X(112, sizeof(((RenoOwnedResumeRecordV1 *)0)->kwnames)) \
+    X(113, _Alignof(PyObject *)) \
+    X(114, offsetof(RenoOwnedResumeRecordV1, argv)) \
+    X(115, sizeof(((RenoOwnedResumeRecordV1 *)0)->argv)) \
+    X(116, _Alignof(PyObject *const *)) \
+    X(117, offsetof(RenoOwnedResumeRecordV1, frame_code)) \
+    X(118, sizeof(((RenoOwnedResumeRecordV1 *)0)->frame_code)) \
+    X(119, _Alignof(PyObject *)) \
+    X(120, offsetof(RenoOwnedResumeRecordV1, raw_owned)) \
+    X(121, sizeof(((RenoOwnedResumeRecordV1 *)0)->raw_owned)) \
+    X(122, _Alignof(void *)) \
+    X(123, offsetof(RenoOwnedResumeRecordV1, free_debt)) \
+    X(124, sizeof(((RenoOwnedResumeRecordV1 *)0)->free_debt)) \
+    X(125, _Alignof(void *)) \
+    X(126, offsetof(RenoOwnedResumeRecordV1, old_chunk)) \
+    X(127, sizeof(((RenoOwnedResumeRecordV1 *)0)->old_chunk)) \
+    X(128, _Alignof(void *)) \
+    X(129, offsetof(RenoOwnedResumeRecordV1, old_top)) \
+    X(130, sizeof(((RenoOwnedResumeRecordV1 *)0)->old_top)) \
+    X(131, _Alignof(PyObject **)) \
+    X(132, offsetof(RenoOwnedResumeRecordV1, old_limit)) \
+    X(133, sizeof(((RenoOwnedResumeRecordV1 *)0)->old_limit)) \
+    X(134, _Alignof(PyObject **)) \
+    X(135, offsetof(RenoOwnedResumeRecordV1, reserved_frame)) \
+    X(136, sizeof(((RenoOwnedResumeRecordV1 *)0)->reserved_frame)) \
+    X(137, _Alignof(void *)) \
+    X(138, offsetof(RenoOwnedResumeRecordV1, record_address)) \
+    X(139, sizeof(((RenoOwnedResumeRecordV1 *)0)->record_address)) \
+    X(140, _Alignof(void *)) \
+    X(141, offsetof(RenoOwnedResumeRecordV1, expected_standard)) \
+    X(142, sizeof(((RenoOwnedResumeRecordV1 *)0)->expected_standard)) \
+    X(143, _Alignof(vectorcallfunc)) \
+    X(144, offsetof(RenoOwnedResumeMoveOutV1, function_owned)) \
+    X(145, sizeof(((RenoOwnedResumeMoveOutV1 *)0)->function_owned)) \
+    X(146, _Alignof(PyObject *)) \
+    X(147, offsetof(RenoOwnedResumeMoveOutV1, locals_owned)) \
+    X(148, sizeof(((RenoOwnedResumeMoveOutV1 *)0)->locals_owned)) \
+    X(149, _Alignof(PyObject *)) \
+    X(150, offsetof(RenoOwnedResumeMoveOutV1, pending_owned)) \
+    X(151, sizeof(((RenoOwnedResumeMoveOutV1 *)0)->pending_owned)) \
+    X(152, _Alignof(PyObject *)) \
+    X(153, offsetof(RenoOwnedResumeMoveOutV1, argv)) \
+    X(154, sizeof(((RenoOwnedResumeMoveOutV1 *)0)->argv)) \
+    X(155, _Alignof(PyObject *const *)) \
+    X(156, offsetof(RenoOwnedResumeMoveOutV1, values_owned_count)) \
+    X(157, sizeof(((RenoOwnedResumeMoveOutV1 *)0)->values_owned_count)) \
+    X(158, _Alignof(size_t)) \
+    X(159, offsetof(RenoOwnedResumeMoveOutV1, raw_to_free)) \
+    X(160, sizeof(((RenoOwnedResumeMoveOutV1 *)0)->raw_to_free)) \
+    X(161, _Alignof(void *)) \
+    X(162, offsetof(RenoOwnedResumeMoveOutV1, raw_bytes)) \
+    X(163, sizeof(((RenoOwnedResumeMoveOutV1 *)0)->raw_bytes)) \
+    X(164, _Alignof(size_t)) \
+    X(165, offsetof(PyCodeObject, co_framesize)) \
+    X(166, offsetof(PyFunctionObject, func_code)) \
+    X(167, offsetof(PyFunctionObject, func_globals)) \
+    X(168, offsetof(PyThreadState, datastack_chunk)) \
+    X(169, offsetof(PyThreadState, datastack_top)) \
+    X(170, offsetof(PyThreadState, datastack_limit)) \
+    X(171, offsetof(_PyStackChunk, top)) \
+    X(172, sizeof(_PyStackChunk)) \
+    X(173, _Alignof(_PyStackChunk)) \
+    X(174, offsetof(_PyInterpreterFrame, localsplus)) \
+    X(175, UINT32_C(1)) \
+    X(176, RENO_OWNED_RESUME_BUILD_SHA256_0) \
+    X(177, RENO_OWNED_RESUME_BUILD_SHA256_1) \
+    X(178, RENO_OWNED_RESUME_BUILD_SHA256_2) \
+    X(179, RENO_OWNED_RESUME_BUILD_SHA256_3) \
+    X(180, RENO_OWNED_RESUME_BUILD_SHA256_4) \
+    X(181, RENO_OWNED_RESUME_BUILD_SHA256_5) \
+    X(182, RENO_OWNED_RESUME_BUILD_SHA256_6) \
+    X(183, RENO_OWNED_RESUME_BUILD_SHA256_7) \
+    X(184, UINT32_C(0)) \
+    X(185, UINT32_C(0)) \
+    X(186, UINT32_C(0)) \
+    X(187, UINT32_C(0)) \
+    X(188, UINT32_C(0)) \
+    X(189, UINT32_C(0)) \
+    X(190, UINT32_C(0)) \
+    X(191, UINT32_C(0)) \
+    X(192, UINT32_C(0)) \
+    X(193, UINT32_C(0)) \
+    X(194, UINT32_C(0)) \
+    X(195, UINT32_C(0)) \
+    X(196, UINT32_C(0)) \
+    X(197, UINT32_C(0)) \
+    X(198, UINT32_C(0)) \
+    X(199, UINT32_C(0)) \
+    X(200, UINT32_C(0)) \
+    X(201, UINT32_C(0)) \
+    X(202, UINT32_C(0)) \
+    X(203, UINT32_C(0)) \
+    X(204, UINT32_C(0)) \
+    X(205, UINT32_C(0)) \
+    X(206, UINT32_C(0)) \
+    X(207, UINT32_C(0)) \
+    X(208, UINT32_C(0)) \
+    X(209, UINT32_C(0)) \
+    X(210, UINT32_C(0)) \
+    X(211, UINT32_C(0)) \
+    X(212, UINT32_C(0)) \
+    X(213, UINT32_C(0)) \
+    X(214, UINT32_C(0)) \
+    X(215, UINT32_C(0)) \
+    X(216, UINT32_C(0)) \
+    X(217, UINT32_C(0)) \
+    X(218, UINT32_C(0)) \
+    X(219, UINT32_C(0)) \
+    X(220, UINT32_C(0)) \
+    X(221, UINT32_C(0)) \
+    X(222, UINT32_C(0)) \
+    X(223, UINT32_C(0)) \
+    X(224, UINT32_C(0)) \
+    X(225, UINT32_C(0)) \
+    X(226, UINT32_C(0)) \
+    X(227, UINT32_C(0)) \
+    X(228, UINT32_C(0)) \
+    X(229, UINT32_C(0)) \
+    X(230, UINT32_C(0)) \
+    X(231, UINT32_C(0)) \
+    X(232, UINT32_C(0)) \
+    X(233, UINT32_C(0)) \
+    X(234, UINT32_C(0)) \
+    X(235, UINT32_C(0)) \
+    X(236, UINT32_C(0)) \
+    X(237, UINT32_C(0)) \
+    X(238, UINT32_C(0)) \
+    X(239, UINT32_C(0)) \
+    X(240, UINT32_C(0)) \
+    X(241, UINT32_C(0)) \
+    X(242, UINT32_C(0)) \
+    X(243, UINT32_C(0)) \
+    X(244, UINT32_C(0)) \
+    X(245, UINT32_C(0)) \
+    X(246, UINT32_C(0)) \
+    X(247, UINT32_C(0)) \
+    X(248, UINT32_C(0)) \
+    X(249, UINT32_C(0)) \
+    X(250, UINT32_C(0)) \
+    X(251, UINT32_C(0)) \
+    X(252, UINT32_C(0)) \
+    X(253, UINT32_C(0)) \
+    X(254, UINT32_C(0)) \
+    X(255, UINT32_C(0))
+
+#define RENO_QUERY_ASSERT_WORD(index, value) \
+    enum { reno_owned_resume_query_index_##index = (index) }; \
+    _Static_assert((index) >= 0 && (index) < 256, "query index must fit V1"); \
+    RENO_QUERY_CHECK_U32(value)
+RENO_QUERY_DESCRIPTION_WORDS(RENO_QUERY_ASSERT_WORD)
+#undef RENO_QUERY_ASSERT_WORD
+
+#define RENO_QUERY_COUNT_WORD(index, value) + 1
+enum { RENO_QUERY_ENTRY_COUNT = 0 RENO_QUERY_DESCRIPTION_WORDS(RENO_QUERY_COUNT_WORD) };
+#undef RENO_QUERY_COUNT_WORD
+_Static_assert(RENO_QUERY_ENTRY_COUNT == 256, "query must define exactly 256 indices");
+
+#define RENO_QUERY_EMIT_WORD(index, value) [index] = (uint32_t)(value),
+static const uint32_t reno_owned_resume_description_words[256] = {
+    RENO_QUERY_DESCRIPTION_WORDS(RENO_QUERY_EMIT_WORD)
+};
+#undef RENO_QUERY_EMIT_WORD
+_Static_assert(sizeof(reno_owned_resume_description_words) /
+               sizeof(reno_owned_resume_description_words[0]) == 256,
+               "query storage must match the fixed V1 bound");
+
+uint32_t RENO_OWNED_RESUME_QUERY_CALL
+RenoOwnedResumeDescribeWordV1(uint32_t index)
+{
+    if (index >= UINT32_C(256)) {
+        return UINT32_C(0);
+    }
+    return reno_owned_resume_description_words[index];
+}
+
+#undef RENO_QUERY_DESCRIPTION_WORDS
+#undef RENO_QUERY_CHECK_U32
+#undef RENO_QUERY_ACTUAL_FEATURE_BITS
+#undef RENO_QUERY_STATS_BIT
+#undef RENO_QUERY_REF_DEBUG_BIT
+#undef RENO_QUERY_TRACE_REFS_BIT
+#undef RENO_QUERY_GIL_DISABLED_BIT
+#undef RENO_QUERY_LIMITED_API_BIT
+#undef RENO_QUERY_ACTUAL_BYTE_ORDER
+#undef RENO_QUERY_NATIVE_ARCH
+#undef RENO_QUERY_NATIVE_OS
+#undef RENO_QUERY_NATIVE_CALL_ABI
+
+static PyObject *
+null_error(PyThreadState *tstate)
+{
+    if (!_PyErr_Occurred(tstate)) {
+        _PyErr_SetString(tstate, PyExc_SystemError,
+                         "null argument to internal routine");
+    }
+    return NULL;
+}
+
+
+PyObject*
+_Py_CheckFunctionResult(PyThreadState *tstate, PyObject *callable,
+                        PyObject *result, const char *where)
+{
+    assert((callable != NULL) ^ (where != NULL));
+
+    if (result == NULL) {
+        if (!_PyErr_Occurred(tstate)) {
+            if (callable)
+                _PyErr_Format(tstate, PyExc_SystemError,
+                              "%R returned NULL without setting an exception",
+                              callable);
+            else
+                _PyErr_Format(tstate, PyExc_SystemError,
+                              "%s returned NULL without setting an exception",
+                              where);
+#ifdef Py_DEBUG
+            /* Ensure that the bug is caught in debug mode.
+               Py_FatalError() logs the SystemError exception raised above. */
+            Py_FatalError("a function returned NULL without setting an exception");
+#endif
+            return NULL;
+        }
+    }
+    else {
+        if (_PyErr_Occurred(tstate)) {
+            Py_DECREF(result);
+
+            if (callable) {
+                _PyErr_FormatFromCauseTstate(
+                    tstate, PyExc_SystemError,
+                    "%R returned a result with an exception set", callable);
+            }
+            else {
+                _PyErr_FormatFromCauseTstate(
+                    tstate, PyExc_SystemError,
+                    "%s returned a result with an exception set", where);
+            }
+#ifdef Py_DEBUG
+            /* Ensure that the bug is caught in debug mode.
+               Py_FatalError() logs the SystemError exception raised above. */
+            Py_FatalError("a function returned a result with an exception set");
+#endif
+            return NULL;
+        }
+    }
+    return result;
+}
+
+
+int
+_Py_CheckSlotResult(PyObject *obj, const char *slot_name, int success)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (!success) {
+        if (!_PyErr_Occurred(tstate)) {
+            _Py_FatalErrorFormat(__func__,
+                                 "Slot %s of type %s failed "
+                                 "without setting an exception",
+                                 slot_name, Py_TYPE(obj)->tp_name);
+        }
+    }
+    else {
+        if (_PyErr_Occurred(tstate)) {
+            _Py_FatalErrorFormat(__func__,
+                                 "Slot %s of type %s succeeded "
+                                 "with an exception set",
+                                 slot_name, Py_TYPE(obj)->tp_name);
+        }
+    }
+    return 1;
+}
+
+
+/* --- Core PyObject call functions ------------------------------- */
+
+/* Call a callable Python object without any arguments */
+PyObject *
+PyObject_CallNoArgs(PyObject *func)
+{
+    EVAL_CALL_STAT_INC_IF_FUNCTION(EVAL_CALL_API, func);
+    PyThreadState *tstate = _PyThreadState_GET();
+    return _PyObject_VectorcallTstate(tstate, func, NULL, 0, NULL);
+}
+
+
+PyObject *
+_PyObject_FastCallDictTstate(PyThreadState *tstate, PyObject *callable,
+                             PyObject *const *args, size_t nargsf,
+                             PyObject *kwargs)
+{
+    assert(callable != NULL);
+
+    /* PyObject_VectorcallDict() must not be called with an exception set,
+       because it can clear it (directly or indirectly) and so the
+       caller loses its exception */
+    assert(!_PyErr_Occurred(tstate));
+
+    Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
+    assert(nargs >= 0);
+    assert(nargs == 0 || args != NULL);
+    assert(kwargs == NULL || PyDict_Check(kwargs));
+
+    vectorcallfunc func = _PyVectorcall_Function(callable);
+    if (func == NULL) {
+        /* Use tp_call instead */
+        return _PyObject_MakeTpCall(tstate, callable, args, nargs, kwargs);
+    }
+
+    PyObject *res;
+    if (kwargs == NULL || PyDict_GET_SIZE(kwargs) == 0) {
+        res = func(callable, args, nargsf, NULL);
+    }
+    else {
+        PyObject *kwnames;
+        PyObject *const *newargs;
+        newargs = _PyStack_UnpackDict(tstate,
+                                      args, nargs,
+                                      kwargs, &kwnames);
+        if (newargs == NULL) {
+            return NULL;
+        }
+        res = func(callable, newargs,
+                   nargs | PY_VECTORCALL_ARGUMENTS_OFFSET, kwnames);
+        _PyStack_UnpackDict_Free(newargs, nargs, kwnames);
+    }
+    return _Py_CheckFunctionResult(tstate, callable, res, NULL);
+}
+
+
+PyObject *
+PyObject_VectorcallDict(PyObject *callable, PyObject *const *args,
+                       size_t nargsf, PyObject *kwargs)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    return _PyObject_FastCallDictTstate(tstate, callable, args, nargsf, kwargs);
+}
+
+static void
+object_is_not_callable(PyThreadState *tstate, PyObject *callable)
+{
+    if (Py_IS_TYPE(callable, &PyModule_Type)) {
+        // >>> import pprint
+        // >>> pprint(thing)
+        // Traceback (most recent call last):
+        //   File "<stdin>", line 1, in <module>
+        // TypeError: 'module' object is not callable. Did you mean: 'pprint.pprint(...)'?
+        PyObject *name = PyModule_GetNameObject(callable);
+        if (name == NULL) {
+            _PyErr_Clear(tstate);
+            goto basic_type_error;
+        }
+        PyObject *attr;
+        int res = _PyObject_LookupAttr(callable, name, &attr);
+        if (res < 0) {
+            _PyErr_Clear(tstate);
+        }
+        else if (res > 0 && PyCallable_Check(attr)) {
+            _PyErr_Format(tstate, PyExc_TypeError,
+                          "'%.200s' object is not callable. "
+                          "Did you mean: '%U.%U(...)'?",
+                          Py_TYPE(callable)->tp_name, name, name);
+            Py_DECREF(attr);
+            Py_DECREF(name);
+            return;
+        }
+        Py_XDECREF(attr);
+        Py_DECREF(name);
+    }
+basic_type_error:
+    _PyErr_Format(tstate, PyExc_TypeError, "'%.200s' object is not callable",
+                  Py_TYPE(callable)->tp_name);
+}
+
+
+PyObject *
+_PyObject_MakeTpCall(PyThreadState *tstate, PyObject *callable,
+                     PyObject *const *args, Py_ssize_t nargs,
+                     PyObject *keywords)
+{
+    assert(nargs >= 0);
+    assert(nargs == 0 || args != NULL);
+    assert(keywords == NULL || PyTuple_Check(keywords) || PyDict_Check(keywords));
+
+    /* Slow path: build a temporary tuple for positional arguments and a
+     * temporary dictionary for keyword arguments (if any) */
+    ternaryfunc call = Py_TYPE(callable)->tp_call;
+    if (call == NULL) {
+        object_is_not_callable(tstate, callable);
+        return NULL;
+    }
+
+    PyObject *argstuple = _PyTuple_FromArray(args, nargs);
+    if (argstuple == NULL) {
+        return NULL;
+    }
+
+    PyObject *kwdict;
+    if (keywords == NULL || PyDict_Check(keywords)) {
+        kwdict = keywords;
+    }
+    else {
+        if (PyTuple_GET_SIZE(keywords)) {
+            assert(args != NULL);
+            kwdict = _PyStack_AsDict(args + nargs, keywords);
+            if (kwdict == NULL) {
+                Py_DECREF(argstuple);
+                return NULL;
+            }
+        }
+        else {
+            keywords = kwdict = NULL;
+        }
+    }
+
+    PyObject *result = NULL;
+    if (_Py_EnterRecursiveCallTstate(tstate, " while calling a Python object") == 0)
+    {
+        result = _PyCFunctionWithKeywords_TrampolineCall(
+            (PyCFunctionWithKeywords)call, callable, argstuple, kwdict);
+        _Py_LeaveRecursiveCallTstate(tstate);
+    }
+
+    Py_DECREF(argstuple);
+    if (kwdict != keywords) {
+        Py_DECREF(kwdict);
+    }
+
+    return _Py_CheckFunctionResult(tstate, callable, result, NULL);
+}
+
+
+vectorcallfunc
+PyVectorcall_Function(PyObject *callable)
+{
+    return _PyVectorcall_FunctionInline(callable);
+}
+
+
+static PyObject *
+_PyVectorcall_Call(PyThreadState *tstate, vectorcallfunc func,
+                   PyObject *callable, PyObject *tuple, PyObject *kwargs)
+{
+    assert(func != NULL);
+
+    Py_ssize_t nargs = PyTuple_GET_SIZE(tuple);
+
+    /* Fast path for no keywords */
+    if (kwargs == NULL || PyDict_GET_SIZE(kwargs) == 0) {
+        return func(callable, _PyTuple_ITEMS(tuple), nargs, NULL);
+    }
+
+    /* Convert arguments & call */
+    PyObject *const *args;
+    PyObject *kwnames;
+    args = _PyStack_UnpackDict(tstate,
+                               _PyTuple_ITEMS(tuple), nargs,
+                               kwargs, &kwnames);
+    if (args == NULL) {
+        return NULL;
+    }
+    PyObject *result = func(callable, args,
+                            nargs | PY_VECTORCALL_ARGUMENTS_OFFSET, kwnames);
+    _PyStack_UnpackDict_Free(args, nargs, kwnames);
+
+    return _Py_CheckFunctionResult(tstate, callable, result, NULL);
+}
+
+
+PyObject *
+PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwargs)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+
+    /* get vectorcallfunc as in _PyVectorcall_Function, but without
+     * the Py_TPFLAGS_HAVE_VECTORCALL check */
+    Py_ssize_t offset = Py_TYPE(callable)->tp_vectorcall_offset;
+    if (offset <= 0) {
+        _PyErr_Format(tstate, PyExc_TypeError,
+                      "'%.200s' object does not support vectorcall",
+                      Py_TYPE(callable)->tp_name);
+        return NULL;
+    }
+    assert(PyCallable_Check(callable));
+
+    vectorcallfunc func;
+    memcpy(&func, (char *) callable + offset, sizeof(func));
+    if (func == NULL) {
+        _PyErr_Format(tstate, PyExc_TypeError,
+                      "'%.200s' object does not support vectorcall",
+                      Py_TYPE(callable)->tp_name);
+        return NULL;
+    }
+
+    return _PyVectorcall_Call(tstate, func, callable, tuple, kwargs);
+}
+
+
+PyObject *
+PyObject_Vectorcall(PyObject *callable, PyObject *const *args,
+                     size_t nargsf, PyObject *kwnames)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    return _PyObject_VectorcallTstate(tstate, callable,
+                                      args, nargsf, kwnames);
+}
+
+
+PyObject *
+_PyObject_FastCall(PyObject *func, PyObject *const *args, Py_ssize_t nargs)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    return _PyObject_FastCallTstate(tstate, func, args, nargs);
+}
+
+
+PyObject *
+_PyObject_Call(PyThreadState *tstate, PyObject *callable,
+               PyObject *args, PyObject *kwargs)
+{
+    ternaryfunc call;
+    PyObject *result;
+
+    /* PyObject_Call() must not be called with an exception set,
+       because it can clear it (directly or indirectly) and so the
+       caller loses its exception */
+    assert(!_PyErr_Occurred(tstate));
+    assert(PyTuple_Check(args));
+    assert(kwargs == NULL || PyDict_Check(kwargs));
+    EVAL_CALL_STAT_INC_IF_FUNCTION(EVAL_CALL_API, callable);
+    vectorcallfunc vector_func = _PyVectorcall_Function(callable);
+    if (vector_func != NULL) {
+        return _PyVectorcall_Call(tstate, vector_func, callable, args, kwargs);
+    }
+    else {
+        call = Py_TYPE(callable)->tp_call;
+        if (call == NULL) {
+            object_is_not_callable(tstate, callable);
+            return NULL;
+        }
+
+        if (_Py_EnterRecursiveCallTstate(tstate, " while calling a Python object")) {
+            return NULL;
+        }
+
+        result = (*call)(callable, args, kwargs);
+
+        _Py_LeaveRecursiveCallTstate(tstate);
+
+        return _Py_CheckFunctionResult(tstate, callable, result, NULL);
+    }
+}
+
+PyObject *
+PyObject_Call(PyObject *callable, PyObject *args, PyObject *kwargs)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    return _PyObject_Call(tstate, callable, args, kwargs);
+}
+
+
+PyObject *
+PyCFunction_Call(PyObject *callable, PyObject *args, PyObject *kwargs)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    return _PyObject_Call(tstate, callable, args, kwargs);
+}
+
+
+PyObject *
+PyObject_CallOneArg(PyObject *func, PyObject *arg)
+{
+    EVAL_CALL_STAT_INC_IF_FUNCTION(EVAL_CALL_API, func);
+    assert(arg != NULL);
+    PyObject *_args[2];
+    PyObject **args = _args + 1;  // For PY_VECTORCALL_ARGUMENTS_OFFSET
+    args[0] = arg;
+    PyThreadState *tstate = _PyThreadState_GET();
+    size_t nargsf = 1 | PY_VECTORCALL_ARGUMENTS_OFFSET;
+    return _PyObject_VectorcallTstate(tstate, func, args, nargsf, NULL);
+}
+
+
+/* --- PyFunction call functions ---------------------------------- */
+
+/* Read the actual generic slot for this function component without invoking
+   the debug callable predicate or replacing dispatch with an expected slot. */
+static vectorcallfunc
+owned_resume_actual_vectorcall_slot(PyObject *callable)
+{
+    if (callable == NULL || !PyFunction_Check(callable)) {
+        return NULL;
+    }
+    PyTypeObject *tp = Py_TYPE(callable);
+    if (!PyType_HasFeature(tp, Py_TPFLAGS_HAVE_VECTORCALL)) {
+        return NULL;
+    }
+    Py_ssize_t offset = tp->tp_vectorcall_offset;
+    if (offset <= 0) {
+        return NULL;
+    }
+    vectorcallfunc actual_slot;
+    memcpy(&actual_slot, (char *)callable + offset, sizeof(actual_slot));
+    return actual_slot;
+}
+
+/* Preserve the original function statistic and the original locals choice. */
+static PyObject *
+function_vectorcall_locals(PyFunctionObject *f, RenoOwnedResumeRecordV1 *record)
+{
+    EVAL_CALL_STAT_INC(EVAL_CALL_FUNCTION_VECTORCALL);
+    if (record != NULL) {
+        record->function_site_executed = 1;
+    }
+    if (((PyCodeObject *)f->func_code)->co_flags & CO_OPTIMIZED) {
+        if (record != NULL) {
+            record->locals_mode = RENO_OWNED_RESUME_LOCALS_NULL;
+        }
+        return NULL;
+    }
+    else {
+        if (record != NULL) {
+            record->locals_mode = RENO_OWNED_RESUME_LOCALS_GLOBALS;
+        }
+        return f->func_globals;
+    }
+}
+
+/* Internal boolean: 0 is outside this component's selected numeric domain;
+   1 writes both outputs. Compute only from the independent source code root. */
+static int
+checked_raw_allocation_size(PyCodeObject *source_code, size_t *slots_out,
+                            int *bytes_out)
+{
+    int observed_slots = source_code->co_framesize;
+    const size_t slot_bytes = sizeof(PyObject *);
+    if (observed_slots < 0 ||
+        (uintmax_t)observed_slots > (uintmax_t)SIZE_MAX ||
+        (uintmax_t)observed_slots > (uintmax_t)INT_MAX ||
+        slot_bytes == 0 || (uintmax_t)slot_bytes > (uintmax_t)INT_MAX) {
+        return 0;
+    }
+    size_t slots = (size_t)observed_slots;
+    int width = (int)slot_bytes;
+    if (observed_slots >= INT_MAX / width ||
+        observed_slots > INT_MAX - 1000) {
+        return 0;
+    }
+    int sum = observed_slots + 1000;
+    if (sum > INT_MAX / width) {
+        return 0;
+    }
+    int target = width * sum;
+    int allocate_size = 16 * 1024;
+    while (allocate_size < target) {
+        if (allocate_size > INT_MAX / 2) {
+            return 0;
+        }
+        allocate_size *= 2;
+    }
+    if ((uintmax_t)allocate_size > (uintmax_t)SIZE_MAX) {
+        return 0;
+    }
+    size_t bytes = (size_t)allocate_size;
+    const size_t header_bytes = offsetof(_PyStackChunk, data);
+    if (bytes % sizeof(PyObject **) != 0 || bytes < header_bytes ||
+        (bytes - header_bytes) % slot_bytes != 0) {
+        return 0;
+    }
+    size_t capacity = (bytes - header_bytes) / slot_bytes;
+    if ((uintmax_t)capacity > (uintmax_t)PTRDIFF_MAX ||
+        capacity <= 1 || slots >= capacity - 1) {
+        return 0;
+    }
+    *slots_out = slots;
+    *bytes_out = allocate_size;
+    return 1;
+}
+
+/* The live producer and C activation establish the record's provenance.
+   These raw checks associate it with this call; they do not authenticate it. */
+static int
+owned_resume_call_matches(
+    RenoOwnedResumeRecordV1 *record, PyThreadState *tstate, PyObject *callable,
+    PyObject *const *args, size_t nargsf, PyObject *kwnames,
+    vectorcallfunc actual_slot)
+{
+    if (callable == NULL || !PyFunction_Check(callable) ||
+        actual_slot != _PyFunction_Vectorcall ||
+        record->expected_standard != _PyFunction_Vectorcall ||
+        record->abi_major != RENO_OWNED_RESUME_ABI_MAJOR ||
+        record->abi_minor != RENO_OWNED_RESUME_ABI_MINOR ||
+        record->storage_bytes != sizeof(*record) ||
+        record->record_address != (void *)record ||
+        record->actual_tstate != tstate ||
+        record->actual_callable != callable || record->function_owned != callable ||
+        record->argv != args || record->nargsf != nargsf ||
+        record->kwnames != kwnames || record->function_site_executed != 1 ||
+        record->frame_site_executed != 1) {
+        return 0;
+    }
+    Py_ssize_t observed_positional = PyVectorcall_NARGS(nargsf);
+    if (observed_positional < 0 ||
+        (uintmax_t)observed_positional > (uintmax_t)SIZE_MAX) {
+        return 0;
+    }
+    size_t positional = (size_t)observed_positional;
+    if (record->positional != positional ||
+        record->keyword_count > SIZE_MAX - positional ||
+        record->values_owned_count != positional + record->keyword_count ||
+        (kwnames == NULL && record->keyword_count != 0)) {
+        return 0;
+    }
+    if (record->locals_mode == RENO_OWNED_RESUME_LOCALS_NULL) {
+        if (record->locals_owned != NULL) {
+            return 0;
+        }
+    }
+    else if (record->locals_mode == RENO_OWNED_RESUME_LOCALS_GLOBALS) {
+        if (record->locals_owned == NULL) {
+            return 0;
+        }
+    }
+    else {
+        return 0;
+    }
+    PyFunctionObject *func = (PyFunctionObject *)callable;
+    if (record->frame_code == NULL || func->func_code != record->frame_code) {
+        return 0;
+    }
+    size_t slots;
+    int bytes;
+    if (!checked_raw_allocation_size((PyCodeObject *)record->frame_code,
+                                     &slots, &bytes) ||
+        record->frame_slots != slots || record->raw_bytes != (size_t)bytes ||
+        record->raw_owned == NULL || record->free_debt != NULL ||
+        record->old_chunk != NULL || record->old_top != NULL ||
+        record->old_limit != NULL || record->reserved_frame != NULL ||
+        record->old_chunk_top != 0 || record->saved_old_top_valid != 0) {
+        return 0;
+    }
+    _PyStackChunk *raw = (_PyStackChunk *)record->raw_owned;
+    return raw->size == record->raw_bytes && raw->top == 0;
+}
+
+/* Terminal PRIVATE/DETACHED only, with the current request already empty.
+   Preserve two distinct debts when an indicator and D05 are both nonNULL;
+   the real consumer must choose D05 first and settle that indicator. */
+static PyObject *
+owned_resume_fail_private(PyThreadState *tstate,
+                          RenoOwnedResumeRecordV1 *record, const char *message)
+{
+    if (_PyErr_Occurred(tstate) == NULL) {
+        PyObject *pending = record->pending_owned;
+        if (pending != NULL) {
+            record->pending_owned = NULL;
+            _PyErr_SetRaisedException(tstate, pending);
+        }
+        else {
+            _PyErr_SetString(tstate, PyExc_SystemError, message);
+        }
+    }
+    return NULL;
+}
+
+PyObject *
+_PyFunction_Vectorcall(PyObject *func, PyObject* const* stack,
+                       size_t nargsf, PyObject *kwnames)
+{
+    PyThreadState *resume_tstate = _PyThreadState_GET();
+    if (resume_tstate != NULL) {
+        RenoOwnedResumeRecordV1 *record =
+            (RenoOwnedResumeRecordV1 *)resume_tstate->reno_owned_resume_request;
+        if (record != NULL) {
+            resume_tstate->reno_owned_resume_request = NULL;
+            uint32_t old_phase = record->phase;
+            record->phase = RENO_OWNED_RESUME_PHASE_TAKEN_PRIVATE;
+            if (old_phase != RENO_OWNED_RESUME_PHASE_ARMED_PRIVATE ||
+                record->pending_owned != NULL ||
+                !owned_resume_call_matches(record, resume_tstate, func, stack,
+                                            nargsf, kwnames,
+                                            _PyFunction_Vectorcall)) {
+                record->phase = RENO_OWNED_RESUME_PHASE_RETURNED_PRIVATE;
+                return owned_resume_fail_private(
+                    resume_tstate, record, "owned resume claim validation failed");
+            }
+            return _PyRenoOwnedResumeConsumeV1(
+                resume_tstate, record, (PyFunctionObject *)func, stack, nargsf,
+                kwnames);
+        }
+    }
+    assert(PyFunction_Check(func));
+    PyFunctionObject *f = (PyFunctionObject *)func;
+    Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
+    assert(nargs >= 0);
+    PyThreadState *tstate = _PyThreadState_GET();
+    assert(nargs == 0 || stack != NULL);
+    PyObject *locals = function_vectorcall_locals(f, NULL);
+    return _PyEval_Vector(tstate, f, locals, stack, nargs, kwnames);
+}
+
+/* Private producer. The caller supplies one fresh aggregate-zero typed record
+   and an independently held source code root; it retains all input lifetimes. */
+uint32_t
+RenoOwnedResumePrepareV1(
+    RenoOwnedResumeRecordV1 *record, PyObject *actual_callable,
+    PyObject *source_frame_code, PyObject *const *args, size_t nargsf,
+    PyObject *kwnames)
+{
+    if (record->phase != RENO_OWNED_RESUME_PHASE_ZERO) {
+        return RENO_OWNED_RESUME_PREPARE_ERROR;
+    }
+    record->abi_major = RENO_OWNED_RESUME_ABI_MAJOR;
+    record->abi_minor = RENO_OWNED_RESUME_ABI_MINOR;
+    record->storage_bytes = sizeof(*record);
+    record->record_address = (void *)record;
+    record->phase = RENO_OWNED_RESUME_PHASE_PREPARING;
+    record->failure_reason = RENO_OWNED_RESUME_FAILURE_NONE;
+    PyThreadState *tstate = _PyThreadState_GET();
+    record->actual_tstate = tstate;
+    record->actual_callable = actual_callable;
+    record->kwnames = kwnames;
+    record->argv = args;
+    record->nargsf = nargsf;
+    record->expected_standard = _PyFunction_Vectorcall;
+    if (tstate == NULL || actual_callable == NULL) {
+        goto protocol_error;
+    }
+    if (!PyFunction_Check(actual_callable)) {
+        goto not_selected;
+    }
+    vectorcallfunc actual_slot = owned_resume_actual_vectorcall_slot(actual_callable);
+    if (actual_slot != _PyFunction_Vectorcall) {
+        goto not_selected;
+    }
+    if (source_frame_code == NULL || !PyCode_Check(source_frame_code)) {
+        record->failure_reason = RENO_OWNED_RESUME_FAILURE_PREPARE_SOURCE;
+        record->phase = RENO_OWNED_RESUME_PHASE_PREPARE_FAILED_PRIVATE;
+        return RENO_OWNED_RESUME_PREPARE_ERROR;
+    }
+    Py_ssize_t positional = PyVectorcall_NARGS(nargsf);
+    if (positional < 0 || (uintmax_t)positional > (uintmax_t)SIZE_MAX) {
+        goto protocol_error;
+    }
+    record->positional = (size_t)positional;
+    size_t expected_slots;
+    int allocation_bytes;
+    if (!checked_raw_allocation_size((PyCodeObject *)source_frame_code,
+                                     &expected_slots, &allocation_bytes)) {
+        goto not_selected;
+    }
+    PyObject **top = tstate->datastack_top;
+    PyObject **limit = tstate->datastack_limit;
+    if ((top == NULL) != (limit == NULL)) {
+        goto protocol_error;
+    }
+    if (top != NULL) {
+        /* Same allocation and ptrdiff domain are original runtime premises. */
+        ptrdiff_t remaining = limit - top;
+        if ((int)expected_slots < remaining) {
+            goto not_selected;
+        }
+    }
+    PyFunctionObject *func = (PyFunctionObject *)actual_callable;
+    PyObject *locals = function_vectorcall_locals(func, record);
+    return _PyRenoOwnedResumePreparePrefixV1(
+        tstate, record, func, locals, source_frame_code, expected_slots,
+        allocation_bytes);
+
+protocol_error:
+    record->failure_reason = RENO_OWNED_RESUME_FAILURE_PREPARE_PROTOCOL;
+    record->phase = RENO_OWNED_RESUME_PHASE_PREPARE_FAILED_PRIVATE;
+    return RENO_OWNED_RESUME_PREPARE_ERROR;
+
+not_selected:
+    record->phase = RENO_OWNED_RESUME_PHASE_NOT_SELECTED;
+    return RENO_OWNED_RESUME_PREPARE_NOT_SELECTED;
+}
+
+/* Only a live, same-current READY record has one Invoke qualification.
+   The first guards are private misuse exits, not ordinary cleanup failures. */
+PyObject *
+RenoOwnedResumeInvokeV1(RenoOwnedResumeRecordV1 *record,
+                        uint32_t *public_attempted_out)
+{
+    *public_attempted_out = 0;
+    if (record->phase != RENO_OWNED_RESUME_PHASE_READY_PRIVATE) {
+        return NULL;
+    }
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (tstate == NULL || record->actual_tstate != tstate ||
+        tstate->reno_owned_resume_request != NULL) {
+        return NULL;
+    }
+    record->phase = RENO_OWNED_RESUME_PHASE_INVOKING_PRIVATE;
+    vectorcallfunc actual_slot =
+        owned_resume_actual_vectorcall_slot(record->actual_callable);
+    if (!owned_resume_call_matches(record, tstate, record->actual_callable,
+                                    record->argv, record->nargsf, record->kwnames,
+                                    actual_slot) ||
+        _PyErr_Occurred(tstate) != NULL) {
+        record->phase = RENO_OWNED_RESUME_PHASE_RETURNED_PRIVATE;
+        return owned_resume_fail_private(
+            tstate, record, "owned resume invoke validation failed");
+    }
+    PyObject *callable = record->actual_callable;
+    PyObject *const *args = record->argv;
+    size_t nargsf = record->nargsf;
+    PyObject *kwnames = record->kwnames;
+    PyObject *pending = record->pending_owned;
+    if (pending != NULL) {
+        record->pending_owned = NULL;
+        _PyErr_SetRaisedException(tstate, pending);
+    }
+    record->phase = RENO_OWNED_RESUME_PHASE_ARMED_PRIVATE;
+    tstate->reno_owned_resume_request = (void *)record;
+    *public_attempted_out = 1;
+    return PyObject_Vectorcall(callable, args, nargsf, kwnames);
+}
+
+/* Internal 0 ordinary / 1 associated / -1 terminated.  An installed record
+   comes only from the enclosing live Invoke activation, never from a token. */
+int
+_PyRenoOwnedResumeDispatchBeginV1(
+    PyThreadState *tstate, PyObject *callable, PyObject *const *args,
+    size_t nargsf, PyObject *kwnames, RenoOwnedResumeRecordV1 **record_out,
+    vectorcallfunc *slot_out)
+{
+    *record_out = NULL;
+    *slot_out = NULL;
+    RenoOwnedResumeRecordV1 *record =
+        (RenoOwnedResumeRecordV1 *)tstate->reno_owned_resume_request;
+    if (record == NULL) {
+        return 0;
+    }
+    *record_out = record;
+    if (record->phase != RENO_OWNED_RESUME_PHASE_ARMED_PRIVATE ||
+        record->actual_tstate != tstate || record->actual_callable != callable ||
+        record->argv != args || record->nargsf != nargsf ||
+        record->kwnames != kwnames || record->pending_owned != NULL) {
+        goto reject;
+    }
+    vectorcallfunc actual_slot = owned_resume_actual_vectorcall_slot(callable);
+    if (!owned_resume_call_matches(record, tstate, callable, args, nargsf,
+                                    kwnames, actual_slot)) {
+        goto reject;
+    }
+    *slot_out = actual_slot;
+    return 1;
+
+reject:
+    if (tstate->reno_owned_resume_request == (void *)record) {
+        tstate->reno_owned_resume_request = NULL;
+    }
+    record->phase = RENO_OWNED_RESUME_PHASE_RETURNED_PRIVATE;
+    (void)owned_resume_fail_private(
+        tstate, record, "owned resume dispatch association failed");
+    return -1;
+}
+
+/* The P22 local borrow stays live through this gate and the original result
+   check.  COMMITTED must not inspect any former resource or rollback field. */
+void
+_PyRenoOwnedResumeDispatchEndV1(PyThreadState *tstate,
+                                RenoOwnedResumeRecordV1 *record)
+{
+    uint32_t phase = record->phase;
+    if (phase == RENO_OWNED_RESUME_PHASE_COMMITTED) {
+        return;
+    }
+    if (phase == RENO_OWNED_RESUME_PHASE_ATTACHED_UNMOVED) {
+        _PyRenoOwnedResumeAbortRawV1(record);
+        phase = record->phase;
+    }
+    if (phase != RENO_OWNED_RESUME_PHASE_ARMED_PRIVATE &&
+        phase != RENO_OWNED_RESUME_PHASE_TAKEN_PRIVATE &&
+        phase != RENO_OWNED_RESUME_PHASE_RETURNED_PRIVATE &&
+        phase != RENO_OWNED_RESUME_PHASE_DETACHED_OWNED) {
+        return;
+    }
+    if (tstate->reno_owned_resume_request == (void *)record) {
+        tstate->reno_owned_resume_request = NULL;
+    }
+    if (phase == RENO_OWNED_RESUME_PHASE_ARMED_PRIVATE ||
+        phase == RENO_OWNED_RESUME_PHASE_TAKEN_PRIVATE) {
+        record->phase = RENO_OWNED_RESUME_PHASE_RETURNED_PRIVATE;
+    }
+    (void)owned_resume_fail_private(
+        tstate, record, "owned resume dispatch returned without commit");
+}
+
+/* DRAFT: insert after the unchanged V1 DispatchEnd body in Objects/call.c.
+ * These native operations do not publish a TState request, impersonate a
+ * public Vectorcall borrower or transfer a V1 record to a new protocol.
+ */
+static PyObject *
+native_owned_fail_v2(PyThreadState *tstate, RenoNativeOwnedCallV2 *call,
+    const char *message)
+{
+    if (_PyErr_Occurred(tstate) == NULL) {
+        PyObject *pending = call->pending_owned;
+        if (pending != NULL) {
+            call->pending_owned = NULL;
+            _PyErr_SetRaisedException(tstate, pending);
+        }
+        else {
+            _PyErr_SetString(tstate, PyExc_SystemError, message);
+        }
+    }
+    return NULL;
+}
+
+/* Match the original PushFrame numeric bound without imposing the new-chunk
+ * size+1000/doubling domain on a lawful existing-stack reservation.
+ */
+static int
+native_owned_frame_slots_v2(PyCodeObject *code, size_t *slots_out)
+{
+    int observed = code->co_framesize;
+    const size_t width = sizeof(PyObject *);
+    if (observed < 0 || (uintmax_t)observed > (uintmax_t)SIZE_MAX
+            || (uintmax_t)width > (uintmax_t)INT_MAX
+            || (uintmax_t)observed >= (uintmax_t)INT_MAX / (uintmax_t)width) {
+        return 0;
+    }
+    *slots_out = (size_t)observed;
+    return 1;
+}
+
+uint32_t
+RenoNativeOwnedPrepareV2(RenoNativeOwnedCallV2 *call,
+    RenoNativeOwnedInputsV2 *inputs, PyObject *source_frame_code)
+{
+    if (call->phase != RENO_NATIVE_OWNED_ZERO_V2) {
+        return RENO_NATIVE_OWNED_PREPARE_ERROR_V2;
+    }
+    call->abi_major = RENO_NATIVE_OWNED_ABI_MAJOR_V2;
+    call->abi_minor = RENO_NATIVE_OWNED_ABI_MINOR_V2;
+    call->storage_bytes = sizeof(*call);
+    call->record_address = (void *)call;
+    call->phase = RENO_NATIVE_OWNED_PREPARING_V2;
+    PyThreadState *tstate = _PyThreadState_GET();
+    call->actual_tstate = tstate;
+    if (tstate == NULL || inputs == NULL || inputs->callee == NULL
+            || inputs->self == NULL || inputs->first_name == NULL
+            || inputs->callee_moved != 1 || inputs->self_moved != 1
+            || inputs->first_name_moved != 1) {
+        goto protocol_error;
+    }
+    if (!PyFunction_Check(inputs->callee)
+            || owned_resume_actual_vectorcall_slot(inputs->callee)
+                != _PyFunction_Vectorcall) {
+        goto not_selected;
+    }
+    if (source_frame_code == NULL || !PyCode_Check(source_frame_code)) {
+        goto source_error;
+    }
+    size_t slots;
+    int allocation_bytes = 0;
+    uint32_t reservation_kind;
+    if (!native_owned_frame_slots_v2((PyCodeObject *)source_frame_code, &slots)) {
+        goto not_selected;
+    }
+    PyObject **top = tstate->datastack_top;
+    PyObject **limit = tstate->datastack_limit;
+    if ((top == NULL) != (limit == NULL)) { goto protocol_error; }
+    /* pycore_frame.h is already included in this TU. Use its actual strict
+     * size < limit-top helper under the original lawful pointer premises.
+     */
+    if (_PyThreadState_HasStackSpace(tstate, (int)slots)) {
+        reservation_kind = RENO_NATIVE_OWNED_RESERVATION_CURRENT_STACK_V2;
+    }
+    else {
+        size_t raw_slots;
+        if (!checked_raw_allocation_size((PyCodeObject *)source_frame_code,
+                &raw_slots, &allocation_bytes) || raw_slots != slots) {
+            goto not_selected;
+        }
+        reservation_kind = RENO_NATIVE_OWNED_RESERVATION_PRIVATE_CHUNK_V2;
+    }
+    PyFunctionObject *func = (PyFunctionObject *)inputs->callee;
+    /* The unchanged leaf really performs the function statistic/locals read.
+     * NULL record writes no V1 fields. No EVAL_CALL_API is added.
+     */
+    PyObject *locals = function_vectorcall_locals(func, NULL);
+    call->function_site_executed = 1;
+    call->locals_mode = locals == NULL
+        ? RENO_OWNED_RESUME_LOCALS_NULL : RENO_OWNED_RESUME_LOCALS_GLOBALS;
+    return _PyRenoNativeOwnedPreparePrefixV2(tstate, call, inputs, func,
+        locals, source_frame_code, slots, allocation_bytes, reservation_kind);
+
+source_error:
+    call->phase = RENO_NATIVE_OWNED_FAILED_V2;
+    (void)native_owned_fail_v2(tstate, call, "native owned source code unavailable");
+    return RENO_NATIVE_OWNED_PREPARE_ERROR_V2;
+protocol_error:
+    call->phase = RENO_NATIVE_OWNED_FAILED_V2;
+    if (tstate != NULL) {
+        (void)native_owned_fail_v2(tstate, call, "native owned prepare protocol failed");
+    }
+    return RENO_NATIVE_OWNED_PREPARE_ERROR_V2;
+not_selected:
+    call->phase = RENO_NATIVE_OWNED_NOT_SELECTED_V2;
+    return RENO_NATIVE_OWNED_PREPARE_NOT_SELECTED_V2;
+}
+
+static int
+native_owned_ready_matches_v2(PyThreadState *tstate,
+    const RenoNativeOwnedCallV2 *call)
+{
+    if (call->abi_major != RENO_NATIVE_OWNED_ABI_MAJOR_V2
+            || call->abi_minor != RENO_NATIVE_OWNED_ABI_MINOR_V2
+            || call->storage_bytes != sizeof(*call)
+            || call->record_address != (const void *)call
+            || call->actual_tstate != tstate || call->inputs_taken_mask != 7
+            || call->argument_owned_mask != 3 || call->function_owned == NULL
+            || call->check_callable_owned != call->function_owned
+            || call->arguments_owned[0] == NULL || call->arguments_owned[1] == NULL
+            || call->function_site_executed != 1 || call->frame_site_executed != 1
+            || call->frame_handoff_started != 0 || call->frame_code == NULL
+            || owned_resume_actual_vectorcall_slot(call->function_owned)
+                != _PyFunction_Vectorcall) {
+        return 0;
+    }
+    if (call->locals_mode == RENO_OWNED_RESUME_LOCALS_NULL) {
+        if (call->locals_owned != NULL) { return 0; }
+    }
+    else if (call->locals_mode == RENO_OWNED_RESUME_LOCALS_GLOBALS) {
+        if (call->locals_owned == NULL) { return 0; }
+    }
+    else { return 0; }
+    PyFunctionObject *func = (PyFunctionObject *)call->function_owned;
+    if (func->func_code != call->frame_code) { return 0; }
+    size_t slots;
+    if (!native_owned_frame_slots_v2((PyCodeObject *)call->frame_code, &slots)
+            || call->frame_slots != slots || call->free_debt != NULL
+            || call->old_chunk != NULL || call->old_top != NULL
+            || call->old_limit != NULL || call->reserved_frame != NULL
+            || call->old_chunk_top != 0 || call->saved_old_top_valid != 0) {
+        return 0;
+    }
+    if (call->reservation_kind == RENO_NATIVE_OWNED_RESERVATION_CURRENT_STACK_V2) {
+        return call->raw_owned == NULL && call->raw_bytes == 0
+            && call->pending_owned == NULL;
+    }
+    if (call->reservation_kind != RENO_NATIVE_OWNED_RESERVATION_PRIVATE_CHUNK_V2) {
+        return 0;
+    }
+    int bytes;
+    size_t raw_slots;
+    if (!checked_raw_allocation_size((PyCodeObject *)call->frame_code,
+            &raw_slots, &bytes) || raw_slots != slots
+            || call->raw_bytes != (size_t)bytes || call->raw_owned == NULL) {
+        return 0;
+    }
+    _PyStackChunk *raw = (_PyStackChunk *)call->raw_owned;
+    return raw->size == call->raw_bytes && raw->top == 0;
+}
+
+PyObject *
+RenoNativeOwnedInvokeV2(RenoNativeOwnedCallV2 *call,
+    uint32_t *native_attempted_out)
+{
+    *native_attempted_out = 0;
+    if (call->phase != RENO_NATIVE_OWNED_READY_V2) { return NULL; }
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (tstate == NULL || call->actual_tstate != tstate) { return NULL; }
+    if (!native_owned_ready_matches_v2(tstate, call)
+            || _PyErr_Occurred(tstate) != NULL) {
+        call->phase = RENO_NATIVE_OWNED_RETURNED_V2;
+        return native_owned_fail_v2(tstate, call, "native owned invoke association failed");
+    }
+    if (call->reservation_kind == RENO_NATIVE_OWNED_RESERVATION_CURRENT_STACK_V2) {
+        if ((tstate->datastack_top == NULL) != (tstate->datastack_limit == NULL)) {
+            call->phase = RENO_NATIVE_OWNED_RETURNED_V2;
+            return native_owned_fail_v2(tstate, call,
+                "native owned current stack association failed");
+        }
+        if (!_PyThreadState_HasStackSpace(tstate, (int)call->frame_slots)) {
+            /* No effects or error: retain the same live prepared continuation.
+             * A late allocating fallback would require a new source station.
+             */
+            return NULL;
+        }
+    }
+    call->phase = RENO_NATIVE_OWNED_INVOKING_V2;
+    PyObject *pending = call->pending_owned;
+    call->pending_owned = NULL;
+    if (pending != NULL) { _PyErr_SetRaisedException(tstate, pending); }
+    call->phase = RENO_NATIVE_OWNED_TAKEN_V2;
+    *native_attempted_out = 1;
+    PyObject *result = _PyRenoNativeOwnedConsumeV2(tstate, call);
+    /* The actual independent check guard remains held through result DECREF,
+     * repr/cause formatting, debug checks and their possible callbacks.
+     * No former argument, packet or argv object is read after consumption.
+     */
+    return _Py_CheckFunctionResult(tstate, call->check_callable_owned, result, NULL);
+}
+
+/* --- More complex call functions -------------------------------- */
+
+/* External interface to call any callable object.
+   The args must be a tuple or NULL.  The kwargs must be a dict or NULL. */
+PyObject *
+PyEval_CallObjectWithKeywords(PyObject *callable,
+                              PyObject *args, PyObject *kwargs)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+#ifdef Py_DEBUG
+    /* PyEval_CallObjectWithKeywords() must not be called with an exception
+       set. It raises a new exception if parameters are invalid or if
+       PyTuple_New() fails, and so the original exception is lost. */
+    assert(!_PyErr_Occurred(tstate));
+#endif
+
+    if (args != NULL && !PyTuple_Check(args)) {
+        _PyErr_SetString(tstate, PyExc_TypeError,
+                         "argument list must be a tuple");
+        return NULL;
+    }
+
+    if (kwargs != NULL && !PyDict_Check(kwargs)) {
+        _PyErr_SetString(tstate, PyExc_TypeError,
+                         "keyword list must be a dictionary");
+        return NULL;
+    }
+
+    if (args == NULL) {
+        return _PyObject_FastCallDictTstate(tstate, callable, NULL, 0, kwargs);
+    }
+    else {
+        return _PyObject_Call(tstate, callable, args, kwargs);
+    }
+}
+
+
+PyObject *
+PyObject_CallObject(PyObject *callable, PyObject *args)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    assert(!_PyErr_Occurred(tstate));
+    if (args == NULL) {
+        return _PyObject_CallNoArgsTstate(tstate, callable);
+    }
+    if (!PyTuple_Check(args)) {
+        _PyErr_SetString(tstate, PyExc_TypeError,
+                         "argument list must be a tuple");
+        return NULL;
+    }
+    return _PyObject_Call(tstate, callable, args, NULL);
+}
+
+
+/* Call callable(obj, *args, **kwargs). */
+PyObject *
+_PyObject_Call_Prepend(PyThreadState *tstate, PyObject *callable,
+                       PyObject *obj, PyObject *args, PyObject *kwargs)
+{
+    assert(PyTuple_Check(args));
+
+    PyObject *small_stack[_PY_FASTCALL_SMALL_STACK];
+    PyObject **stack;
+
+    Py_ssize_t argcount = PyTuple_GET_SIZE(args);
+    if (argcount + 1 <= (Py_ssize_t)Py_ARRAY_LENGTH(small_stack)) {
+        stack = small_stack;
+    }
+    else {
+        stack = PyMem_Malloc((argcount + 1) * sizeof(PyObject *));
+        if (stack == NULL) {
+            PyErr_NoMemory();
+            return NULL;
+        }
+    }
+
+    /* use borrowed references */
+    stack[0] = obj;
+    memcpy(&stack[1],
+           _PyTuple_ITEMS(args),
+           argcount * sizeof(PyObject *));
+
+    PyObject *result = _PyObject_FastCallDictTstate(tstate, callable,
+                                                    stack, argcount + 1,
+                                                    kwargs);
+    if (stack != small_stack) {
+        PyMem_Free(stack);
+    }
+    return result;
+}
+
+
+/* --- Call with a format string ---------------------------------- */
+
+static PyObject *
+_PyObject_CallFunctionVa(PyThreadState *tstate, PyObject *callable,
+                         const char *format, va_list va, int is_size_t)
+{
+    PyObject* small_stack[_PY_FASTCALL_SMALL_STACK];
+    const Py_ssize_t small_stack_len = Py_ARRAY_LENGTH(small_stack);
+    PyObject **stack;
+    Py_ssize_t nargs, i;
+    PyObject *result;
+
+    if (callable == NULL) {
+        return null_error(tstate);
+    }
+
+    if (!format || !*format) {
+        return _PyObject_CallNoArgsTstate(tstate, callable);
+    }
+
+    if (is_size_t) {
+        stack = _Py_VaBuildStack_SizeT(small_stack, small_stack_len,
+                                       format, va, &nargs);
+    }
+    else {
+        stack = _Py_VaBuildStack(small_stack, small_stack_len,
+                                 format, va, &nargs);
+    }
+    if (stack == NULL) {
+        return NULL;
+    }
+    EVAL_CALL_STAT_INC_IF_FUNCTION(EVAL_CALL_API, callable);
+    if (nargs == 1 && PyTuple_Check(stack[0])) {
+        /* Special cases for backward compatibility:
+           - PyObject_CallFunction(func, "O", tuple) calls func(*tuple)
+           - PyObject_CallFunction(func, "(OOO)", arg1, arg2, arg3) calls
+             func(*(arg1, arg2, arg3)): func(arg1, arg2, arg3) */
+        PyObject *args = stack[0];
+        result = _PyObject_VectorcallTstate(tstate, callable,
+                                            _PyTuple_ITEMS(args),
+                                            PyTuple_GET_SIZE(args),
+                                            NULL);
+    }
+    else {
+        result = _PyObject_VectorcallTstate(tstate, callable,
+                                            stack, nargs, NULL);
+    }
+
+    for (i = 0; i < nargs; ++i) {
+        Py_DECREF(stack[i]);
+    }
+    if (stack != small_stack) {
+        PyMem_Free(stack);
+    }
+    return result;
+}
+
+
+PyObject *
+PyObject_CallFunction(PyObject *callable, const char *format, ...)
+{
+    va_list va;
+    PyObject *result;
+    PyThreadState *tstate = _PyThreadState_GET();
+
+    va_start(va, format);
+    result = _PyObject_CallFunctionVa(tstate, callable, format, va, 0);
+    va_end(va);
+
+    return result;
+}
+
+
+/* PyEval_CallFunction is exact copy of PyObject_CallFunction.
+ * This function is kept for backward compatibility.
+ */
+PyObject *
+PyEval_CallFunction(PyObject *callable, const char *format, ...)
+{
+    va_list va;
+    PyObject *result;
+    PyThreadState *tstate = _PyThreadState_GET();
+
+    va_start(va, format);
+    result = _PyObject_CallFunctionVa(tstate, callable, format, va, 0);
+    va_end(va);
+
+    return result;
+}
+
+
+PyObject *
+_PyObject_CallFunction_SizeT(PyObject *callable, const char *format, ...)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+
+    va_list va;
+    va_start(va, format);
+    PyObject *result = _PyObject_CallFunctionVa(tstate, callable, format, va, 1);
+    va_end(va);
+
+    return result;
+}
+
+
+static PyObject*
+callmethod(PyThreadState *tstate, PyObject* callable, const char *format, va_list va, int is_size_t)
+{
+    assert(callable != NULL);
+    if (!PyCallable_Check(callable)) {
+        _PyErr_Format(tstate, PyExc_TypeError,
+                      "attribute of type '%.200s' is not callable",
+                      Py_TYPE(callable)->tp_name);
+        return NULL;
+    }
+
+    return _PyObject_CallFunctionVa(tstate, callable, format, va, is_size_t);
+}
+
+PyObject *
+PyObject_CallMethod(PyObject *obj, const char *name, const char *format, ...)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+
+    if (obj == NULL || name == NULL) {
+        return null_error(tstate);
+    }
+
+    PyObject *callable = PyObject_GetAttrString(obj, name);
+    if (callable == NULL) {
+        return NULL;
+    }
+
+    va_list va;
+    va_start(va, format);
+    PyObject *retval = callmethod(tstate, callable, format, va, 0);
+    va_end(va);
+
+    Py_DECREF(callable);
+    return retval;
+}
+
+
+/* PyEval_CallMethod is exact copy of PyObject_CallMethod.
+ * This function is kept for backward compatibility.
+ */
+PyObject *
+PyEval_CallMethod(PyObject *obj, const char *name, const char *format, ...)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (obj == NULL || name == NULL) {
+        return null_error(tstate);
+    }
+
+    PyObject *callable = PyObject_GetAttrString(obj, name);
+    if (callable == NULL) {
+        return NULL;
+    }
+
+    va_list va;
+    va_start(va, format);
+    PyObject *retval = callmethod(tstate, callable, format, va, 0);
+    va_end(va);
+
+    Py_DECREF(callable);
+    return retval;
+}
+
+
+PyObject *
+_PyObject_CallMethod(PyObject *obj, PyObject *name,
+                     const char *format, ...)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (obj == NULL || name == NULL) {
+        return null_error(tstate);
+    }
+
+    PyObject *callable = PyObject_GetAttr(obj, name);
+    if (callable == NULL) {
+        return NULL;
+    }
+
+    va_list va;
+    va_start(va, format);
+    PyObject *retval = callmethod(tstate, callable, format, va, 1);
+    va_end(va);
+
+    Py_DECREF(callable);
+    return retval;
+}
+
+
+PyObject *
+_PyObject_CallMethodId(PyObject *obj, _Py_Identifier *name,
+                       const char *format, ...)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (obj == NULL || name == NULL) {
+        return null_error(tstate);
+    }
+
+    PyObject *callable = _PyObject_GetAttrId(obj, name);
+    if (callable == NULL) {
+        return NULL;
+    }
+
+    va_list va;
+    va_start(va, format);
+    PyObject *retval = callmethod(tstate, callable, format, va, 0);
+    va_end(va);
+
+    Py_DECREF(callable);
+    return retval;
+}
+
+
+PyObject * _PyObject_CallMethodFormat(PyThreadState *tstate, PyObject *callable,
+                                      const char *format, ...)
+{
+    va_list va;
+    va_start(va, format);
+    PyObject *retval = callmethod(tstate, callable, format, va, 0);
+    va_end(va);
+    return retval;
+}
+
+
+PyObject *
+_PyObject_CallMethod_SizeT(PyObject *obj, const char *name,
+                           const char *format, ...)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (obj == NULL || name == NULL) {
+        return null_error(tstate);
+    }
+
+    PyObject *callable = PyObject_GetAttrString(obj, name);
+    if (callable == NULL) {
+        return NULL;
+    }
+
+    va_list va;
+    va_start(va, format);
+    PyObject *retval = callmethod(tstate, callable, format, va, 1);
+    va_end(va);
+
+    Py_DECREF(callable);
+    return retval;
+}
+
+
+PyObject *
+_PyObject_CallMethodId_SizeT(PyObject *obj, _Py_Identifier *name,
+                             const char *format, ...)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (obj == NULL || name == NULL) {
+        return null_error(tstate);
+    }
+
+    PyObject *callable = _PyObject_GetAttrId(obj, name);
+    if (callable == NULL) {
+        return NULL;
+    }
+
+    va_list va;
+    va_start(va, format);
+    PyObject *retval = callmethod(tstate, callable, format, va, 1);
+    va_end(va);
+
+    Py_DECREF(callable);
+    return retval;
+}
+
+
+/* --- Call with "..." arguments ---------------------------------- */
+
+static PyObject *
+object_vacall(PyThreadState *tstate, PyObject *base,
+              PyObject *callable, va_list vargs)
+{
+    PyObject *small_stack[_PY_FASTCALL_SMALL_STACK];
+    PyObject **stack;
+    Py_ssize_t nargs;
+    PyObject *result;
+    Py_ssize_t i;
+    va_list countva;
+
+    if (callable == NULL) {
+        return null_error(tstate);
+    }
+
+    /* Count the number of arguments */
+    va_copy(countva, vargs);
+    nargs = base ? 1 : 0;
+    while (1) {
+        PyObject *arg = va_arg(countva, PyObject *);
+        if (arg == NULL) {
+            break;
+        }
+        nargs++;
+    }
+    va_end(countva);
+
+    /* Copy arguments */
+    if (nargs <= (Py_ssize_t)Py_ARRAY_LENGTH(small_stack)) {
+        stack = small_stack;
+    }
+    else {
+        stack = PyMem_Malloc(nargs * sizeof(stack[0]));
+        if (stack == NULL) {
+            PyErr_NoMemory();
+            return NULL;
+        }
+    }
+
+    i = 0;
+    if (base) {
+        stack[i++] = base;
+    }
+
+    for (; i < nargs; ++i) {
+        stack[i] = va_arg(vargs, PyObject *);
+    }
+
+#ifdef Py_STATS
+    if (PyFunction_Check(callable)) {
+        EVAL_CALL_STAT_INC(EVAL_CALL_API);
+    }
+#endif
+    /* Call the function */
+    result = _PyObject_VectorcallTstate(tstate, callable, stack, nargs, NULL);
+
+    if (stack != small_stack) {
+        PyMem_Free(stack);
+    }
+    return result;
+}
+
+
+PyObject *
+PyObject_VectorcallMethod(PyObject *name, PyObject *const *args,
+                           size_t nargsf, PyObject *kwnames)
+{
+    assert(name != NULL);
+    assert(args != NULL);
+    assert(PyVectorcall_NARGS(nargsf) >= 1);
+
+    PyThreadState *tstate = _PyThreadState_GET();
+    PyObject *callable = NULL;
+    /* Use args[0] as "self" argument */
+    int unbound = _PyObject_GetMethod(args[0], name, &callable);
+    if (callable == NULL) {
+        return NULL;
+    }
+
+    if (unbound) {
+        /* We must remove PY_VECTORCALL_ARGUMENTS_OFFSET since
+         * that would be interpreted as allowing to change args[-1] */
+        nargsf &= ~PY_VECTORCALL_ARGUMENTS_OFFSET;
+    }
+    else {
+        /* Skip "self". We can keep PY_VECTORCALL_ARGUMENTS_OFFSET since
+         * args[-1] in the onward call is args[0] here. */
+        args++;
+        nargsf--;
+    }
+    EVAL_CALL_STAT_INC_IF_FUNCTION(EVAL_CALL_METHOD, callable);
+    PyObject *result = _PyObject_VectorcallTstate(tstate, callable,
+                                                  args, nargsf, kwnames);
+    Py_DECREF(callable);
+    return result;
+}
+
+
+PyObject *
+PyObject_CallMethodObjArgs(PyObject *obj, PyObject *name, ...)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (obj == NULL || name == NULL) {
+        return null_error(tstate);
+    }
+
+    PyObject *callable = NULL;
+    int is_method = _PyObject_GetMethod(obj, name, &callable);
+    if (callable == NULL) {
+        return NULL;
+    }
+    obj = is_method ? obj : NULL;
+
+    va_list vargs;
+    va_start(vargs, name);
+    PyObject *result = object_vacall(tstate, obj, callable, vargs);
+    va_end(vargs);
+
+    Py_DECREF(callable);
+    return result;
+}
+
+
+PyObject *
+_PyObject_CallMethodIdObjArgs(PyObject *obj, _Py_Identifier *name, ...)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (obj == NULL || name == NULL) {
+        return null_error(tstate);
+    }
+
+    PyObject *oname = _PyUnicode_FromId(name); /* borrowed */
+    if (!oname) {
+        return NULL;
+    }
+
+    PyObject *callable = NULL;
+    int is_method = _PyObject_GetMethod(obj, oname, &callable);
+    if (callable == NULL) {
+        return NULL;
+    }
+    obj = is_method ? obj : NULL;
+
+    va_list vargs;
+    va_start(vargs, name);
+    PyObject *result = object_vacall(tstate, obj, callable, vargs);
+    va_end(vargs);
+
+    Py_DECREF(callable);
+    return result;
+}
+
+
+PyObject *
+PyObject_CallFunctionObjArgs(PyObject *callable, ...)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    va_list vargs;
+    PyObject *result;
+
+    va_start(vargs, callable);
+    result = object_vacall(tstate, NULL, callable, vargs);
+    va_end(vargs);
+
+    return result;
+}
+
+
+/* --- PyStack functions ------------------------------------------ */
+
+PyObject *
+_PyStack_AsDict(PyObject *const *values, PyObject *kwnames)
+{
+    Py_ssize_t nkwargs;
+
+    assert(kwnames != NULL);
+    nkwargs = PyTuple_GET_SIZE(kwnames);
+    return _PyDict_FromItems(&PyTuple_GET_ITEM(kwnames, 0), 1,
+                             values, 1, nkwargs);
+}
+
+
+/* Convert (args, nargs, kwargs: dict) into a (stack, nargs, kwnames: tuple).
+
+   Allocate a new argument vector and keyword names tuple. Return the argument
+   vector; return NULL with exception set on error. Return the keyword names
+   tuple in *p_kwnames.
+
+   This also checks that all keyword names are strings. If not, a TypeError is
+   raised.
+
+   The newly allocated argument vector supports PY_VECTORCALL_ARGUMENTS_OFFSET.
+
+   When done, you must call _PyStack_UnpackDict_Free(stack, nargs, kwnames) */
+PyObject *const *
+_PyStack_UnpackDict(PyThreadState *tstate,
+                    PyObject *const *args, Py_ssize_t nargs,
+                    PyObject *kwargs, PyObject **p_kwnames)
+{
+    assert(nargs >= 0);
+    assert(kwargs != NULL);
+    assert(PyDict_Check(kwargs));
+
+    Py_ssize_t nkwargs = PyDict_GET_SIZE(kwargs);
+    /* Check for overflow in the PyMem_Malloc() call below. The subtraction
+     * in this check cannot overflow: both maxnargs and nkwargs are
+     * non-negative signed integers, so their difference fits in the type. */
+    Py_ssize_t maxnargs = PY_SSIZE_T_MAX / sizeof(args[0]) - 1;
+    if (nargs > maxnargs - nkwargs) {
+        _PyErr_NoMemory(tstate);
+        return NULL;
+    }
+
+    /* Add 1 to support PY_VECTORCALL_ARGUMENTS_OFFSET */
+    PyObject **stack = PyMem_Malloc((1 + nargs + nkwargs) * sizeof(args[0]));
+    if (stack == NULL) {
+        _PyErr_NoMemory(tstate);
+        return NULL;
+    }
+
+    PyObject *kwnames = PyTuple_New(nkwargs);
+    if (kwnames == NULL) {
+        PyMem_Free(stack);
+        return NULL;
+    }
+
+    stack++;  /* For PY_VECTORCALL_ARGUMENTS_OFFSET */
+
+    /* Copy positional arguments */
+    for (Py_ssize_t i = 0; i < nargs; i++) {
+        stack[i] = Py_NewRef(args[i]);
+    }
+
+    PyObject **kwstack = stack + nargs;
+    /* This loop doesn't support lookup function mutating the dictionary
+       to change its size. It's a deliberate choice for speed, this function is
+       called in the performance critical hot code. */
+    Py_ssize_t pos = 0, i = 0;
+    PyObject *key, *value;
+    unsigned long keys_are_strings = Py_TPFLAGS_UNICODE_SUBCLASS;
+    while (PyDict_Next(kwargs, &pos, &key, &value)) {
+        keys_are_strings &= Py_TYPE(key)->tp_flags;
+        PyTuple_SET_ITEM(kwnames, i, Py_NewRef(key));
+        kwstack[i] = Py_NewRef(value);
+        i++;
+    }
+
+    /* keys_are_strings has the value Py_TPFLAGS_UNICODE_SUBCLASS if that
+     * flag is set for all keys. Otherwise, keys_are_strings equals 0.
+     * We do this check once at the end instead of inside the loop above
+     * because it simplifies the deallocation in the failing case.
+     * It happens to also make the loop above slightly more efficient. */
+    if (!keys_are_strings) {
+        _PyErr_SetString(tstate, PyExc_TypeError,
+                         "keywords must be strings");
+        _PyStack_UnpackDict_Free(stack, nargs, kwnames);
+        return NULL;
+    }
+
+    *p_kwnames = kwnames;
+    return stack;
+}
+
+void
+_PyStack_UnpackDict_Free(PyObject *const *stack, Py_ssize_t nargs,
+                         PyObject *kwnames)
+{
+    Py_ssize_t n = PyTuple_GET_SIZE(kwnames) + nargs;
+    for (Py_ssize_t i = 0; i < n; i++) {
+        Py_DECREF(stack[i]);
+    }
+    _PyStack_UnpackDict_FreeNoDecRef(stack, kwnames);
+}
+
+void
+_PyStack_UnpackDict_FreeNoDecRef(PyObject *const *stack, PyObject *kwnames)
+{
+    PyMem_Free((PyObject **)stack - 1);
+    Py_DECREF(kwnames);
+}
+
+// Export for the stable ABI
+#undef PyVectorcall_NARGS
+Py_ssize_t
+PyVectorcall_NARGS(size_t n)
+{
+    return _PyVectorcall_NARGS(n);
+}

@@ -2,9 +2,19 @@
 {% block content %}
 <h1>争议复核</h1>
 <p class="muted">规则与LLM只产生候选;最终决策永远由你做出,且不会被AI覆盖。</p>
+{% if cloud %}
+<p>请在家庭节点更新争议，再同步完整知识。本节点暂不能执行重新判定。</p>
+{% else %}
+<button id="rejudge" type="button">重新判定（调用模型）</button>
+<p id="rejudge-state" role="status">仅在点击后调用模型；完成后请刷新查看新判定。</p>
+{% endif %}
 {% for c in conflicts %}
-<div class="conflict-card" id="cf-{{c.conflict_id}}">
+<div class="conflict-card" id="cf-{{c.conflict_id}}" data-conflict-id="{{c.conflict_id}}" data-fingerprint="{{c.target_fingerprint or ''}}">
   <div class="cf-head">{{c.conflict_id}} · {{c.ctype}} · <span class="badge">{{c.status}}</span></div>
+  <p>{{ {'active':'判定依据未变化','stale':'历史判定：依据已变化','missing':'历史判定：成员已缺失','unknown':'历史判定：生成依据无法确认'}[c.derivation.state] }}</p>
+  {% if c.derivation.state != 'active' %}
+  <p>旧分析保留供核对，建议更新争议。下方操作仅记录个人意见，不会更新判定依据。</p>
+  {% endif %}
   <div class="cf-sides">
     <div class="cf-side">
       <div class="cf-claim">{{ c.side_a.claim }}</div>
@@ -22,22 +32,58 @@
     · 理由:{{ c.analysis.judge_note }}
   </div>
   <div class="cf-actions">
-    <button onclick="decide('{{c.conflict_id}}','accept_a')">采纳A</button>
-    <button onclick="decide('{{c.conflict_id}}','accept_b')">采纳B</button>
-    <button onclick="decide('{{c.conflict_id}}','both')">两者各适用</button>
-    <button onclick="decide('{{c.conflict_id}}','reject')">都不采</button>
+    <button data-decision="accept_a">采纳A</button>
+    <button data-decision="accept_b">采纳B</button>
+    <button data-decision="both">两者各适用</button>
+    <button data-decision="reject">都不采</button>
     <input class="note" id="note-{{c.conflict_id}}" placeholder="备注(可选)">
+    <span class="decision-state" role="status"></span>
   </div>
 </div>
 {% else %}
 <p>暂无冲突。先 `reno judge` 生成聚类与冲突。</p>
 {% endfor %}
 <script>
-async function decide(cid, action){
-  const note=document.getElementById('note-'+cid).value;
-  await fetch('/api/decision',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({conflict_id:cid,action,note})});
-  document.getElementById('cf-'+cid).classList.add('decided');
+const pendingDecisions=new Map();
+function headers(){
+  const value={'Content-Type':'application/json'};
+  const token=localStorage.getItem('reno-auth-token');
+  if(token)value['X-Reno-Token']=token;
+  return value;
 }
+document.querySelectorAll('[data-decision]').forEach(button=>button.addEventListener('click',async()=>{
+  const card=button.closest('[data-conflict-id]'), cid=card.dataset.conflictId;
+  const status=card.querySelector('.decision-state');
+  const payload=pendingDecisions.get(cid)||{conflict_id:cid,action:button.dataset.decision,
+    note:card.querySelector('.note').value,event_id:crypto.randomUUID(),target_fingerprint:card.dataset.fingerprint};
+  pendingDecisions.set(cid,payload);
+  const buttons=card.querySelectorAll('[data-decision]');
+  buttons.forEach(item=>item.disabled=true);
+  try{
+    const response=await fetch('/api/decision',{method:'POST',headers:headers(),body:JSON.stringify(payload)});
+    if(!response.ok){
+      if(response.status<500){pendingDecisions.delete(cid);status.textContent='保存未完成，请刷新核对当前内容后重试。';}
+      else status.textContent='结果尚未确认，再次点击将重试原操作。';
+      return;
+    }
+    pendingDecisions.delete(cid);card.classList.add('decided');status.textContent='个人意见已保存。';
+  }catch{status.textContent='结果尚未确认，再次点击将重试原操作。';}
+  finally{buttons.forEach(item=>item.disabled=false);}
+}));
+const rejudge=document.getElementById('rejudge');
+let rejudgeId=null;
+rejudge?.addEventListener('click',async()=>{
+  const status=document.getElementById('rejudge-state');
+  rejudgeId ||= crypto.randomUUID();rejudge.disabled=true;
+  try{
+    const response=await fetch('/api/tasks',{method:'POST',headers:headers(),
+      body:JSON.stringify({kind:'judge',request_id:rejudgeId})});
+    if(!response.ok){
+      if(response.status<500)rejudgeId=null;
+      status.textContent='提交未完成，再次点击可重试；请先核对任务状态。';rejudge.disabled=false;return;
+    }
+    status.textContent='重新判定任务已提交，完成后请刷新查看；排队不代表已完成。';
+  }catch{status.textContent='提交结果尚未确认，再次点击将重试原请求。';rejudge.disabled=false;}
+});
 </script>
 {% endblock %}

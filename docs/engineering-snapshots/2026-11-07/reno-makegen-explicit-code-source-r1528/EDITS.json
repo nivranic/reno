@@ -1,0 +1,31 @@
+{
+  "scope": "four literal edits for explicit private make_gen code input",
+  "source": "runtime/Objects/genobject.c.txt",
+  "added_reference_source": "data/t16-h01-catalog-generator-route-r1126/cpython-v3.12.10/Objects/genobject.c",
+  "added_reference_identity": {
+    "bytes": 78785,
+    "sha256": "7c13a1de31fc8af6e082fc9aa055bcfe980786b4104fec0f7564e40735e44cad"
+  },
+  "edits": [
+    {
+      "id": "explicit-private-code-parameter",
+      "before": "make_gen(PyTypeObject *type, PyFunctionObject *func)\n{\n    PyCodeObject *code = (PyCodeObject *)func->func_code;\n",
+      "after": "make_gen(PyTypeObject *type, PyFunctionObject *func, PyCodeObject *code)\n{\n"
+    },
+    {
+      "id": "current-code-PyGen_Type",
+      "before": "make_gen(&PyGen_Type, func)",
+      "after": "make_gen(&PyGen_Type, func, (PyCodeObject *)func->func_code)"
+    },
+    {
+      "id": "current-code-PyAsyncGen_Type",
+      "before": "make_gen(&PyAsyncGen_Type, func)",
+      "after": "make_gen(&PyAsyncGen_Type, func, (PyCodeObject *)func->func_code)"
+    },
+    {
+      "id": "current-code-PyCoro_Type",
+      "before": "make_gen(&PyCoro_Type, func)",
+      "after": "make_gen(&PyCoro_Type, func, (PyCodeObject *)func->func_code)"
+    }
+  ]
+}

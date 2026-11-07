@@ -1,0 +1,37 @@
+--- before-01/runtime/Objects/genobject.c.txt
++++ working-01/runtime/Objects/genobject.c.txt
+@@ -868,9 +868,8 @@
+ };
+ 
+ static PyObject *
+-make_gen(PyTypeObject *type, PyFunctionObject *func)
+-{
+-    PyCodeObject *code = (PyCodeObject *)func->func_code;
++make_gen(PyTypeObject *type, PyFunctionObject *func, PyCodeObject *code)
++{
+     int slots = _PyFrame_NumSlotsForCodeObject(code);
+     PyGenObject *gen = PyObject_GC_NewVar(PyGenObject, type, slots);
+     if (gen == NULL) {
+@@ -898,11 +897,11 @@
+         (CO_GENERATOR | CO_COROUTINE | CO_ASYNC_GENERATOR);
+     assert(coro_flags);
+     if (coro_flags == CO_GENERATOR) {
+-        return make_gen(&PyGen_Type, func);
++        return make_gen(&PyGen_Type, func, (PyCodeObject *)func->func_code);
+     }
+     if (coro_flags == CO_ASYNC_GENERATOR) {
+         PyAsyncGenObject *o;
+-        o = (PyAsyncGenObject *)make_gen(&PyAsyncGen_Type, func);
++        o = (PyAsyncGenObject *)make_gen(&PyAsyncGen_Type, func, (PyCodeObject *)func->func_code);
+         if (o == NULL) {
+             return NULL;
+         }
+@@ -913,7 +912,7 @@
+         return (PyObject*)o;
+     }
+     assert (coro_flags == CO_COROUTINE);
+-    PyObject *coro = make_gen(&PyCoro_Type, func);
++    PyObject *coro = make_gen(&PyCoro_Type, func, (PyCodeObject *)func->func_code);
+     if (!coro) {
+         return NULL;
+     }
