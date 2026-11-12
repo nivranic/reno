@@ -534,10 +534,27 @@
       "passed": 10,
       "skipped": 2,
       "deselected": 15273,
-      "full_module_execution": "in_progress"
+      "full_module_execution": "completed_in_separate_isolated_run"
     },
     "suite_order_class_catalog_investigation": "in_progress",
-    "full_backend_remote_pass": false
+    "full_backend_remote_pass": false,
+    "operation_full_module": {
+      "python": "3.12.10",
+      "platform": "Linux",
+      "scope": "Complete personal_authority_replica_operation module in its isolated source copy",
+      "tests": 231,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 231,
+      "seconds": 1907.619,
+      "junit_identity": {
+        "bytes": 41735,
+        "sha256": "82f5b476a7e598dd1fcf0e67dc1fd625198cb8197d586915c7a160327396ce8c"
+      },
+      "whole_backend_execution": false,
+      "real_database_or_device_acceptance": false
+    }
   },
   "v3_runtime_text_candidate": {
     "artifact": "reno-native-v3-frame-call-source-r1530",
@@ -550,5 +567,370 @@
     "candidate_executed": false,
     "c_parsed_or_built": false,
     "owner_body_and_selector_integrated": false
+  },
+  "post_a4f116c_followup": {
+    "source_base": "a4f116c473d5d15c18de04362d5e3bf9698d7ffd",
+    "remote_before_this_batch": {
+      "run_id": 43190819321,
+      "backend_job_id": 131089375907,
+      "conclusion": "failure",
+      "successful_jobs": 6,
+      "backend": {
+        "passed": 12389,
+        "failed": 490,
+        "errors": 93,
+        "skipped": 2313,
+        "subtests_passed": 43,
+        "seconds": 9050.06
+      },
+      "log_identity": {
+        "bytes": 2290794,
+        "sha256": "add4e095402403ca6b8b36a1e8ed52a3bc8ceee7ba6489d674761f09d2ff705e"
+      }
+    },
+    "test_prerequisite_changes": [
+      "Establish the standard StorageProfile serialization cache before source catalogs bind",
+      "Require the two additional historical snapshot packages before running their pinned-source suites",
+      "Build the original16 parser image before reading it under current readers",
+      "Own the external synthetic QA root through the complete module fixture lifetime",
+      "Use the existing released16_env for the declared original Home-origin and mapping tests",
+      "Match the resolver test double to the current explicit client argument",
+      "Import the two actual storage spawn targets through a small dedicated test module"
+    ],
+    "publication_completion_repair": {
+      "cause": "The pre-ack pending snapshot rejected an ack that had already cleared the original pointer",
+      "change": "Remove the stale check and consume the existing fresh complete terminal validation",
+      "specific_regression": {
+        "exit_code": 0,
+        "seconds": 26.313806197999952,
+        "selected": [
+          "tests/test_sync_source_control_agent.py::test_published_source_clear_before_finish_recovers_original_ack_and_success_without_new_work",
+          "tests/test_sync_source_control_agent.py::test_published_completion_requires_original_permanent_receipt_outbox_and_exact_ack",
+          "tests/test_sync_budget_agent.py::test_normal_home_strict_entry_binds_before_resolver_and_scopes_only_ingest"
+        ],
+        "log": "linux-ci-normal-entry-repairs.log",
+        "junit": "linux-ci-normal-entry-repairs.xml",
+        "tests": 8,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 8,
+        "log_identity": {
+          "bytes": 99,
+          "sha256": "58a743fdcdf5046b215d157a2d3830640bb5b176e9f178bdf1bc7cd0664e7e2e"
+        },
+        "junit_identity": {
+          "bytes": 1641,
+          "sha256": "5eb35fc020e69cfadd293767ff1afac799084917497548962ffb9dd8410badf1"
+        }
+      },
+      "complete_related_modules": {
+        "exit_code": 0,
+        "seconds": 88.00285008300011,
+        "selected": [
+          "tests/test_sync_source_control_agent.py",
+          "tests/test_sync_budget_agent.py"
+        ],
+        "log": "linux-ci-normal-entry-full-modules.log",
+        "junit": "linux-ci-normal-entry-full-modules.xml",
+        "tests": 64,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 64,
+        "log_identity": {
+          "bytes": 110,
+          "sha256": "3ca3c565b4b0cea87c62d2bdaf5288764969cf1ed26b95ed4e6c6394ee295f93"
+        },
+        "junit_identity": {
+          "bytes": 10474,
+          "sha256": "c4fcb6f863db41eb2cdb95475e193d575dde3387eea4405b7f85b241e046677e"
+        }
+      }
+    },
+    "separate_pytest_batches": [
+      {
+        "exit_code": 1,
+        "seconds": 124.08893049100001,
+        "selected": [
+          "tests/test_namespace_guard_runtime.py",
+          "tests/test_namespace_directory_observation.py",
+          "tests/test_storage_root_inputs.py",
+          "tests/test_storage_source_readmit_roots.py",
+          "tests/test_config_isolation.py"
+        ],
+        "log": "linux-ci-prerequisites-followup.log",
+        "junit": "linux-ci-prerequisites-followup.xml",
+        "tests": 193,
+        "errors": 0,
+        "failures": 1,
+        "skipped": 55,
+        "passed": 137,
+        "log_identity": {
+          "bytes": 3808,
+          "sha256": "09c2d6e9ba37cbe915dfc883ff62891beb8f29ddbdcb591cf68a80ef0d9d291e"
+        },
+        "junit_identity": {
+          "bytes": 51744,
+          "sha256": "64662750c2208ed41e44f033f77bbe52d9539936f8f4c66f2d07a43c4bc91b1e"
+        }
+      },
+      {
+        "exit_code": 1,
+        "seconds": 226.66831536499996,
+        "selected": [
+          "tests/test_sync_source_execution_binding.py",
+          "tests/test_sync_source_genesis.py",
+          "tests/test_home_source_budget.py",
+          "tests/test_sync_budget_propagation.py",
+          "tests/test_sync_source_control_agent.py",
+          "tests/test_sync_budget_agent.py"
+        ],
+        "log": "linux-ci-original16-home-followup.log",
+        "junit": "linux-ci-original16-home-followup.xml",
+        "tests": 115,
+        "errors": 0,
+        "failures": 3,
+        "skipped": 0,
+        "passed": 112,
+        "log_identity": {
+          "bytes": 2396,
+          "sha256": "9b6919497b03bbb23afa31a87ccfe08ab74b91548db30d1e59c3fdaa29b1acf6"
+        },
+        "junit_identity": {
+          "bytes": 19788,
+          "sha256": "3c3f1bd7e781c5a890b1dd47faebacb3bf0d8b5f5cbf3e4020557dec553299ac"
+        }
+      },
+      {
+        "exit_code": 0,
+        "seconds": 196.314203088,
+        "selected": [
+          "tests/test_home_source_terminal_flow.py",
+          "tests/test_source_terminal.py",
+          "tests/test_sync_bootstrap_agent.py",
+          "tests/test_sync_budget_resume_authority.py",
+          "tests/test_sync_agent.py"
+        ],
+        "log": "linux-ci-original16-additional-followup.log",
+        "junit": "linux-ci-original16-additional-followup.xml",
+        "tests": 76,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 76,
+        "log_identity": {
+          "bytes": 191,
+          "sha256": "0397878b24f18e1f579b596af87996ec76ed974c86efb0e1dd14fa74b7ec0f9a"
+        },
+        "junit_identity": {
+          "bytes": 10999,
+          "sha256": "0fecbfd24b46d11a82ceab5d127aebfbf74742f466b3d6944a63d45156c1369a"
+        }
+      },
+      {
+        "exit_code": 2,
+        "seconds": 410.255068229,
+        "selected": [
+          "tests/test_home_writer_lifecycle.py",
+          "tests/test_config_isolation.py"
+        ],
+        "log": "linux-ci-writer-qa-final.log",
+        "junit": "linux-ci-writer-qa-final.xml",
+        "tests": 41,
+        "errors": 0,
+        "failures": 20,
+        "skipped": 0,
+        "passed": 21,
+        "log_identity": {
+          "bytes": 50082,
+          "sha256": "98c0fd6ad981b51754e7825dec3f95f4980cc7fab612386fabd17aca53aefc2f"
+        },
+        "junit_identity": {
+          "bytes": 73267,
+          "sha256": "0d89df9e4ccac1eb33b60ed6fed685b827eae839860b197ac0e627e626e44a29"
+        }
+      },
+      {
+        "exit_code": 1,
+        "seconds": 45.81010486399998,
+        "selected": [
+          "tests/test_home_writer_lifecycle.py::test_state_writer_really_waits_for_another_process_exclusive",
+          "tests/test_home_writer_lifecycle.py::test_all_state_publications_hold_exact_profile_through_atomic_write[retire]"
+        ],
+        "log": "linux-ci-writer-cache-mode.log",
+        "junit": "linux-ci-writer-cache-mode.xml",
+        "bytecode_cache_enabled": true,
+        "tests": 2,
+        "errors": 0,
+        "failures": 1,
+        "skipped": 0,
+        "passed": 1,
+        "log_identity": {
+          "bytes": 1050,
+          "sha256": "b7e775572c13234af9c4f5cd8d0b8860fba9b62462352bce905d0c92f6e34734"
+        },
+        "junit_identity": {
+          "bytes": 935,
+          "sha256": "2c1649ee2d52724059725ca16d859f38fbacbf02bf902a4ae1d37c5e2d36a136"
+        }
+      },
+      {
+        "exit_code": 0,
+        "seconds": 37.151700413,
+        "selected": [
+          "tests/test_home_writer_lifecycle.py::test_state_writer_really_waits_for_another_process_exclusive",
+          "tests/test_home_writer_lifecycle.py::test_heartbeat_new_epoch_waits_for_ex_and_archives_old_pending_refs",
+          "tests/test_home_writer_lifecycle.py::test_freeze_has_no_gc_window_between_export_outbox_and_pending"
+        ],
+        "log": "linux-ci-light-spawn-candidate.log",
+        "junit": "linux-ci-light-spawn-candidate.xml",
+        "bytecode_cache_enabled": true,
+        "tests": 3,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 3,
+        "log_identity": {
+          "bytes": 99,
+          "sha256": "395b6021d3effba712e919e082f318642e41583a9a6471bdd7c7420b301c1bd8"
+        },
+        "junit_identity": {
+          "bytes": 673,
+          "sha256": "29c307386c6334cd4a5c4f9813d34e743eca2010b1b596899cf1de5007cbd6de"
+        }
+      },
+      {
+        "exit_code": 0,
+        "seconds": 312.74483913,
+        "selected": [
+          "tests/test_home_writer_lifecycle.py",
+          "tests/test_config_isolation.py"
+        ],
+        "log": "linux-ci-writer-qa-final02.log",
+        "junit": "linux-ci-writer-qa-final02.xml",
+        "bytecode_cache_enabled": true,
+        "tests": 62,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 62,
+        "log_identity": {
+          "bytes": 111,
+          "sha256": "d8133f12321c9b653f3dd9dad9e20e4e820c392c263222f907bec13d3591c3e3"
+        },
+        "junit_identity": {
+          "bytes": 9697,
+          "sha256": "2c2343e161785fa0d1b77219549952af6a951a7f76a73e176a0bed99e856a561"
+        }
+      }
+    ],
+    "pytest_counting": "Batches overlap and retain their own original failures; counts are not summed as unique cases",
+    "diff_audit": {
+      "product_source_exact_two_line_removal": true,
+      "agent_original_test_bodies_preserved": true,
+      "spawn_target_bodies_preserved_with_local_imports": 2
+    },
+    "serialization_order": {
+      "before": {
+        "exit_code": 1,
+        "observations": [
+          {
+            "test": "tests/test_home_writer_lifecycle.py::test_state_writer_really_waits_for_another_process_exclusive",
+            "cache_present_before": false,
+            "cache_present_after": true,
+            "cache_value": []
+          },
+          {
+            "test": "tests/test_personal_authority_replica_operation.py::test_real_fixed_factory_registration_ledger_and_exact_result[preview-detached]",
+            "cache_present_before": true,
+            "cache_present_after": true,
+            "cache_value": []
+          }
+        ]
+      },
+      "after": {
+        "exit_code": 0,
+        "observations": [
+          {
+            "test": "tests/test_home_writer_lifecycle.py::test_state_writer_really_waits_for_another_process_exclusive",
+            "cache_present_before": true,
+            "cache_present_after": true,
+            "cache_value": []
+          },
+          {
+            "test": "tests/test_personal_authority_replica_operation.py::test_real_fixed_factory_registration_ledger_and_exact_result[preview-detached]",
+            "cache_present_before": true,
+            "cache_present_after": true,
+            "cache_value": []
+          }
+        ]
+      }
+    },
+    "frontend": {
+      "exit_code": 0,
+      "worker_limit": 2,
+      "log": "frontend-full-workers2-receipt.log",
+      "passed": 314,
+      "test_files_passed": 41,
+      "log_identity": {
+        "bytes": 8812,
+        "sha256": "5b05bdf66ef4e8a9a4989ab28bbfe2aa3b691b2b30ab80ba7a1ae85ea51e1341"
+      },
+      "typecheck": "passed_before_the_first_full_vitest_execution",
+      "earlier_attempts": [
+        {
+          "mode": "default_worker_count",
+          "passed": 312,
+          "failed": 2
+        },
+        {
+          "mode": "isolated_import_dialog",
+          "passed": 7,
+          "exit_code": 0
+        },
+        {
+          "mode": "two_workers_json_report",
+          "reported_passed": 314,
+          "exit_code": 1,
+          "exit_mismatch_root_cause": "unconfirmed"
+        }
+      ]
+    },
+    "initial_order_observation": {
+      "first_drift": "StorageProfile.__slotnames__ after the real spawn writer test",
+      "runner_limitation": "The first broad observation runner lacked a spawn main guard; the two-case reproduction used a guarded runner",
+      "broad_initial_counts_used_as_acceptance": false
+    },
+    "local_process_startup_followup": {
+      "original_failure": "Owned Python subprocesses exceeded existing ten-second readiness/command limits",
+      "interrupted_run": "SIGINT requested normal pytest fixture cleanup after repeated failures; its exit2 and twenty failures remain recorded",
+      "cache_mode_followup": "One availability case passed with normal bytecode caching while spawn readiness still failed",
+      "light_spawn_candidate": "Three existing real-process tests passed after their target functions moved out of the parent test module",
+      "final_mode": "Normal bytecode caching and the exact small spawn-target module"
+    },
+    "v3_owner_preparation": {
+      "artifact": "reno-loader-v3-owner-integration-r1531",
+      "fragments": 8,
+      "fragment_bytes": 25995,
+      "root_and_independent_fragment_reviews": "passed",
+      "complete_candidate_generated": false,
+      "c_parsed_or_built": false,
+      "remaining": [
+        "Complete dispatcher source/authority gates",
+        "Complete selector and retirement/restoration integration",
+        "Full-source assembly, build/ABI/COMPAT and runtime verification"
+      ]
+    },
+    "recorded_before_commit": true,
+    "current_remote_validation": "Read the GitHub Actions run attached to the containing commit",
+    "full_backend_remote_pass_at_recording": false,
+    "complete_product_goal": false,
+    "post_test_whitespace_cleanup": {
+      "path": "tests/storage_processes.py",
+      "ast_unchanged": true,
+      "before_sha256": "c773d52cc61adf1693da945a3d3e3a0f6010881043d04a58e4050a1dc64c0ae7",
+      "after_sha256": "351578883766d3f98275fabb9e8660a3091679d11a400b20b08ea505a1f250a5"
+    }
   }
 }

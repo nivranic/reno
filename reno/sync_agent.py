@@ -1247,8 +1247,6 @@ class _Cycle:
                 if self.store.read()["pending_publication"] == request["metadata"]:
                     _error("SYNC_STATE_SOURCE_TERMINAL_CONFLICT")
                 raise _SourcePublished()
-            elif current["pending_publication"] is not None:
-                _error("SYNC_STATE_SOURCE_TERMINAL_CONFLICT")
             current = self.store.read()
             if (current.get("source_execution") is not None or current.get("source_control_pending") is not None
                     or current["budget_pending"] is not None or current["pending_publication"] is not None
