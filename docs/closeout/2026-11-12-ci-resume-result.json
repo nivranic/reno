@@ -1674,6 +1674,170 @@
     "frontend_validation": "Base commit frontend CI passed typecheck, complete Vitest and build",
     "full_backend_remote_pass": false,
     "c_candidate_parsed_built_or_executed": false,
-    "complete_product_goal": false
+    "complete_product_goal": false,
+    "pushed_product_commit": "6500e82",
+    "pushed_test_record_commit": "8121f1f",
+    "remote_validation": {
+      "head_sha": "8121f1f0e011e288982761624caa50252007e201",
+      "run_id": 43242887631,
+      "jobs": [
+        {
+          "run_id": "43242887631",
+          "job_id": 131267789413,
+          "name": "reconciliation",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [],
+          "current_step": null
+        },
+        {
+          "run_id": "43242887631",
+          "job_id": 131267789589,
+          "name": "frontend",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [],
+          "current_step": null
+        },
+        {
+          "run_id": "43242887631",
+          "job_id": 131267789591,
+          "name": "sync-recovery",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [],
+          "current_step": null
+        },
+        {
+          "run_id": "43242887631",
+          "job_id": 131267789657,
+          "name": "sync-chain",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [],
+          "current_step": null
+        },
+        {
+          "run_id": "43242887631",
+          "job_id": 131267789658,
+          "name": "backend",
+          "status": "in_progress",
+          "conclusion": null,
+          "steps": [],
+          "current_step": "pytest (robustness + units; LLM probes opt-in, skipped here)"
+        },
+        {
+          "run_id": "43242887631",
+          "job_id": 131267789745,
+          "name": "checkpoint-runtime",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [],
+          "current_step": null
+        },
+        {
+          "run_id": "43242887631",
+          "job_id": 131267789849,
+          "name": "derivation",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [],
+          "current_step": null
+        }
+      ],
+      "full_backend_pass": false
+    }
+  },
+  "v3_owner_partial_source_assembly": {
+    "package": "reno-loader-v3-source-integration-r1532",
+    "current_revision": "working-02",
+    "source_files": 29,
+    "source_bytes": 2562791,
+    "reviewed_scope": {
+      "reviewers": [
+        "/root",
+        "/root/v3_readonly_review"
+      ],
+      "scope": "literal source, owner transfer text, exact predictions and reverse-image consistency",
+      "working_01": {
+        "root_review": "passed",
+        "independent_review": "passed",
+        "sources": 29,
+        "bytes": 2562791,
+        "modified_files": 3,
+        "unchanged_parent_files": 26,
+        "literal_edits": 8,
+        "all_independent_predictions_match_actual": true,
+        "complete_reverse_image_matches_parent": true
+      },
+      "working_02": {
+        "root_review": "passed",
+        "independent_review": "passed",
+        "sources": 29,
+        "bytes": 2562791,
+        "modified_files": 1,
+        "changed_lines": 3,
+        "unchanged_parent_files": 28,
+        "independent_prediction_matches_actual": true,
+        "reverse_image_matches_working_01": true
+      },
+      "preparation_correction": "Before execution, replace an assertion naming an absent direct row matcher with the two actual domain and metadata predicates",
+      "c_parsed_or_built": false,
+      "candidate_executed": false,
+      "complete_candidate": false,
+      "full_goal_complete": false
+    },
+    "root_index_repair": {
+      "parent_revision": "working-01",
+      "working_revision": "working-02",
+      "file": "native/reno_windows_cpython312_owner_factory.c.txt",
+      "before_sha256": "ca8bd18e33695d28194634acb327e8a108810a1bf1ca92d3b52ceaee07fb5a41",
+      "after_sha256": "bbc431c9ebe0c3b622299e18233ba6d17b553a2fb1ded658b809e630b8e6d885",
+      "function": "reno_loader_observe_dynamic_get_code_once",
+      "changed_lines": 3,
+      "metadata_row": 4,
+      "metadata_base": 66,
+      "entry_globals": 73,
+      "entry_builtins": 74,
+      "source_files": 29,
+      "source_bytes": 2562791,
+      "unchanged_parent_files": 28,
+      "reverse_image_matches_parent": true,
+      "c_parsed_or_built": false,
+      "candidate_executed": false,
+      "source_index_consistency_only": true,
+      "review": "root_and_independent_text_review_passed"
+    },
+    "entry_domain_review": {
+      "document": "DISPATCHER-ENTRY-DOMAINS.md",
+      "bytes": 6313,
+      "sha256": "d49b2c4b91993554d953010d12c660cdb5e0a867bd6af38732a993727eb929f3",
+      "root_review": "passed",
+      "independent_review": "passed",
+      "reviewer": "/root/v3_readonly_review",
+      "scope": "Actual entry domains and original S1/F4 contract boundaries; complete dispatcher design remains open"
+    },
+    "current_modified_source_identities": {
+      "native/reno_windows_cpython312_owner_factory.c.txt": {
+        "bytes": 1128735,
+        "sha256": "bbc431c9ebe0c3b622299e18233ba6d17b553a2fb1ded658b809e630b8e6d885"
+      },
+      "runtime/Include/internal/pycore_reno_owned_resume.h.txt": {
+        "bytes": 28329,
+        "sha256": "93016a07d6d40cac3b09e6305676d32b4b9cd0a01195a0ee5ee94b161ce0b28d"
+      },
+      "runtime/Python/ceval.c.txt": {
+        "bytes": 132347,
+        "sha256": "35d4e0beb59ca906b5e68a32b2d9b2b67c507b17f199a8a66cd720621c59f20d"
+      }
+    },
+    "dispatcher_definition_present": false,
+    "source_authority_gates_complete": false,
+    "selector_retirement_restore_complete": false,
+    "complete_c_candidate": false,
+    "c_parsed_or_built": false,
+    "candidate_executed": false,
+    "product_source_installed": false,
+    "full_goal_complete": false
   }
 }

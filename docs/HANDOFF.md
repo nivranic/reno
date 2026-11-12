@@ -25,3 +25,5 @@
 V3 的 r1530 已生成并双审 29 源／2,537,465 B 的静态运行时候选，包含 code／closure 配对、frame 模式、V3 调用、V2 同次续作及栈分配／释放接点。完整 owner／None／exec／selector、C 构建、ABI、COMPAT 与运行验证仍待完成。
 
 V3 的 r1531 已准备并双审八份owner／F3／None／exec片段，共25,995 B。完整dispatcher的source／authority接点、selector与退休／恢复仍待组合，完整C候选尚未生成。
+
+V3 的 r1532 已把 r1531 片段组合为29源／2,562,791 B的部分源码文本，主核和同一名只读代理均核对实际输出及完整逆像。working-01为3变26保，working-02另修dynamic producer的3行根索引，按metadata row4把globals／builtins对应到73／74，28份保持。入口域文档已核对原S1与固定F4 body删除的实际边界。完整dispatcher定义、逐站source／authority消费者、selector及正常退休／恢复、C解析／构建／ABI／COMPAT与运行验证仍待完成。
