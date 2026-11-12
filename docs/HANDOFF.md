@@ -45,3 +45,7 @@ V3的r1535已补齐原NULL-slot的实际consumer、声明及唯一inner调用点
 构建前提修订b935240已推送并核对远端SHA。补齐真实构建的两个子进程场景模块6项全部通过，完整来源恢复模块23项全部通过，JUnit的29个具名用例互不重叠。这些完整回归分别耗时约649秒和1241秒，早先中断运行单独保留且不计为完成。304e186至b935240的Python变更仅为夹具注释，AST一致性已核对。b935240的六项远端作业成功，backend131398631479仍在执行整库pytest，完整远端结论继续跟进。
 
 V3的scoped合同跟进已由同一只读代理完成有限复核。现有frameless binder可直接复用，版本查询前置零返回与producer/backoff、generic/specialized回退及opcode映射的有限文本依据已登记。29源身份核对一致，本批working源码修改为零。下一源码计划位于General的reno-loader-scoped-custom-slot-r1536/DESIGN.md，正在复核V1/V2真实终态、V3分流、typed slot与递归责任。完整dispatcher、效果站点接线及C解析／构建／ABI／COMPAT／物理成本和运行验证继续推进。
+
+V3的r1536已组合scoped custom-slot源码，30源共2,626,125 B，26项文本检查、195项有限Python条件模型及独立复核完成。后继主核发现dynamic observer仍保留旧三参数调用，原文本检查和独立源码复核均漏检。r1537以owner三处修改修正delegated标量传递，30源共2,626,218 B，其余29份保持父字节，完整逆像及独立源码复核通过。
+
+本轮已实际执行MSVC x64 C语法检查，14个不同完整C translation unit的最新结果为12成功、2失败。三批共18次编译器调用，原缺头失败与补齐同版官方依赖后的四项成功分别保留。owner仍因缺少reno_h01_bootstrap_existing定义报C2129，call.c仍因缺少完整可信build metadata报C1189。完整dispatcher也仍缺定义。官方3.12.10归档与44份依赖头身份已保存，209份未被候选覆盖的安装头仅存在CRLF/LF字节差异。外部MSVC/SDK头完整内容身份、M/D/H、完整构建、链接/ABI、COMPAT、物理成本及实际runtime继续推进。源码候选位于General的reno-loader-delegation-call-contract-r1537/working-01，产品runtime源码本批修改为零，候选尚未安装。eb7c23f的六项CI成功，backend131409256006仍执行整库pytest。长期goal保持active。

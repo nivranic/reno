@@ -2693,5 +2693,118 @@
     "complete_design_approved": false,
     "c_parsed_built_or_executed": false,
     "complete_product_goal": false
+  },
+  "v3_scoped_source_assembly": {
+    "package": "reno-loader-scoped-custom-slot-r1536",
+    "source_files": 30,
+    "source_bytes": 2626125,
+    "root_text_checks_passed": 26,
+    "finite_python_model_cases_passed": 195,
+    "source_and_model_record_independent_review": "passed",
+    "subsequent_source_omission": "The dynamic observer retained one three-argument binding-domain call after the helper gained its fourth parameter",
+    "source_omission_repaired_in": "reno-loader-delegation-call-contract-r1537",
+    "source_omission_missed_by_prior_text_checks_and_review": true,
+    "model_count_is_not_c_or_product_runtime_evidence": true
+  },
+  "v3_c_syntax_followup": {
+    "package": "reno-loader-delegation-call-contract-r1537",
+    "source_files": 30,
+    "source_bytes": 2626218,
+    "changed_source_files": 1,
+    "literal_edit_sites": 3,
+    "parent_sources_preserved": 29,
+    "delegated_scalar_call_chain": "common -> dynamic observer -> binding-domain, with original static 0/1 producers",
+    "source_identity": {
+      "file": "reno-loader-delegation-call-contract-r1537/SOURCE-IDENTITIES.json",
+      "bytes": 11036,
+      "sha256": "5c040adc55f3f85b2c210a3d11136bdc1af97c926de50a878664723848aa5301"
+    },
+    "source_text_verification": {
+      "file": "reno-loader-delegation-call-contract-r1537/TEXT-VERIFICATION.json",
+      "bytes": 2300,
+      "sha256": "a4b487d411ecc2fa75d3a8f9cbfc1da8850879ec24dc4b7c0a9e4d3da823ae08"
+    },
+    "independent_review": {
+      "file": "reno-loader-delegation-call-contract-r1537/REVIEW.json",
+      "bytes": 1142,
+      "sha256": "3442cb2b9356f08dd9110d8d7037b59a53220c18a903d0ec238c0dd378e8017d"
+    },
+    "syntax_result_receipts": [
+      {
+        "file": "reno-loader-delegation-call-contract-r1537/syntax-01/RESULTS.json",
+        "bytes": 8249,
+        "sha256": "3c513f2e27ef73f20c1fca554b6159efb8b2729aa1da752bb18292d6cb293042"
+      },
+      {
+        "file": "reno-loader-delegation-call-contract-r1537/syntax-runtime-01/RESULTS.json",
+        "bytes": 14855,
+        "sha256": "4834abdc0f59f3052f48990d8c6d0c8a8400ef2021a77733d2d0775a7c745df9"
+      },
+      {
+        "file": "reno-loader-delegation-call-contract-r1537/syntax-runtime-02/RESULTS.json",
+        "bytes": 14770,
+        "sha256": "1454628419f5955790184e8f25d2e2dc662978d2928febd37247ec2bcbee527b"
+      }
+    ],
+    "compiler": "MSVC x64",
+    "syntax_flags": [
+      "/Zs",
+      "/TC",
+      "/std:c11",
+      "/utf-8"
+    ],
+    "compiler_invocations": 18,
+    "invocations_exit_zero": 12,
+    "invocations_exit_two": 6,
+    "different_full_translation_units": 14,
+    "latest_syntax_successes": 12,
+    "latest_syntax_failures": 2,
+    "latest_native_syntax_successes": 4,
+    "latest_runtime_syntax_successes": 8,
+    "remaining_failures": {
+      "native/reno_windows_cpython312_owner_factory.c": "C2129: static reno_h01_bootstrap_existing has a declaration and call but lacks its definition",
+      "runtime/Objects/call.c": "C1189: the mandatory complete trusted build metadata is missing"
+    },
+    "original_missing_header_failures_retained": true,
+    "compiler_timeouts": 0,
+    "official_source_archive_sha256": "07ab697474595e06f06647417d3c7fa97ded07afc1a7e4454c5639919b46eaea",
+    "official_dependency_header_files": 44,
+    "installed_headers_compared_to_official_archive": 209,
+    "installed_header_raw_byte_matches": 0,
+    "installed_header_crlf_to_lf_matches": 209,
+    "installed_header_non_newline_differences": 0,
+    "actual_syntax_inputs_keep_original_bytes": true,
+    "external_msvc_sdk_header_content_identity_frozen": false,
+    "all_syntax_checks_passed": false,
+    "complete_dispatcher_defined": false,
+    "complete_build_metadata_available": false,
+    "full_runtime_build_completed": false,
+    "linked": false,
+    "candidate_executed": false,
+    "candidate_applied_to_product": false,
+    "product_runtime_source_changes_this_batch": 0,
+    "remaining_source_and_runtime_work": [
+      "Complete reno_h01_loader_exec_dispatch definition and remaining effect consumers",
+      "Installation selector, normal retirement and restore_returned",
+      "Clone and existing-frame scope",
+      "Complete authoritative build-input manifest M, canonicalizer, digest D and derived H",
+      "Complete build/link/export/ABI/target image identity and independent expected",
+      "COMPAT, physical costs and actual runtime validation"
+    ],
+    "observed_product_ci": {
+      "head_sha": "eb7c23f490f0a20a2c0ba41cf015d0a3642791f8",
+      "run_id": 43283089679,
+      "successful_jobs": 6,
+      "backend_job_id": 131409256006,
+      "backend_status": "in_progress",
+      "backend_conclusion": null,
+      "snapshot": {
+        "file": "remote-ci-eb7c23f-progress03-jobs.json",
+        "bytes": 1463,
+        "sha256": "5c1dcb97801a178e1ee5e7f525138479500c415bf7f2ddc00c38484844b457e6"
+      }
+    },
+    "goal_status": "active",
+    "complete_product_goal": false
   }
 }
