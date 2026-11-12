@@ -1,0 +1,146 @@
+{
+  "recorded_date": "2026-11-12",
+  "timezone": "UTC+08:00",
+  "source_commit": "6b0aa1705516d6761805b8e2119773d89f369dbc",
+  "user_requested_goal_state_after_closeout": "paused",
+  "remote_ci": {
+    "source_commit": "bbc5c6bd4bba63f874ad9beff13c046d9992b601",
+    "run_id": 42362145344,
+    "passed_jobs": 3,
+    "failed_jobs": 4,
+    "prior_result": "2026-11-07-python311-ci-result.json",
+    "detailed_failure_logs_obtained": false
+  },
+  "windows_checkpoint": {
+    "python": "3.12.10",
+    "platform": "Windows",
+    "passed": 50,
+    "skipped": 1,
+    "seconds_reported_by_pytest": 23.72,
+    "source_revision": "6b0aa1705516d6761805b8e2119773d89f369dbc",
+    "exit_code": 0,
+    "timed_out": false,
+    "tests": [
+      "tests/test_sync_checkpoints.py",
+      "tests/test_sync_checkpoint_migrations.py",
+      "tests/test_sync_checkpoint_publication.py"
+    ],
+    "dependency_source": "existing development venv site-packages",
+    "source_preparation": "complete git archive export under local Git configuration",
+    "skip_reason": "Windows held directory handles prevent this POSIX rename race",
+    "runner_options": [
+      "-q",
+      "-x",
+      "--tb=short",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp",
+      "<private-test-root>",
+      "--junitxml",
+      "<private-junit-file>"
+    ],
+    "log_identity": {
+      "bytes": 113,
+      "sha256": "660697f44d019e05eea07a4141e92f431a11f59817d82aa6e214c5fe9f79e340"
+    },
+    "junit_identity": {
+      "bytes": 7922,
+      "sha256": "99b2ae9f0a189605e98562cee58cb7ad4d316bd355a18248f585ad5530368051"
+    },
+    "start_receipt": "de08f1",
+    "completion_receipt": "ff163f",
+    "proves_linux_or_python311_pass": false
+  },
+  "windows_backend_collection": {
+    "collect_only": true,
+    "stop_after_first_error": true,
+    "collected_before_stop": 2674,
+    "collection_errors": 1,
+    "test_bodies_run": 0,
+    "seconds_reported_by_pytest": 12.43,
+    "source_revision": "6b0aa1705516d6761805b8e2119773d89f369dbc",
+    "exit_code": 1,
+    "timed_out": false,
+    "location": "tests/test_personal_authority_enrollment_store_initial.py:378",
+    "call_chain": [
+      "bootstrap_fresh_methods",
+      "_require_fresh_operation"
+    ],
+    "exception_type": "RuntimeError",
+    "message": "r915 fixture requires first original operation import",
+    "log_identity": {
+      "bytes": 331317,
+      "sha256": "19ef7e6b3ba31a8a3c1f55484849cf64bd2540fd04f9a409de680fbbc01cc3e2"
+    },
+    "start_receipt": "a3d6d5",
+    "completion_receipt": "4d38a6",
+    "same_cause_as_remote_backend_confirmed": false
+  },
+  "historical_source_pins_static_audit": {
+    "method": "AST literal extraction and raw byte comparison",
+    "summary": [
+      {
+        "test": "tests/test_personal_authority_enrollment_store_initial.py",
+        "pin_count": 7,
+        "checkout_matches": 3,
+        "committed_blob_matches": 3,
+        "archive_export_matches": 0,
+        "checkout_and_archive_equal_after_crlf_normalization": 7
+      },
+      {
+        "test": "tests/test_personal_authority_enrollment_store_owning.py",
+        "pin_count": 13,
+        "checkout_matches": 13,
+        "committed_blob_matches": 12,
+        "archive_export_matches": 0,
+        "checkout_and_archive_equal_after_crlf_normalization": 13
+      }
+    ],
+    "full_local_audit_identity": {
+      "bytes": 24300,
+      "sha256": "a1d4ec99c19a8d030abad56738ef0d69a615e0ddc0427551673c6a1921b64c1e"
+    },
+    "completion_receipt": "84a29a",
+    "scope": "static checks after collection failure, with pin assertions pending in that run"
+  },
+  "linux_dependency_preparation": {
+    "platform": "existing Ubuntu WSL",
+    "python": "3.12.3",
+    "exit_code": 2,
+    "timed_out": false,
+    "subprocess_timeout_seconds": 900,
+    "fresh_venv": true,
+    "binary_wheels_only": true,
+    "index_url": "https://pypi.org/simple",
+    "configured_pip_proxy": false,
+    "proxy_environment_present": false,
+    "per_request_timeout_seconds": 25,
+    "pip_retries": 2,
+    "log_identity": {
+      "bytes": 22580,
+      "sha256": "ba18fd4dee9e035b71b903d4d87c3081cb8bca94a63e370083a53c79a5f8da2d"
+    },
+    "tests_started": false,
+    "start_receipt": "f728f4",
+    "completion_receipt": "c37191",
+    "exception_type": "ReadTimeoutError",
+    "exception_message": "HTTPSConnectionPool(host='files.pythonhosted.org', port=443): Read timed out."
+  },
+  "remote_identity_before_closeout_commit": {
+    "branch": "refs/heads/main",
+    "sha": "6b0aa1705516d6761805b8e2119773d89f369dbc",
+    "receipt": "dda313"
+  },
+  "remaining_failed_ci_jobs": [
+    "backend",
+    "checkpoint-runtime",
+    "sync-chain",
+    "sync-recovery"
+  ],
+  "candidate_executed": false,
+  "complete_child_implemented": false,
+  "complete_exec_dispatch_implemented": false,
+  "full_goal_complete": false,
+  "source_only_closed_fields": [],
+  "new_product_source_changes": false
+}
