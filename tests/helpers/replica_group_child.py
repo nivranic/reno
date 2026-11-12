@@ -19,7 +19,7 @@ sys.path.insert(0, str(REPOSITORY))
 def install_audit():
     # Audit hooks do not survive exec. Both the Root runner and this child use
     # this one fixed reviewed file; there is no caller path or enable switch.
-    path = REPOSITORY / "data/t16-h02-replica-group-r748/native_test_audit.py"
+    path = Path(__file__).with_name("replica_group_native_test_audit.py")
     spec = importlib.util.spec_from_file_location("replica_group_native_test_audit", path)
     if spec is None or spec.loader is None:
         raise RuntimeError("The fixed native-test audit module is unavailable")
@@ -413,19 +413,23 @@ def known_cleanup_fault(root, case):
 
 
 def admitted_root(value):
-    """Only the current r748 runner's retained pytest subtree is admissible."""
+    """Require the retained runner tree or the current isolated pytest tree."""
     configured = os.environ.get("RENO_QA_ROOT")
     if type(configured) is not str or not configured:
-        raise ValueError("The fixed runner QA root is required")
+        raise ValueError("The isolated runner QA root is required")
     qa, root = Path(configured), Path(value)
-    fixed = REPOSITORY / "data/t16-h02-replica-group-r748"
-    if (not qa.is_absolute() or ".." in qa.parts or qa.name != "isolated"
-            or re.fullmatch(r"run-[0-9]{2}", qa.parent.name) is None
-            or qa.parent.parent != fixed):
-        raise ValueError("QA root does not belong to the fixed r748 run")
-    if qa.resolve(strict=True) != qa:
+    if not qa.is_absolute() or ".." in qa.parts or qa.resolve(strict=True) != qa:
         raise ValueError("QA root is not the original canonical runner directory")
-    pytest_root = qa / "pytest"
+    fixed = REPOSITORY / "data/t16-h02-replica-group-r748"
+    retained = (qa.name == "isolated" and re.fullmatch(r"run-[0-9]{2}", qa.parent.name) is not None
+        and qa.parent.parent == fixed)
+    if retained:
+        pytest_root = qa / "pytest"
+    else:
+        from reno import config
+        if not config.is_isolated_qa():
+            raise ValueError("QA root is not the current isolated pytest tree")
+        pytest_root = qa
     if (not root.is_absolute() or ".." in root.parts or root == pytest_root
             or not root.is_relative_to(pytest_root)
             or root.resolve(strict=True) != root or not root.is_dir()):

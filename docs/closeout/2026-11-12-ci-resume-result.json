@@ -1380,5 +1380,300 @@
     ],
     "frontend_validation": "Containing base commit's frontend CI passed; frontend sources unchanged in this follow-up",
     "latest_full_backend_ci_pass": false
+  },
+  "post_6947aba_followup": {
+    "source_base": "6947aba0648dd435f9b541e4a3f0011b0804ab29",
+    "goal_state": "active",
+    "legacy_receipt_reader_scope": {
+      "cause": "Two independent receipt factories borrowed creation readers without their required owned read scope",
+      "implementation": "Select the exact three existing capture types and retain each original seal and context; register real pins and readers; retire the public capture before final reader verification and close readers before the owner",
+      "before": {
+        "exit_code": 1,
+        "seconds": 539.646310681,
+        "selected": [
+          "tests/test_sync_source_legacy_pending_intake17.py",
+          "tests/test_sync_source_legacy_pending_public17.py",
+          "tests/test_sync_source_legacy_receipt_completion17.py"
+        ],
+        "log": "linux-ci-legacy-pending-before.log",
+        "junit": "linux-ci-legacy-pending-before.xml",
+        "bytecode_cache_enabled": true,
+        "basetemp_location": "system_temporary_directory",
+        "tests": 47,
+        "errors": 0,
+        "failures": 15,
+        "skipped": 0,
+        "passed": 32,
+        "log_identity": {
+          "bytes": 38910,
+          "sha256": "4a46ea0d424f4eb40ebeba266d1e71174cee4740aa50f60136498f92b7fc6305"
+        },
+        "junit_identity": {
+          "bytes": 26749,
+          "sha256": "ab4a322d6f04facb1df637a382be492dc671ad597b0fdbe3375598554c02c89a"
+        }
+      },
+      "first_focused": {
+        "exit_code": 1,
+        "seconds": 152.63080848800007,
+        "selected": [
+          "tests/test_legacy_receipt_owned_read_scope17.py",
+          "tests/test_creation_owned_read_scope17.py",
+          "tests/test_sync_source_legacy_pending_intake17.py::test_real_http_saved_receipt_tail_resumes_without_another_ticket_or_state_effect[before_body]",
+          "tests/test_sync_source_legacy_pending_public17.py::test_public_saved_receipt_tail_completes_without_another_http_call[before_body]",
+          "tests/test_sync_source_legacy_receipt_completion17.py::test_original_tail_finishes_at_zero_rpc_without_state_or_paid_effect[before_body]"
+        ],
+        "log": "linux-ci-receipt-read-scope-focused.log",
+        "junit": "linux-ci-receipt-read-scope-focused.xml",
+        "bytecode_cache_enabled": true,
+        "basetemp_location": "system_temporary_directory",
+        "tests": 17,
+        "errors": 0,
+        "failures": 4,
+        "skipped": 0,
+        "passed": 13,
+        "log_identity": {
+          "bytes": 12375,
+          "sha256": "2a06a2765e332b1826d36c4fb9266b54405fb5685ddf58762bca8486d4c7c373"
+        },
+        "junit_identity": {
+          "bytes": 9299,
+          "sha256": "04fd7e32ad5b0e15a4039e9630bb61c1c035a1e93189fcd48a12750ee991eec6"
+        }
+      },
+      "focused_test_correction": "Four new copy tests originally expected the later reader gate, while existing receipt constructors already reject copying. The final regression checks both the constructor rejection and a separately copied instance's reader rejection",
+      "first_complete": {
+        "exit_code": 0,
+        "seconds": 540.7710333519999,
+        "selected": [
+          "tests/test_legacy_receipt_owned_read_scope17.py",
+          "tests/test_creation_owned_read_scope17.py",
+          "tests/test_sync_source_legacy_pending_intake17.py",
+          "tests/test_sync_source_legacy_pending_public17.py",
+          "tests/test_sync_source_legacy_receipt_completion17.py"
+        ],
+        "log": "linux-ci-receipt-read-scope-final.log",
+        "junit": "linux-ci-receipt-read-scope-final.xml",
+        "bytecode_cache_enabled": true,
+        "basetemp_location": "system_temporary_directory",
+        "tests": 61,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 61,
+        "log_identity": {
+          "bytes": 111,
+          "sha256": "b0eedf4fdadf088b0c0d0b685691b84e5a8369f63de840e7a17984655853cc27"
+        },
+        "junit_identity": {
+          "bytes": 10861,
+          "sha256": "e1da81265e25d60f2a3047358ce087fc2b3e797b414c8bea4e4b2548f1b0afdb"
+        }
+      },
+      "first_failure_traceback_correction": {
+        "synthetic_reproduction": {
+          "synthetic_only": true,
+          "original_recorded": false,
+          "interrupted_by_traceback_override": true
+        },
+        "implementation": "Read the BaseException traceback member directly, as existing State cleanup already does, so a caller exception override cannot interrupt first-error capture and subsequent cleanup",
+        "regressions": "Both receipt factories preserve an overriding caller exception through real cleanup; a synthetic collector test retains the same first exception and runs subsequent cleanup"
+      },
+      "final": {
+        "exit_code": 0,
+        "seconds": 598.9413161769999,
+        "selected": [
+          "tests/test_legacy_receipt_owned_read_scope17.py",
+          "tests/test_creation_owned_read_scope17.py",
+          "tests/test_sync_source_legacy_pending_intake17.py",
+          "tests/test_sync_source_legacy_pending_public17.py",
+          "tests/test_sync_source_legacy_receipt_completion17.py"
+        ],
+        "log": "linux-ci-receipt-read-scope-final02.log",
+        "junit": "linux-ci-receipt-read-scope-final02.xml",
+        "bytecode_cache_enabled": true,
+        "basetemp_location": "system_temporary_directory",
+        "tests": 64,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 64,
+        "log_identity": {
+          "bytes": 111,
+          "sha256": "9286254145d184597fd82edb158639c6a510023cd798217c3d95d61be5c159df"
+        },
+        "junit_identity": {
+          "bytes": 11374,
+          "sha256": "cbc09105cb9d2ecfdd3433757244269ec0f7b4ee9a3b3d759ecf8ebf07cab52e"
+        }
+      },
+      "original_business_assertions": "Existing UUID/result equality, zero additional RPC, unchanged State and paid rows, exact head repair and original producer gates are retained"
+    },
+    "replica_child_test_dependencies": {
+      "cause": "The test child imported an ignored historical data-only audit module and admitted only a historical fixed runner directory",
+      "implementation": "Promote the original audit bytes into tracked test helpers; use the existing isolated-QA validator for ordinary pytest roots and preserve the retained runner subtree",
+      "before": {
+        "exit_code": 1,
+        "seconds": 15.421044927999901,
+        "selected": [
+          "tests/test_personal_authority_replica_group.py::test_unknown_native_outcomes_poison_only_their_isolated_child_and_never_retry_closers[fd-close-raised]"
+        ],
+        "log": "linux-ci-replica-child-before.log",
+        "junit": "linux-ci-replica-child-before.xml",
+        "bytecode_cache_enabled": true,
+        "basetemp_location": "system_temporary_directory",
+        "tests": 1,
+        "errors": 0,
+        "failures": 1,
+        "skipped": 0,
+        "passed": 0,
+        "log_identity": {
+          "bytes": 3526,
+          "sha256": "3d18b50dcef79238313a91c298cadf376b9e54e2370be4f266e796d08ec2a80d"
+        },
+        "junit_identity": {
+          "bytes": 3195,
+          "sha256": "799f8585b62a5277d7b9d2a245bc10017b3e93c2d39c37549bd6f697567b7e85"
+        }
+      },
+      "after": {
+        "exit_code": 0,
+        "seconds": 167.04314590600006,
+        "selected": [
+          "tests/test_personal_authority_replica_group.py",
+          "tests/test_replica_group_child.py"
+        ],
+        "log": "linux-ci-replica-child-after.log",
+        "junit": "linux-ci-replica-child-after.xml",
+        "bytecode_cache_enabled": true,
+        "basetemp_location": "system_temporary_directory",
+        "tests": 224,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 11,
+        "passed": 213,
+        "log_identity": {
+          "bytes": 364,
+          "sha256": "485f971fa5ad60bac9b5af743ae8c06c9c791299eb34a202036629fb0bfcb0f1"
+        },
+        "junit_identity": {
+          "bytes": 41358,
+          "sha256": "e50eeb9cfbd7a8ca1995b94947a393d074dadcb4f84afcc6fae7720b8c9cd534"
+        }
+      },
+      "audit_content_changed": false,
+      "skip_reasons": [
+        "Windows CRT transfer",
+        "Windows DuplicateHandle",
+        "Windows GetLastError after CreateFile",
+        "Windows GetLastError after DuplicateHandle",
+        "Windows HANDLE closer",
+        "Windows HANDLE to CRT-fd transfer",
+        "Windows OVERLAPPED contract",
+        "Windows reserved component"
+      ]
+    },
+    "file_identities": {
+      "reno/home_creation_recovery17.py": {
+        "before_sha256": "456b32705fd3ac1d91c2b87b67063070d47e086d1f26e285e4481045c1c4baf1",
+        "after_sha256": "6e952e90f9522e92c47620104ccf4c5906ffe6ad6ebc4c655e2390d3a3704f9d"
+      },
+      "reno/sync_source_legacy_pending_receipt17.py": {
+        "before_sha256": "d159ff578225738d8f5741609061e408b041f7a89444aca24ad5670d1eeb7b2e",
+        "after_sha256": "9ce4f356096e251c067c6559cd0d1cd798b73f1d10de23fc27662cd8a95ff3c5"
+      },
+      "reno/sync_source_legacy_receipt_completion17.py": {
+        "before_sha256": "800c3690412b07b962b188f3e867e72d890879b72baaef4ecffd6ee040549215",
+        "after_sha256": "8a0e70df5aceeef4af83d3a57c030f9b85cc2d0a80c537a1b38263b9d33d574b"
+      },
+      "tests/test_legacy_receipt_owned_read_scope17.py": {
+        "before_sha256": null,
+        "after_sha256": "b82d7dba1f0f961b0d7001bbed4750dc1b8ea88137b6c780baa1d926351161e0"
+      },
+      "tests/helpers/replica_group_child.py": {
+        "before_sha256": "8fa7f1a6e81fea0d9c62ec6aec9e9118c0241cf1b6a34291bafca2ad03234783",
+        "after_sha256": "4c256a8e910a2ed2c3ca1a2a5e514c45302b1d950821e65e75c5c01decbd75a6"
+      },
+      "tests/helpers/replica_group_native_test_audit.py": {
+        "before_sha256": null,
+        "after_sha256": "4090005c902060d1fb59530a4342d1d39efc5839af7c6c8e74945fabfec0a3fc",
+        "original_source": "data/t16-h02-replica-group-r748/native_test_audit.py",
+        "original_bytes_preserved": true
+      },
+      "tests/test_replica_group_child.py": {
+        "before_sha256": null,
+        "after_sha256": "b22b85a5d64fe89f9ce6380a649202c0825f2a76ab1404c39fd8d8f4bac333a4"
+      }
+    },
+    "pytest_counting": "Batches overlap and must be read separately",
+    "base_ci_jobs_at_recording": [
+      {
+        "run_id": "43235347680",
+        "job_id": 131241101225,
+        "name": "frontend",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      },
+      {
+        "run_id": "43235347680",
+        "job_id": 131241101553,
+        "name": "derivation",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      },
+      {
+        "run_id": "43235347680",
+        "job_id": 131241101630,
+        "name": "backend",
+        "status": "in_progress",
+        "conclusion": null,
+        "steps": [],
+        "current_step": "pytest (robustness + units; LLM probes opt-in, skipped here)"
+      },
+      {
+        "run_id": "43235347680",
+        "job_id": 131241101751,
+        "name": "sync-chain",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      },
+      {
+        "run_id": "43235347680",
+        "job_id": 131241101762,
+        "name": "sync-recovery",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      },
+      {
+        "run_id": "43235347680",
+        "job_id": 131241101765,
+        "name": "reconciliation",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      },
+      {
+        "run_id": "43235347680",
+        "job_id": 131241101919,
+        "name": "checkpoint-runtime",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      }
+    ],
+    "frontend_validation": "Base commit frontend CI passed typecheck, complete Vitest and build",
+    "full_backend_remote_pass": false,
+    "c_candidate_parsed_built_or_executed": false,
+    "complete_product_goal": false
   }
 }
