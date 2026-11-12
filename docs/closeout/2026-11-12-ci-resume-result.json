@@ -2562,12 +2562,67 @@
     },
     "local_followups": {
       "linux-ci-current-scenarios-built-retry": {
-        "state": "running",
-        "process_receipt": "linux-ci-current-scenarios-built-retry-process.json"
+        "exit_code": 0,
+        "seconds": 649.4340903689999,
+        "selected": [
+          "tests/test_sync_scenario.py",
+          "tests/test_sync_recovery_scenario.py"
+        ],
+        "log": "linux-ci-current-scenarios-built-retry.log",
+        "junit": "linux-ci-current-scenarios-built-retry.xml",
+        "bytecode_cache_enabled": false,
+        "basetemp_location": "system_temporary_directory",
+        "tests": 6,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 6,
+        "result_identity": {
+          "file": "linux-ci-current-scenarios-built-retry.json",
+          "bytes": 429,
+          "sha256": "65c2415419a94994d875487cfbceb860a048d854ce884fe675eea657118dd297"
+        },
+        "log_identity": {
+          "file": "linux-ci-current-scenarios-built-retry.log",
+          "bytes": 110,
+          "sha256": "501eacb6bc8ec701e745bd6c0955b75336ce5ad37a452f90c15e6157bcbee05d"
+        },
+        "junit_identity": {
+          "file": "linux-ci-current-scenarios-built-retry.xml",
+          "bytes": 1163,
+          "sha256": "abe5b71970ef3b01bc7cae9986ffdeffa998c50946699286e29ba6fa92df3aad"
+        }
       },
       "linux-ci-current-restore-cycle-retry": {
-        "state": "running",
-        "process_receipt": "linux-ci-current-restore-cycle-retry-process.json"
+        "exit_code": 0,
+        "seconds": 1241.071993972,
+        "selected": [
+          "tests/test_sync_source_restore_cycle17.py"
+        ],
+        "log": "linux-ci-current-restore-cycle-retry.log",
+        "junit": "linux-ci-current-restore-cycle-retry.xml",
+        "bytecode_cache_enabled": false,
+        "basetemp_location": "system_temporary_directory",
+        "tests": 23,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 23,
+        "result_identity": {
+          "file": "linux-ci-current-restore-cycle-retry.json",
+          "bytes": 394,
+          "sha256": "2b8698ad6a896c51bf6015f71a54a0519c0cbe4a7b931e1fc7fe1daa1ae79a68"
+        },
+        "log_identity": {
+          "file": "linux-ci-current-restore-cycle-retry.log",
+          "bytes": 112,
+          "sha256": "14c7e9b7ab29f3258a878139acce4b69045b258d2402b9aa72cac5863e1567a4"
+        },
+        "junit_identity": {
+          "file": "linux-ci-current-restore-cycle-retry.xml",
+          "bytes": 4630,
+          "sha256": "ca36138fcf9447300c4a28c3377d2366e34520f0933c910ccbae2c751a6738bd"
+        }
       }
     },
     "prior_completed_ci": {
@@ -2599,6 +2654,44 @@
       "backend_conclusion": null
     },
     "full_remote_backend_pass": false,
+    "complete_product_goal": false,
+    "final_followup_nodeids_unique": 29,
+    "interrupted_runs_counted_as_complete": false,
+    "python_diff_after_fixture_delivery": {
+      "from": "304e186c124480d5abddbf7da22e2992fcbe1fbd",
+      "to": "b935240db857b2c951df3c0280ee50e6323f9c86",
+      "changed_paths": [
+        "tests/test_config_isolation.py"
+      ],
+      "changed_fixture_ast_preserved": true,
+      "product_runtime_python_changes": 0
+    },
+    "observed_ci_after_workflow_delivery": {
+      "head_sha": "b935240db857b2c951df3c0280ee50e6323f9c86",
+      "run_id": 43280056006,
+      "backend_job_id": 131398631479,
+      "successful_jobs": 6,
+      "backend_conclusion": null
+    }
+  },
+  "v3_scoped_contract_followup": {
+    "package": "reno-loader-null-slot-consumer-r1535",
+    "review": {
+      "file": "reno-loader-null-slot-consumer-r1535/SCOPED-DELEGATION-REVIEW.json",
+      "bytes": 4070,
+      "sha256": "fcfad14bfcb5305faff41e1071abc4de23f9d72142a18d6830c446d0227c9ffd"
+    },
+    "existing_frameless_binder_reuse_confirmed": true,
+    "official_new_texts": 5,
+    "copied_existing_counter_bytes": 15835,
+    "version_probe_backoff_fallback_and_deopt_finite_review": "passed",
+    "source_files": 29,
+    "source_bytes": 2572313,
+    "working_source_changes_this_batch": 0,
+    "next_source_plan": "reno-loader-scoped-custom-slot-r1536/DESIGN.md",
+    "source_plan_review_in_progress": true,
+    "complete_design_approved": false,
+    "c_parsed_built_or_executed": false,
     "complete_product_goal": false
   }
 }
