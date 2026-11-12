@@ -5,12 +5,13 @@ only fresh synthetic fixtures; no owner, permit, registry or token is supplied.
 """
 from contextvars import copy_context
 import hashlib
-import importlib
 import os
 from pathlib import Path
 import uuid
 
 import pytest
+
+from tests.historical_sources import import_historical_snapshot
 
 from reno import storage_lifecycle as lifecycle, sync_media as safe
 from tests.test_namespace_guard_runtime import profile  # noqa: F401
@@ -23,7 +24,7 @@ _NAMESPACE_SHA256 = "f90ad781a2fec3576dd8716d78fdd280e5affdc3a75244a2f98371ec54d
 def namespace(monkeypatch):
     graph = Path(__file__).resolve().parents[1] / "data/t16-runtime-origin-graph-r666"
     monkeypatch.syspath_prepend(str(graph))
-    namespace = importlib.import_module("authority_runtime_origin_r666.personal_authority_namespace")
+    namespace = import_historical_snapshot("authority_runtime_origin_r666.personal_authority_namespace")
     path = graph / "authority_runtime_origin_r666/personal_authority_namespace.py"
     assert Path(namespace.__file__).resolve() == path
     assert hashlib.sha256(path.read_bytes()).hexdigest() == _NAMESPACE_SHA256

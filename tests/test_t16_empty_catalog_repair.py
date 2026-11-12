@@ -16,6 +16,8 @@ from tests.test_personal_preservation import library
 
 
 def imported(name, path):
+    if not Path(path).is_file():
+        pytest.skip("Historical maintenance tool is absent from this checkout")
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module

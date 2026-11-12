@@ -1,10 +1,11 @@
 """A real Store stack preserves every directory while batching path reads."""
 from collections import Counter
 import hashlib
-import importlib
 from pathlib import Path
 
 import pytest
+
+from tests.historical_sources import import_historical_snapshot
 
 from reno import storage_lifecycle as lifecycle, sync_media as safe
 from tests.test_namespace_guard_runtime import initialized, profile, _ChangedStat  # noqa: F401
@@ -17,7 +18,7 @@ from tests.test_store_stage_effect_integration import (  # noqa: F401
 def namespace(monkeypatch):
     graph = Path(__file__).resolve().parents[1] / "data/t16-runtime-origin-graph-r671"
     monkeypatch.syspath_prepend(str(graph))
-    module = importlib.import_module("authority_runtime_origin_r671.personal_authority_namespace")
+    module = import_historical_snapshot("authority_runtime_origin_r671.personal_authority_namespace")
     path = graph / "authority_runtime_origin_r671/personal_authority_namespace.py"
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "f90ad781a2fec3576dd8716d78fdd280e5affdc3a75244a2f98371ec54d63073"
@@ -27,7 +28,7 @@ def namespace(monkeypatch):
 
 @pytest.fixture
 def store(namespace):
-    module = importlib.import_module("authority_runtime_origin_r671.personal_authority_store")
+    module = import_historical_snapshot("authority_runtime_origin_r671.personal_authority_store")
     path = Path(namespace.__file__).with_name("personal_authority_store.py")
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "244088ff995472fe51869bfeab6ee24dfbf8298bc3419bb3a24f3be664ab78f4"

@@ -21,6 +21,8 @@ from fastapi.testclient import TestClient
 import httpx
 import pytest
 
+from tests.asgi_transport import as_httpx_response
+
 from reno import budget_writer_witness as sql, config, model_budget, storage_admin
 from reno import storage_lifecycle as lifecycle, sync_access, sync_agent as agent
 from reno import sync_queue as queue, sync_source_authority as authority
@@ -61,7 +63,7 @@ class CloudASGITransport(httpx.BaseTransport):
             scoped.setattr(storage_admin, "profile", lambda **kwargs:
                 original_profile(**kwargs) if kwargs else self.profile)
             scoped.setattr(config, "db_path", lambda: self.profile.database)
-            response = Context().run(self.http._transport.handle_request, request)
+            response = as_httpx_response(Context().run(self.http._transport.handle_request, request))
             # Retain only public synthetic endpoint/status/error-code evidence.
             # Preserve the original response for the real SDK parser; never
             # print tokens, request bytes, private facts, or response detail.

@@ -1,12 +1,13 @@
 """Same-effect guard observation with real owned Stage and native Namespace IO."""
 from collections import Counter
 import hashlib
-import importlib
 from pathlib import Path
 import time
 import uuid
 
 import pytest
+
+from tests.historical_sources import import_historical_snapshot
 
 from reno import storage_lifecycle as lifecycle
 from tests.test_stage_directory_entry_r701 import live_stage, initialized, profile  # noqa: F401
@@ -19,7 +20,7 @@ from tests.test_store_stage_effect_integration import (  # noqa: F401
 def namespace(monkeypatch):
     graph = Path(__file__).resolve().parents[1] / "data/t16-runtime-origin-graph-r709"
     monkeypatch.syspath_prepend(str(graph))
-    module = importlib.import_module("authority_runtime_origin_r709.personal_authority_namespace")
+    module = import_historical_snapshot("authority_runtime_origin_r709.personal_authority_namespace")
     path = graph / "authority_runtime_origin_r709/personal_authority_namespace.py"
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "56f2833e0470e0a0af0cc5aa8381193e5ccc4573ee57a70f7c5f829b6245e75e"
@@ -29,7 +30,7 @@ def namespace(monkeypatch):
 
 @pytest.fixture
 def store(namespace):
-    module = importlib.import_module("authority_runtime_origin_r709.personal_authority_store")
+    module = import_historical_snapshot("authority_runtime_origin_r709.personal_authority_store")
     path = Path(namespace.__file__).with_name("personal_authority_store.py")
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "dda8b7c6832ef42b44a3cab9690c9f896629a5b290011235b2811478aa7b0cdc"
@@ -39,7 +40,7 @@ def store(namespace):
 
 @pytest.fixture
 def stage(namespace, store):
-    module = importlib.import_module("authority_runtime_origin_r709.owned_stage_io_r251")
+    module = import_historical_snapshot("authority_runtime_origin_r709.owned_stage_io_r251")
     path = Path(namespace.__file__).with_name("owned_stage_io_r251.py")
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "3fd2746f41c2759d489c6067df2123741026d2de2a5e725e511ccb10198e4611"

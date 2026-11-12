@@ -2,12 +2,13 @@
 from collections import Counter
 from contextlib import contextmanager
 import hashlib
-import importlib
 from pathlib import Path
 import time
 import uuid
 
 import pytest
+
+from tests.historical_sources import import_historical_snapshot
 
 from reno import storage_lifecycle as lifecycle, sync_media as safe
 from tests.test_namespace_guard_runtime import initialized, profile  # noqa: F401
@@ -17,7 +18,7 @@ from tests.test_namespace_guard_runtime import initialized, profile  # noqa: F40
 def namespace(monkeypatch):
     graph = Path(__file__).resolve().parents[1] / "data/t16-runtime-origin-graph-r717"
     monkeypatch.syspath_prepend(str(graph))
-    module = importlib.import_module("authority_runtime_origin_r717.personal_authority_namespace")
+    module = import_historical_snapshot("authority_runtime_origin_r717.personal_authority_namespace")
     path = graph / "authority_runtime_origin_r717/personal_authority_namespace.py"
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "62a1d30835444f14880d96579773d2c9259102db56d4998831e051767176cee5"
@@ -27,7 +28,7 @@ def namespace(monkeypatch):
 
 @pytest.fixture
 def store(namespace):
-    module = importlib.import_module("authority_runtime_origin_r717.personal_authority_store")
+    module = import_historical_snapshot("authority_runtime_origin_r717.personal_authority_store")
     path = Path(namespace.__file__).with_name("personal_authority_store.py")
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "dae1e849df7b3d46a4a50d813c4ba225c8367c99276638ce94625faf3a72f6f7"
@@ -37,7 +38,7 @@ def store(namespace):
 
 @pytest.fixture
 def stage(namespace, store):
-    module = importlib.import_module("authority_runtime_origin_r717.owned_stage_io_r251")
+    module = import_historical_snapshot("authority_runtime_origin_r717.owned_stage_io_r251")
     path = Path(namespace.__file__).with_name("owned_stage_io_r251.py")
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "3fd2746f41c2759d489c6067df2123741026d2de2a5e725e511ccb10198e4611"

@@ -34,6 +34,10 @@ from reno import personal_authority_raw_preservation2 as raw2
 from reno import storage_lifecycle as lifecycle
 
 
+pytestmark = pytest.mark.skipif(
+    os.name != "nt", reason="Windows DATA-chain tests require native Windows filesystem APIs"
+)
+
 OPERATION_ID = "12345678-1234-4234-8234-123456789abc"
 SOURCE_OPERATION_ID = "abcdef12-1234-4234-8234-123456789abc"
 SOURCE_SHA = "0123456789abcdef" * 4

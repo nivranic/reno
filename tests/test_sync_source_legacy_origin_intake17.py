@@ -35,7 +35,8 @@ from tests.test_sync_source_execution_state import request as old_budget_request
 
 
 @pytest.fixture
-def legacy16(env, monkeypatch):
+def legacy16(released16_env, monkeypatch):
+    env = released16_env
     install_import(env, monkeypatch)
     with home_cycle(env) as cycle, executing(cycle) as (job, _):
         proof = bind(cycle)  # Actual legacy producer, no fixture origin file.

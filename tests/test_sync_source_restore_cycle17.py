@@ -164,7 +164,8 @@ def paid_failure_control(value):
 
 
 @pytest.fixture
-def restored_origin17(env, monkeypatch, request):
+def restored_origin17(released16_env, monkeypatch, request):
+    env = released16_env
     profile = storage_admin.profile()
     source_id = str(uuid.uuid4())
     sources.create_checkpoint(profile=profile, source_id=source_id)

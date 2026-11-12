@@ -1,10 +1,11 @@
 """One real source batch owns one directory and three independent fileholds."""
 from contextlib import contextmanager
 import hashlib
-import importlib
 from pathlib import Path
 
 import pytest
+
+from tests.historical_sources import import_historical_snapshot
 
 from reno import storage_lifecycle as lifecycle
 from tests.test_namespace_guard_runtime import initialized, profile  # noqa: F401
@@ -17,7 +18,7 @@ from tests.test_store_stage_effect_integration import (  # noqa: F401
 def namespace(monkeypatch):
     graph = Path(__file__).resolve().parents[1] / "data/t16-runtime-origin-graph-r691"
     monkeypatch.syspath_prepend(str(graph))
-    module = importlib.import_module("authority_runtime_origin_r691.personal_authority_namespace")
+    module = import_historical_snapshot("authority_runtime_origin_r691.personal_authority_namespace")
     path = graph / "authority_runtime_origin_r691/personal_authority_namespace.py"
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "56f2833e0470e0a0af0cc5aa8381193e5ccc4573ee57a70f7c5f829b6245e75e"
@@ -27,7 +28,7 @@ def namespace(monkeypatch):
 
 @pytest.fixture
 def store(namespace):
-    module = importlib.import_module("authority_runtime_origin_r691.personal_authority_store")
+    module = import_historical_snapshot("authority_runtime_origin_r691.personal_authority_store")
     path = Path(namespace.__file__).with_name("personal_authority_store.py")
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "117eedb45812c78a83abd82fa66d9f1b7f354b58613b837fd46be6885962550e"

@@ -25,7 +25,9 @@ jobs:
         env:
           NGINX_TEST_BINARY: /usr/sbin/nginx
           OPENSSL_TEST_BINARY: /usr/bin/openssl
-        run: python -m pytest -q
+        run: |
+          mkdir -p .pytest_cache
+          python -m pytest -q --basetemp=.pytest_cache/backend
       - name: verify server boots
         run: |
           python -m reno init-db

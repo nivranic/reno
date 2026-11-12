@@ -21,6 +21,8 @@ import uuid
 import httpx
 import pytest
 
+from tests.asgi_transport import as_httpx_response
+
 from reno import config, db, home_recovery17 as restore, home_recovery_runtime17 as runtime
 from reno import home_recovery as legacy_restore, tasks, worker
 from reno import home_recovery_source as sources, migrations, storage_admin
@@ -147,7 +149,7 @@ class ActualCloudTransport(httpx.BaseTransport):
             scoped.setattr(queue, "_clock", lambda now: old_clock(self.now if now is None else now))
             # The Cloud is a different service process. It inherits neither
             # the client's Home SH guard nor its worker/HTTP capability frame.
-            return Context().run(self.http._transport.handle_request, request)
+            return as_httpx_response(Context().run(self.http._transport.handle_request, request))
 
 
 @pytest.fixture

@@ -6,11 +6,12 @@ observe real effects or inject stated faults; no owner or registry is supplied.
 from contextlib import contextmanager
 from contextvars import copy_context
 import hashlib
-import importlib
 from pathlib import Path
 import time
 
 import pytest
+
+from tests.historical_sources import import_historical_snapshot
 
 from reno import storage_lifecycle as lifecycle
 from tests.test_namespace_guard_runtime import initialized, profile  # noqa: F401
@@ -24,7 +25,7 @@ _STORE_SHA256 = "3cb7989b7ae73aeb73d3e589f30dcbcfe12fed2fa81a9b2bbf986b1801ccf97
 def namespace(monkeypatch):
     graph = Path(__file__).resolve().parents[1] / "data/t16-runtime-origin-graph-r668"
     monkeypatch.syspath_prepend(str(graph))
-    namespace = importlib.import_module("authority_runtime_origin_r668.personal_authority_namespace")
+    namespace = import_historical_snapshot("authority_runtime_origin_r668.personal_authority_namespace")
     path = graph / "authority_runtime_origin_r668/personal_authority_namespace.py"
     assert Path(namespace.__file__).resolve() == path
     assert hashlib.sha256(path.read_bytes()).hexdigest() == _NAMESPACE_SHA256
@@ -34,7 +35,7 @@ def namespace(monkeypatch):
 
 @pytest.fixture
 def store(namespace):
-    store = importlib.import_module("authority_runtime_origin_r668.personal_authority_store")
+    store = import_historical_snapshot("authority_runtime_origin_r668.personal_authority_store")
     path = Path(namespace.__file__).with_name("personal_authority_store.py")
     assert Path(store.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == _STORE_SHA256

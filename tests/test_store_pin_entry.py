@@ -2,10 +2,11 @@
 from collections import Counter
 from contextlib import contextmanager
 import hashlib
-import importlib
 from pathlib import Path
 
 import pytest
+
+from tests.historical_sources import import_historical_snapshot
 
 from reno import storage_lifecycle as lifecycle
 from tests.test_namespace_guard_runtime import initialized, profile  # noqa: F401
@@ -18,7 +19,7 @@ from tests.test_store_stage_effect_integration import (  # noqa: F401
 def namespace(monkeypatch):
     graph = Path(__file__).resolve().parents[1] / "data/t16-runtime-origin-graph-r685"
     monkeypatch.syspath_prepend(str(graph))
-    module = importlib.import_module("authority_runtime_origin_r685.personal_authority_namespace")
+    module = import_historical_snapshot("authority_runtime_origin_r685.personal_authority_namespace")
     path = graph / "authority_runtime_origin_r685/personal_authority_namespace.py"
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "f90ad781a2fec3576dd8716d78fdd280e5affdc3a75244a2f98371ec54d63073"
@@ -28,7 +29,7 @@ def namespace(monkeypatch):
 
 @pytest.fixture
 def store(namespace):
-    module = importlib.import_module("authority_runtime_origin_r685.personal_authority_store")
+    module = import_historical_snapshot("authority_runtime_origin_r685.personal_authority_store")
     path = Path(namespace.__file__).with_name("personal_authority_store.py")
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "0fc4abc17f492e624abe93334bfaffeae5d37bed2c9df3626c49e4b8e712af62"

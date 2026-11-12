@@ -1,11 +1,12 @@
 """One real immutable-file verification keeps rereads, late gates and fallbacks."""
 from contextlib import contextmanager
 import hashlib
-import importlib
 from pathlib import Path
 import time
 
 import pytest
+
+from tests.historical_sources import import_historical_snapshot
 
 from reno import storage_lifecycle as lifecycle
 from tests.test_namespace_guard_runtime import initialized, profile  # noqa: F401
@@ -18,7 +19,7 @@ from tests.test_store_stage_effect_integration import (  # noqa: F401
 def namespace(monkeypatch):
     graph = Path(__file__).resolve().parents[1] / "data/t16-runtime-origin-graph-r687"
     monkeypatch.syspath_prepend(str(graph))
-    module = importlib.import_module("authority_runtime_origin_r687.personal_authority_namespace")
+    module = import_historical_snapshot("authority_runtime_origin_r687.personal_authority_namespace")
     path = graph / "authority_runtime_origin_r687/personal_authority_namespace.py"
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "56f2833e0470e0a0af0cc5aa8381193e5ccc4573ee57a70f7c5f829b6245e75e"
@@ -28,7 +29,7 @@ def namespace(monkeypatch):
 
 @pytest.fixture
 def store(namespace):
-    module = importlib.import_module("authority_runtime_origin_r687.personal_authority_store")
+    module = import_historical_snapshot("authority_runtime_origin_r687.personal_authority_store")
     path = Path(namespace.__file__).with_name("personal_authority_store.py")
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "3c9e39465994e8b426f226c8339c17fa7c8e93a8d899d45b24e096562ee6289a"

@@ -16,6 +16,8 @@ import uuid
 import httpx
 import pytest
 
+from tests.asgi_transport import as_httpx_response
+
 from reno import config, db, personal, personal_mirror_contract as facts
 from reno import personal_mirror_transfer as receiver, personal_mirror_transfer_contract as wire
 from reno import personal_mirror_transfer_files as receiver_files, personal_mirror_transfer_schema as receiver_schema
@@ -517,7 +519,7 @@ def test_supported_callback_cannot_redirect_a_handshaken_client_or_replace_its_a
     def route(request):
         if request.url.host != httpx.URL(URL).host:
             return peer_b(request)
-        return original_peer._transport.handle_request(request)
+        return as_httpx_response(original_peer._transport.handle_request(request))
     original_transport = httpx.MockTransport(route)
     count, changed, client = 0, False, None
     trigger = 2 if phase == "receipt" else 3

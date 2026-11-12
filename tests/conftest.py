@@ -112,3 +112,13 @@ def _stop_test_workers():
     from reno import worker
     if not worker.stop_running(timeout=5):
         raise RuntimeError("Test worker is still running; refusing to restore data paths")
+
+
+@pytest.fixture
+def released16_env(tmp_path, monkeypatch):
+    """Own the complete original16 producer lifetime for historical fixtures."""
+    from tests.schema_fixtures import released16
+    from tests.test_sync_agent import env as original_env
+
+    with released16(monkeypatch):
+        yield from original_env.__wrapped__(tmp_path, monkeypatch)

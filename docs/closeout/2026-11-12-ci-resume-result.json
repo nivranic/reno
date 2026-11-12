@@ -313,7 +313,7 @@
   "backend_ci_python": "3.12.10",
   "backend_ci_python_reason": "Matches the existing selector representation contract while checkpoint-runtime retains Python 3.11",
   "remote_ci": {
-    "state": "runner_correction_prepared",
+    "state": "backend_test_repairs_verified_locally_pending_remote_rerun",
     "previous_source": "bbc5c6bd4bba63f874ad9beff13c046d9992b601",
     "previous_run_id": 42362145344,
     "previous_passed_jobs": 3,
@@ -334,13 +334,38 @@
       "in_progress": [
         "sync-recovery"
       ]
+    },
+    "latest_completed_run": {
+      "run_id": 43173045129,
+      "source_commit": "1f6a131213afb3cda4ef72184ed38c0b2be96335",
+      "conclusion": "failure",
+      "jobs": {
+        "frontend": "success",
+        "reconciliation": "success",
+        "derivation": "success",
+        "sync-recovery": "success",
+        "checkpoint-runtime": "success",
+        "sync-chain": "success",
+        "backend": "failure"
+      },
+      "backend_pytest": {
+        "passed": 11708,
+        "failed": 502,
+        "errors": 1384,
+        "skipped": 1691,
+        "subtests_passed": 43,
+        "duration_seconds": 5170.52
+      },
+      "backend_log_sha256": "bce9e443dba56f96a60ad7b5ce91c654f52cfcf45c1c111302756da5fa6a2710",
+      "server_boot_verification": "skipped_after_pytest_failure"
     }
   },
   "remaining": [
-    "Current remote CI and recovery Chromium verification",
-    "Complete backend execution",
+    "Full backend CI rerun and server boot verification for the current test repairs",
+    "Operation suite execution-order class catalog investigation",
     "Windows historical fixed-source and first-import suite integration",
-    "r1528 V3 and H01-H06 development",
+    "r1530 owner/None/exec/selector integration and H01-H06 development",
+    "C build/ABI/COMPAT/runtime and physical-budget verification",
     "P06 missing historical source identities and remaining engineering"
   ],
   "complete_product_goal": false,
@@ -450,5 +475,80 @@
     ],
     "manifest_url": "https://github.com/actions/python-versions/blob/main/versions-manifest.json",
     "runner_reference": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners"
+  },
+  "ci_fixture_repairs": {
+    "recorded_at": "2026-11-12T09:20:10.008983+00:00",
+    "asgi_transport": {
+      "root_cause": "Starlette selects installed httpx2; its response stream fails the SDK httpx 0.28.1 SyncByteStream assertion",
+      "ci_versions": {
+        "starlette": "1.10.0",
+        "httpx2": "2.16.0",
+        "httpcore2": "2.16.0",
+        "httpx": "0.28.1"
+      },
+      "same_test_before_overlay": "passed",
+      "same_test_with_ci_overlay_before_fix": "NETWORK wrapping original stream AssertionError",
+      "same_test_with_ci_overlay_after_fix": "passed",
+      "additional_real_home_and_mirror_cases_passed": 3,
+      "scope": "Four real ASGI test transports adapt response ownership to the SDK HTTP client type"
+    },
+    "historical_dependency_gates": {
+      "snapshot_test_modules": 26,
+      "missing_snapshot_package": "explicit_skip",
+      "installed_snapshot_import_failure": "propagates",
+      "installed_snapshot_sha_checks": "retained",
+      "missing_ignored_maintenance_tools": "explicit_skip",
+      "windows_native_data_chain": "Windows_only",
+      "skip_scope_validation": {
+        "passed": 448,
+        "skipped": 157,
+        "failures": 0,
+        "errors": 0
+      }
+    },
+    "qa_directory": {
+      "backend_basetemp": ".pytest_cache/backend",
+      "parent_created_before_pytest": true,
+      "purpose": "Preserve the existing project-relative controlled-material fixture contract",
+      "local_failed_attempts": [
+        "pytest does not create a missing basetemp parent",
+        "WSL Windows mount does not support the required atomic publication operation"
+      ],
+      "verified_local_filesystem": "Linux temporary filesystem with a disposable source copy"
+    },
+    "historical_source_producers": {
+      "affected_shared_fixtures": [
+        "restored_origin17",
+        "legacy16"
+      ],
+      "root_cause": "The fixtures promise original16 sources while the generic environment now initializes production17",
+      "repair": "Use existing released16 context for the complete historical producer lifetime",
+      "isolated_legacy_and_current17_cases_passed": 3,
+      "original_schema_and_continuity_checks": "retained"
+    },
+    "helper_boundary_checks": {
+      "passed": 5,
+      "real_network_calls": 0
+    },
+    "operation_after_full_collection": {
+      "passed": 10,
+      "skipped": 2,
+      "deselected": 15273,
+      "full_module_execution": "in_progress"
+    },
+    "suite_order_class_catalog_investigation": "in_progress",
+    "full_backend_remote_pass": false
+  },
+  "v3_runtime_text_candidate": {
+    "artifact": "reno-native-v3-frame-call-source-r1530",
+    "before_sources": 28,
+    "working_sources": 29,
+    "working_bytes": 2537465,
+    "changed_sources": 11,
+    "unchanged_parent_sources": 18,
+    "source_tool_and_actual_output_reviews": "root_and_independent_passed",
+    "candidate_executed": false,
+    "c_parsed_or_built": false,
+    "owner_body_and_selector_integrated": false
   }
 }

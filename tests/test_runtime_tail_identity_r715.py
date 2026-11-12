@@ -2,11 +2,12 @@
 from collections import Counter
 from contextvars import copy_context
 import hashlib
-import importlib
 from pathlib import Path
 import time
 
 import pytest
+
+from tests.historical_sources import import_historical_snapshot
 
 from reno import storage_lifecycle as lifecycle
 from tests.test_namespace_guard_runtime import (  # noqa: F401
@@ -33,7 +34,7 @@ from tests.test_namespace_guard_runtime import (  # noqa: F401
 def namespace(monkeypatch):
     graph = Path(__file__).resolve().parents[1] / "data/t16-runtime-origin-graph-r715"
     monkeypatch.syspath_prepend(str(graph))
-    module = importlib.import_module("authority_runtime_origin_r715.personal_authority_namespace")
+    module = import_historical_snapshot("authority_runtime_origin_r715.personal_authority_namespace")
     path = graph / "authority_runtime_origin_r715/personal_authority_namespace.py"
     assert Path(module.__file__).resolve() == path.resolve()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == "62a1d30835444f14880d96579773d2c9259102db56d4998831e051767176cee5"

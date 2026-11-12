@@ -9,6 +9,8 @@ import uuid
 import httpx
 import pytest
 
+from tests.asgi_transport import as_httpx_response
+
 from reno import config, personal, personal_mirror_admin as admin
 from reno import personal_mirror_transport as sender, storage_lifecycle as lifecycle, tasks
 from reno import sync_state
@@ -245,7 +247,7 @@ def test_worker_delivers_only_original_actual_request_and_receiver_commit(sender
             request.read()
             def receiver_request():
                 with lifecycle.shared(env["profile"]):
-                    return peer._transport.handle_request(request)
+                    return as_httpx_response(peer._transport.handle_request(request))
             return remote.submit(receiver_request).result()
         client = SyncClient(URL, token_provider=lambda: "synthetic-personal-mirror-test-token",
                             transport=httpx.MockTransport(handle))
