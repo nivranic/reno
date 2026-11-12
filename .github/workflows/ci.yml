@@ -31,6 +31,7 @@ jobs:
         working-directory: frontend
       - name: pytest (robustness + units; LLM probes opt-in, skipped here)
         env:
+          TMPDIR: ${{ runner.temp }}
           NGINX_TEST_BINARY: /usr/sbin/nginx
           OPENSSL_TEST_BINARY: /usr/bin/openssl
         run: python -m pytest -q --basetemp="$RUNNER_TEMP/reno-backend-pytest"
