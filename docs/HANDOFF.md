@@ -27,3 +27,7 @@ V3 的 r1530 已生成并双审 29 源／2,537,465 B 的静态运行时候选，
 V3 的 r1531 已准备并双审八份owner／F3／None／exec片段，共25,995 B。完整dispatcher的source／authority接点、selector与退休／恢复仍待组合，完整C候选尚未生成。
 
 V3 的 r1532 已把 r1531 片段组合为29源／2,562,791 B的部分源码文本，主核和同一名只读代理均核对实际输出及完整逆像。working-01为3变26保，working-02另修dynamic producer的3行根索引，按metadata row4把globals／builtins对应到73／74，28份保持。入口域文档已核对原S1与固定F4 body删除的实际边界。完整dispatcher定义、逐站source／authority消费者、selector及正常退休／恢复、C解析／构建／ABI／COMPAT与运行验证仍待完成。
+
+V3 的 r1533 已补入 CLEAR 回调中的同代数据存活借用，沿原metadata计数与outer清理结账。29源／2,563,551 B，主核和同一只读代理复审通过，完整逆像与28份父源保持已核。有限Python条件模型修订02共226项通过，包含补齐的4项计数上限边界。原222项与修订02范围重叠。四处inner创建及22处Record phase writer的独立文本核对已完成，合法创建路径先完成prepare→Track，构造回调中的退休按实际phase处理。
+
+V3 的 r1534 已固定S1的binder前entry身份漂移消费点，实际比较code/defaults/kwdefaults/closure/G/B及已捕获typed slot。29源／2,566,341 B，主核和同一只读代理核对实际输出及完整逆像，182项有限Python条件模型通过。当前候选位于General的reno-loader-entry-identity-consumer-r1534/working-01。完整dispatcher、原非标准/NULL调用槽及其它入口、逐站source/authority消费者、selector和正常退休/恢复、C解析/构建/ABI/COMPAT/预算与运行验证继续推进。源码文本仍处于静态候选阶段。最近一次核对中，47f26b8的六项CI作业成功，后端整库仍执行pytest。

@@ -1839,5 +1839,177 @@
     "candidate_executed": false,
     "product_source_installed": false,
     "full_goal_complete": false
+  },
+  "v3_clear_continuation_loan": {
+    "package": "reno-loader-v3-continuation-lease-r1533",
+    "current_revision": "working-01",
+    "source_files": 29,
+    "source_bytes": 2563551,
+    "owner": {
+      "bytes": 1129495,
+      "sha256": "4cde18faf585955c656b54ad1cb5c730b6c999030c9db957886aae11a762ae7f"
+    },
+    "review": {
+      "design_review": {
+        "root": "passed",
+        "independent": "passed",
+        "reviewer": "/root/v3_readonly_review",
+        "design_sha256": "01f5cb5dc5b4d8e13901757b5433c37480f86ce02bd752a6894727304d2aa34d",
+        "assembler_sha256": "cf6a32f38fe4d7774463cb967c2cf8f2f39853dfb9dae7575df8802766a4f71e"
+      },
+      "output_review": {
+        "root": "passed",
+        "independent": "passed",
+        "reviewer": "/root/v3_readonly_review",
+        "owner_bytes": 1129495,
+        "owner_sha256": "4cde18faf585955c656b54ad1cb5c730b6c999030c9db957886aae11a762ae7f",
+        "files": 29,
+        "source_bytes": 2563551,
+        "changed_files": 1,
+        "unchanged_parent_files": 28,
+        "literal_edits": 2,
+        "complete_reverse_image_matches_parent": true
+      },
+      "condition_model_review": {
+        "root": "passed",
+        "independent": "passed",
+        "reviewer": "/root/v3_readonly_review",
+        "current_result": "CONDITION-MODEL-VERIFICATION-02.json",
+        "result_bytes": 32264,
+        "result_sha256": "7997fcc74b2608027aee3f0de628778bae02d491daf1f1c96741150193cbf20a",
+        "verifier_sha256": "68c08b5a14f64e3964868b539ba8ab28e1ddfa9cb1c4208ec2ea3e91d8666b1f",
+        "cases_passed": 226,
+        "capacity_boundary_cases_included": 4,
+        "first_review_finding": "The first 222-case model omitted the four promised capacity boundary cases. The original result and verifier are retained. Revision 02 adds those cases and passed review.",
+        "first_and_second_batches_are_overlapping": true
+      },
+      "c_parse_build_abi_compat_or_runtime_review": false
+    },
+    "condition_model_cases_passed": 226,
+    "verification_scope": "literal source identities, complete reverse image, finite Python condition model and independent text review",
+    "dispatcher_definition_present": false,
+    "full_source_authority_gates_complete": false,
+    "complete_c_candidate": false,
+    "c_parsed_or_built": false,
+    "candidate_executed": false,
+    "product_source_installed": false,
+    "full_goal_complete": false
+  },
+  "v3_entry_identity_consumer": {
+    "package": "reno-loader-entry-identity-consumer-r1534",
+    "current_revision": "working-01",
+    "source_files": 29,
+    "source_bytes": 2566341,
+    "owner": {
+      "bytes": 1132285,
+      "sha256": "8f69a3043d61b74853c9f100343485ad360e42b540e8cedb7e84096541a60038"
+    },
+    "review": {
+      "reviewers": [
+        "/root",
+        "/root/v3_readonly_review"
+      ],
+      "design_and_assembler_review": "passed",
+      "actual_output_and_model_review": "passed",
+      "design_sha256": "abdd1b0f085bc63a5363774ccee56aa473013182df8c6c50e9698852c574b3ba",
+      "assembler_sha256": "2298c7b70931e9626fe8980fd17aee955ec0d846d62c68a584d61addb782b302",
+      "owner_bytes": 1132285,
+      "owner_sha256": "8f69a3043d61b74853c9f100343485ad360e42b540e8cedb7e84096541a60038",
+      "model_result_bytes": 21399,
+      "model_result_sha256": "13a1a8db79689c81e5e01756a650c5bb5bab18f17c1c848b4daacb9cb1cf2221",
+      "verifier_sha256": "0af3390bffff7a11ae0881f89785f08e2f83b03efce395c2d97c9975e7a06226",
+      "source_files": 29,
+      "source_bytes": 2566341,
+      "changed_files": 1,
+      "unchanged_parent_files": 28,
+      "literal_edits": 2,
+      "diff_hunks": 2,
+      "complete_reverse_image_matches_parent": true,
+      "model_cases_passed": 182,
+      "seven_field_combination_cases": 128,
+      "other_boundary_cases": 54,
+      "entry_observer_has_one_actual_consumer": true,
+      "original_selector_binder_consumers_and_cleanup_suffix_unchanged": true,
+      "c_parse_build_abi_compat_or_runtime_review": false
+    },
+    "condition_model_cases_passed": 182,
+    "verification_scope": "literal source identities, complete reverse image, finite Python condition model and independent text review",
+    "dispatcher_definition_present": false,
+    "full_source_authority_gates_complete": false,
+    "complete_c_candidate": false,
+    "c_parsed_or_built": false,
+    "candidate_executed": false,
+    "product_source_installed": false,
+    "full_goal_complete": false
+  },
+  "remote_ci_47f26b8_progress": {
+    "head_sha": "47f26b8d1c1c3287ea53fac5a0e138422ced4b07",
+    "run_id": 43246769775,
+    "jobs": [
+      {
+        "run_id": "43246769775",
+        "job_id": 131281417336,
+        "name": "sync-recovery",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      },
+      {
+        "run_id": "43246769775",
+        "job_id": 131281417829,
+        "name": "sync-chain",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      },
+      {
+        "run_id": "43246769775",
+        "job_id": 131281417832,
+        "name": "frontend",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      },
+      {
+        "run_id": "43246769775",
+        "job_id": 131281417998,
+        "name": "derivation",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      },
+      {
+        "run_id": "43246769775",
+        "job_id": 131281418005,
+        "name": "checkpoint-runtime",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      },
+      {
+        "run_id": "43246769775",
+        "job_id": 131281418131,
+        "name": "reconciliation",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        "current_step": null
+      },
+      {
+        "run_id": "43246769775",
+        "job_id": 131281418190,
+        "name": "backend",
+        "status": "in_progress",
+        "conclusion": null,
+        "steps": [],
+        "current_step": "pytest (robustness + units; LLM probes opt-in, skipped here)"
+      }
+    ],
+    "full_backend_pass": false
   }
 }
