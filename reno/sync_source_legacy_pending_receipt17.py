@@ -130,6 +130,7 @@ class OriginalPendingReceiptCapture17:
     # These mechanical readers/refresh algorithms do not construct a sealed
     # capability or accept an effect DTO. They invoke this class's independent
     # context, producer, root SQL and declared-restoration validators.
+    _read_full = physical.OriginalCreationRecoveryCapture17._read_full
     _read_control = physical.OriginalCreationRecoveryCapture17._read_control
     _home_capture = physical.OriginalCreationRecoveryCapture17._home_capture
     _preserved_prefix = physical.OriginalCreationRecoveryCapture17._preserved_prefix
@@ -153,7 +154,10 @@ class OriginalPendingReceiptCapture17:
     def _acquire(self, stack):
         self._stack = stack
         self._state = witness._state(self._store)
-        self._pins = runtime._RuntimePins(stack, self._profile, self._read_control)
+        scope = physical._read_scope(self)
+        callback = scope.check().callback
+        self._pins = runtime._RuntimePins(stack, self._profile, callback)
+        scope.hold_child("pins", self._pins)
         with sql.connection(self._profile) as con:
             con.execute("PRAGMA query_only=ON")
             self._root_projection = _root(con, self._core)
@@ -166,7 +170,8 @@ class OriginalPendingReceiptCapture17:
             self._checkpoint = witness._CheckpointCache(self._store, self._state, stack)
             self._cloud = stack.enter_context(cloud_roots.capture_locked(self._profile,
                 sql_projection=self._projection, limits=cloud_roots.CaptureLimits(deadline_seconds=120),
-                check_cancelled=self._read_control))
+                check_cancelled=callback))
+            scope.hold_child("cloud", self._cloud)
             if self._cloud.unknown or self._cloud.summary["presence"] not in {"present", "absent"}:
                 _fail("CLOUD_INCOMPLETE")
             self._home = self._home_capture(stack, self._actual)
@@ -308,20 +313,22 @@ def capture_original_pending_receipt17_locked(*, profile, store, request_id, req
     authority._sha(request_sha256)
     if expected_record_sha256 is not None:
         authority._sha(expected_record_sha256)
-    with ExitStack() as stack:
-        stack.enter_context(store.reference_operation())
-        owner = intake._owned(stack, store)
+    failures = physical._ExitFailures17()
+    owner_stack = physical._OwnedExitStack17(failures)
+    reader_stack = physical._OwnedExitStack17(failures)
+    captured = scope = token = None
+    try:
+        owner_stack.enter_context(store.reference_operation())
+        owner = intake._owned(owner_stack, store)
         captured = object.__new__(OriginalPendingReceiptCapture17)
         try:
             captured._initialize(owner, profile, store, request_id, request_sha256, expected_record_sha256)
-        except physical.CreationRecoveryError:
-            _fail("ORIGINAL_TAIL_INVALID")
-        token = _CURRENT.set(captured)
-        captured._context_token = _CONTEXT.set(captured)
-        try:
+            scope = physical._OwnedReadScope17(captured, reader_stack, seal=physical._READ_SCOPE_SEAL)
+            token = _CURRENT.set(captured)
+            captured._context_token = _CONTEXT.set(captured)
             acquiring = _ACQUIRING.set(captured)
             try:
-                captured._acquire(stack)
+                captured._acquire(reader_stack)
             finally:
                 _ACQUIRING.reset(acquiring)
             captured.verify_source()
@@ -329,10 +336,26 @@ def capture_original_pending_receipt17_locked(*, profile, store, request_id, req
             captured.verify_source()
         except physical.CreationRecoveryError:
             _fail("ORIGINAL_TAIL_INVALID")
-        finally:
+    except BaseException as error:
+        failures.capture(error)
+    finally:
+        if captured is not None:
             captured._active = False
-            _CONTEXT.reset(captured._context_token)
-            _CURRENT.reset(token)
+            if captured._context_token is not None:
+                failures.run(_CONTEXT.reset, captured._context_token)
+            if token is not None:
+                failures.run(_CURRENT.reset, token)
+        if scope is not None:
+            failures.run(scope.finish_readers, failures)
+        failures.run(reader_stack.close)
+        if scope is not None:
+            # Final reader callbacks retain the original owner and SH lock.
+            failures.run(scope.full)
+            if scope.home is not None:
+                scope.home._active = False
+            failures.run(scope.retire)
+        failures.run(owner_stack.close)
+    failures.reraise()
 
 
 def require_pending_receipt_completion17(owner, kind, record, producer, *, entries):

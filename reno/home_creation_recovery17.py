@@ -37,7 +37,8 @@ _ReadBinding17 = namedtuple("_ReadBinding17", (
     "state_guard", "state_directory", "reference_frame", "checkpoint_root", "owner_stack",
     "store_profile", "owner_profile", "selectors", "started", "reader_stack", "callback",
     "readers", "retired_readers", "home", "cloud", "pins", "closing", "cloud_reader", "current_reader",
-    "context_token", "current_token", "reader_anchors"))
+    "context_token", "current_token", "reader_anchors", "capture_type", "capture_seal",
+    "capture_current", "capture_context"))
 
 
 class CreationRecoveryError(ValueError):
@@ -123,7 +124,7 @@ class _ExitFailures17:
 
     def capture(self, error):
         if self.first is None:
-            self.first = (type(error), error, error.__traceback__)
+            self.first = (type(error), error, BaseException.__dict__["__traceback__"].__get__(error))
         elif error is not self.first[1] and self.notes < 4:
             self.notes += 1
             try:
@@ -181,12 +182,25 @@ class _OwnedExitStack17:
         self.failures.run(self._stack.__exit__, *self.failures.exc_info())
 
 
+def _read_capture_domain(captured):
+    """Select only the three independent factories sharing these readers."""
+    if type(captured) is OriginalCreationRecoveryCapture17:
+        return _SEAL, _CURRENT, _CONTEXT
+    from . import sync_source_legacy_pending_receipt17 as pending_receipt
+    from . import sync_source_legacy_receipt_completion17 as legacy_receipt
+    if type(captured) is pending_receipt.OriginalPendingReceiptCapture17:
+        return pending_receipt._SEAL, pending_receipt._CURRENT, pending_receipt._CONTEXT
+    if type(captured) is legacy_receipt.OriginalReceiptRecoveryCapture17:
+        return legacy_receipt._SEAL, legacy_receipt._CURRENT, legacy_receipt._CONTEXT
+    _fail("FACTORY_REQUIRED")
+
+
 class _OwnedReadScope17:
     """Factory-held readonly callbacks; no data, SQL or publication authority."""
     def __init__(self, captured, reader_stack, *, seal):
+        capture_seal, capture_current, capture_context = _read_capture_domain(captured)
         if (seal is not _READ_SCOPE_SEAL or _READ_CURRENT.get() is not None
-                or type(captured) is not OriginalCreationRecoveryCapture17
-                or captured._seal is not _SEAL or not captured._active
+                or captured._seal is not capture_seal or not captured._active
                 or type(reader_stack) is not _OwnedExitStack17):
             _fail("FACTORY_REQUIRED")
         owner, store = captured.owner, captured._store
@@ -198,7 +212,8 @@ class _OwnedReadScope17:
             owner.lock.storage_guard, store._guard, store._directory, store._reference_frame,
             owner.checkpoint_root, owner.stack, store.profile, owner.profile,
             (captured._folder, captured._identifier), captured._started, reader_stack, callback,
-            (), (), None, None, None, False, None, None, None, None, ())
+            (), (), None, None, None, False, None, None, None, None, (),
+            type(captured), capture_seal, capture_current, capture_context)
         with _READ_SCOPE_LOCK:
             _READ_SCOPES[self] = binding
         current_token = _READ_CURRENT.set(self)
@@ -246,7 +261,8 @@ class _OwnedReadScope17:
     def hold_child(self, kind, child):
         binding = self.check()
         if (binding.closing or not binding.capture._active
-                or _CURRENT.get() is not binding.capture or _CONTEXT.get() is not binding.capture
+                or binding.capture_current.get() is not binding.capture
+                or binding.capture_context.get() is not binding.capture
                 or kind not in {"pins", "cloud", "home"} or getattr(binding, kind) is not None):
             _fail("FACTORY_REQUIRED")
         if kind == "pins":
@@ -273,7 +289,9 @@ class _OwnedReadScope17:
             binding = _READ_SCOPES.get(self)
         if binding is None or _READ_CURRENT.get() is not self or _READ_CONTEXT.get() is not self:
             _fail("FACTORY_REQUIRED")
-        if (binding.context != _owner() or binding.capture.owner is not binding.owner
+        if (binding.context != _owner() or type(binding.capture) is not binding.capture_type
+                or binding.capture._seal is not binding.capture_seal
+                or binding.capture.owner is not binding.owner
                 or binding.capture._profile is not binding.profile or binding.capture._store is not binding.store
                 or (binding.capture._folder, binding.capture._identifier) != binding.selectors
                 or binding.capture._started != binding.started
@@ -330,8 +348,9 @@ class _OwnedReadScope17:
 
     def register_reader(self, reader):
         binding = self.check()
-        if (self.closing or not binding.capture._active or _CURRENT.get() is not binding.capture
-                or _CONTEXT.get() is not binding.capture or sql.in_write_window()
+        if (self.closing or not binding.capture._active
+                or binding.capture_current.get() is not binding.capture
+                or binding.capture_context.get() is not binding.capture or sql.in_write_window()
                 or type(reader) is not home_roots._Reader or reader.profile is not binding.profile
                 or reader.stack is not binding.reader_stack or reader.callback is not binding.callback
                 or any(value is reader for value in self.readers)):
