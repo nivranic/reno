@@ -42,6 +42,8 @@ def test_real_subprocess_sync_chain_faults_and_default_cleanup(tmp_path):
         assert evidence["checks"][key] is True
     assert evidence["checks"]["expired_lease_rejected"] == "SYNC_LEASE_EXPIRED"
     assert evidence["source_mapping_count"] == 3
+    from reno import tasks
+    assert all(item["synthetic_worker_lease_ms"] == tasks.LEASE_MS for item in evidence["home_runs"])
     pids = [item["pid"] for item in evidence["home_runs"]]
     assert len(set(pids)) == len(pids)
     raw = json.dumps(evidence)

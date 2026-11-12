@@ -148,7 +148,9 @@ def _function_pins(class_pins, module_pins=()):
                   _OBJECT_GET(f, "__kwdefaults__")) for f in functions)
 
 
-_FUNCTION_PINS = _function_pins(_PATH_CLASS_PINS, _MODULE_PINS)
+# Unsupported pathlib versions may use native property accessors. Keep
+# ordinary imports available; _path_runtime rejects their projections.
+_FUNCTION_PINS = _function_pins(_PATH_CLASS_PINS, _MODULE_PINS) if _SUPPORTED else ()
 
 
 def _path_runtime():

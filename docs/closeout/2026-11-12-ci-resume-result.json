@@ -1,0 +1,393 @@
+{
+  "recorded_date": "2026-11-12",
+  "timezone": "UTC+08:00",
+  "goal_state": "active",
+  "base_commit": "60074e2cee29de1a4ea6e474d63017414a81b1e8",
+  "runtime_file_identities": [
+    {
+      "path": "reno/personal_authority_replica_operation.py",
+      "bytes": 164590,
+      "sha256": "f291da3e253956d6796e30eac1a7458c8ee56c62cc60651f59d34b0606bc194c"
+    },
+    {
+      "path": "reno/personal_authority_replica_selector.py",
+      "bytes": 22190,
+      "sha256": "f44fac1058b253d13b7c03d8f1db9e5c473d448cdcacc4b0b9bd1d17377a9e13"
+    },
+    {
+      "path": "scripts/run_sync_scenario.py",
+      "bytes": 27649,
+      "sha256": "5a9e79c791eb8d7acaf9da5ee7a2d7690a3dacc333229117b5e1c0da9aac2325"
+    },
+    {
+      "path": "scripts/sync_recovery_scenario.py",
+      "bytes": 9036,
+      "sha256": "8f74bd5366f8685bf13f65cff78c98983bd7aa5137faf6b72569538c42d46bd8"
+    },
+    {
+      "path": "scripts/sync_scenario_node.py",
+      "bytes": 16616,
+      "sha256": "b4ce455466b353108ff2a9c2663cee34b142e100febab980fbe168879e39f452"
+    },
+    {
+      "path": "scripts/sync_scenario_source.py",
+      "bytes": 4048,
+      "sha256": "83778a0fec0be0e2ace5d7be913b5c51c53825a07bbfe272922360ebdba5199c"
+    },
+    {
+      "path": "tests/test_existing_lock_first_error.py",
+      "bytes": 10458,
+      "sha256": "4ef7af6f7306a245a2a1f12c85cef60164286e765384d992eb501700499bda92"
+    },
+    {
+      "path": "tests/test_personal_authority_enrollment_store_initial.py",
+      "bytes": 31776,
+      "sha256": "91aa94ac8f34f11844d3baa54a8e41bddc922d7d860a08880050cebd9a2c2350"
+    },
+    {
+      "path": "tests/test_personal_authority_enrollment_store_owning.py",
+      "bytes": 140540,
+      "sha256": "0aa384fb2575d3862858f75952189eaad4fe632336c629185c66d769bb03751b"
+    },
+    {
+      "path": "tests/test_replica_runtime_compatibility.py",
+      "bytes": 1031,
+      "sha256": "e1662a6420453bd6d20e4717697c0b6671bdf2b3733835cede423456eb0af07f"
+    },
+    {
+      "path": "tests/test_sync_scenario.py",
+      "bytes": 2829,
+      "sha256": "64ede3e206eeeb235a48fc1b491eb6c1e0780fb8c8c8c4ae2d957f3a310b62aa"
+    }
+  ],
+  "matching_snapshot_file_scopes": {
+    "linux": [
+      "reno/personal_authority_replica_operation.py",
+      "reno/personal_authority_replica_selector.py",
+      "scripts/run_sync_scenario.py",
+      "scripts/sync_recovery_scenario.py",
+      "scripts/sync_scenario_node.py",
+      "scripts/sync_scenario_source.py",
+      "tests/test_existing_lock_first_error.py",
+      "tests/test_personal_authority_enrollment_store_initial.py",
+      "tests/test_personal_authority_enrollment_store_owning.py",
+      "tests/test_replica_runtime_compatibility.py",
+      "tests/test_sync_scenario.py"
+    ],
+    "windows": [
+      "reno/personal_authority_replica_operation.py",
+      "reno/personal_authority_replica_selector.py",
+      "scripts/run_sync_scenario.py",
+      "scripts/sync_recovery_scenario.py",
+      "scripts/sync_scenario_node.py",
+      "scripts/sync_scenario_source.py",
+      "tests/test_existing_lock_first_error.py",
+      "tests/test_replica_runtime_compatibility.py",
+      "tests/test_sync_scenario.py"
+    ]
+  },
+  "windows_snapshot_platform_modules": "The two unexecuted Windows-specific modules retain their original bodies without the new POSIX skip lines; Linux matches both platform guards exactly",
+  "pytest_batches": [
+    {
+      "name": "windows_python311_checkpoints",
+      "python": "3.11.3 (tags/v3.11.3:f3909b8, Apr  4 2023, 23:49:59) [MSC v.1934 64 bit (AMD64)]",
+      "exit_code": 0,
+      "timed_out": false,
+      "log_identity": {
+        "bytes": 113,
+        "sha256": "84ef5f31bd52289751770fc45a89ae7d29928075f1a4680fdeb36fb85f5634be"
+      },
+      "tests": 51,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 1,
+      "passed": 50,
+      "seconds": 55.758
+    },
+    {
+      "name": "windows_python311_compatibility",
+      "python": "3.11.3 (tags/v3.11.3:f3909b8, Apr  4 2023, 23:49:59) [MSC v.1934 64 bit (AMD64)]",
+      "exit_code": 0,
+      "timed_out": false,
+      "log_identity": {
+        "bytes": 100,
+        "sha256": "53e3361896f9d6cb5179235d50ecb905f05df13e8e15a195144b9492c855bc50"
+      },
+      "tests": 3,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 3,
+      "seconds": 2.942
+    },
+    {
+      "name": "windows_python31210_selector",
+      "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+      "exit_code": 0,
+      "timed_out": false,
+      "log_identity": {
+        "bytes": 264,
+        "sha256": "c55026c4a1f10ab04dc0465a5b87d3dacf9730bd60d2fb7d1a5cfc5118dde22c"
+      },
+      "tests": 209,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 209,
+      "seconds": 2.259
+    },
+    {
+      "name": "windows_python31210_lock_and_compatibility",
+      "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+      "exit_code": 0,
+      "timed_out": false,
+      "log_identity": {
+        "bytes": 101,
+        "sha256": "e3e264e7d3ec4a3fe40b893de3106c085d29bc38659efc21b094d22dea1d4f1f"
+      },
+      "tests": 31,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 31,
+      "seconds": 2.632
+    },
+    {
+      "name": "windows_python31210_healthy_source_dispatch",
+      "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+      "exit_code": 0,
+      "timed_out": false,
+      "log_identity": {
+        "bytes": 101,
+        "sha256": "45dc4bd7222bccd2fb4e9ef36664e091449ff5985094625a6417e1e902ccdaa0"
+      },
+      "tests": 1,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 1,
+      "seconds": 22.565
+    },
+    {
+      "name": "linux_python31210_targeted",
+      "python": "3.12.10 (main, May 30 2025, 05:37:37) [Clang 20.1.4 ]",
+      "exit_code": 0,
+      "timed_out": false,
+      "log_identity": {
+        "bytes": 432,
+        "sha256": "f5a0d25c4bf87eb7a8a8bf2d842c0dbcb928f876d233e7b58c93076528354d7a"
+      },
+      "tests": 291,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 5,
+      "passed": 286,
+      "seconds": 23.775
+    },
+    {
+      "name": "linux_python31210_backend_followup01",
+      "python": "3.12.10 (main, May 30 2025, 05:37:37) [Clang 20.1.4 ]",
+      "exit_code": 0,
+      "timed_out": false,
+      "log_identity": {
+        "bytes": 1066,
+        "sha256": "6bc3a2db5b47d97a93988d42357ab7351d11ba8b1b5de89842f075166d025823"
+      },
+      "tests": 131,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 131,
+      "seconds": 60.124
+    },
+    {
+      "name": "linux_python31210_backend_followup02",
+      "python": "3.12.10 (main, May 30 2025, 05:37:37) [Clang 20.1.4 ]",
+      "exit_code": null,
+      "timed_out": true,
+      "log_identity": {
+        "bytes": 9,
+        "sha256": "a350e9f897688140366f5f21456c728387e13fa74fa673a445a759bfb6a16747"
+      }
+    }
+  ],
+  "failed_or_incomplete_batches": [
+    "linux_python31210_backend_followup02"
+  ],
+  "linux_dependency_scope": "Isolated CPython with Linux Pillow, pydantic-core and ffmpeg overlays, declared yt-dlp inside its prefix, and reused pure-Python development dependencies",
+  "local_linux_full_collection": {
+    "python": "3.12.3",
+    "collected": 15280,
+    "exit_code": 0,
+    "before_three_new_compatibility_cases": true
+  },
+  "local_linux_full_execution_before_fixture_fix": {
+    "python": "3.12.3",
+    "passed": 678,
+    "skipped": 14,
+    "errors": 1,
+    "first_error": "Fake Windows lock fixture required a platform-only OVERLAPPED class"
+  },
+  "linux_sync_recovery": {
+    "python": "3.12.10",
+    "status": "passed",
+    "elapsed_seconds": 535.476,
+    "evidence_identity": {
+      "bytes": 18018,
+      "sha256": "ee634b8cb7f6dad4bc5d4ca66486dd362471ce407ae85235597ef1e28a1e22b3"
+    },
+    "checks": {
+      "independent_identities": true,
+      "expired_lease_rejected": "SYNC_LEASE_EXPIRED",
+      "normal_ingest_publish_search_range": true,
+      "lost_reply_same_publication_replayed_once": true,
+      "uploaded_unpublished_media_invisible": true,
+      "uploaded_unpublished_queue_remains_claimed": true,
+      "process_crash_network_outage_durable_recovery": true,
+      "interrupted_upload_intent_reserved_before_body": true,
+      "interrupted_upload_pin_retained_after_disconnect": true,
+      "interrupted_upload_cleaned_and_invisible": true,
+      "bidirectional_review_events": true,
+      "personal_tables_and_attachments_unchanged": true,
+      "queue_done_only_after_publication": [
+        {
+          "status": "done",
+          "attempts": 1
+        },
+        {
+          "status": "done",
+          "attempts": 1
+        },
+        {
+          "status": "done",
+          "attempts": 1
+        }
+      ],
+      "source_mapping_generations_match_immutable_v2_records": true,
+      "source_map_bound_to_identity_url_and_actual_media_sha": true
+    },
+    "recovery": {
+      "restored_and_removed_newer_members": true,
+      "restore_idempotent": true,
+      "publication_and_review_history_preserved": true,
+      "hold_survived_process_restart": true,
+      "reviews_continue_while_queue_attempts_unchanged": true,
+      "old_outbox_fenced": true,
+      "resume_fresh_full_generation": true,
+      "lost_resume_reply_replayed_once": true,
+      "queue_resumed_after_publication": true,
+      "restored_video_count": 1,
+      "republished_video_count": 3,
+      "final_control": {
+        "state": "running",
+        "generation": 1,
+        "revision": 3
+      }
+    },
+    "worker_lease_ms": [
+      120000
+    ],
+    "server_retained": false
+  },
+  "earlier_frontend_checks": {
+    "typecheck": "passed",
+    "vitest_files": 41,
+    "vitest_passed": 314,
+    "vite_build": "passed",
+    "tool_receipts": [
+      "08c8b2",
+      "c04606"
+    ],
+    "frontend_source_changed_since": false
+  },
+  "earlier_windows_sync_browser": {
+    "passed": 5,
+    "tool_receipt": "71dd33",
+    "fixture_stage": "Before the default worker lease and recovery marker corrections"
+  },
+  "local_windows_full_operation_suite": {
+    "timed_out": true,
+    "completed": false,
+    "purpose_followup": "The existing healthy source dispatch case subsequently passed on Python 3.12.10"
+  },
+  "backend_ci_python": "3.12.10",
+  "backend_ci_python_reason": "Matches the existing selector representation contract while checkpoint-runtime retains Python 3.11",
+  "remote_ci": {
+    "state": "awaiting_current_changes",
+    "previous_source": "bbc5c6bd4bba63f874ad9beff13c046d9992b601",
+    "previous_run_id": 42362145344,
+    "previous_passed_jobs": 3,
+    "previous_failed_jobs": 4
+  },
+  "remaining": [
+    "Current remote CI and recovery Chromium verification",
+    "Complete backend execution",
+    "Windows historical fixed-source and first-import suite integration",
+    "r1528 V3 and H01-H06 development",
+    "P06 missing historical source identities and remaining engineering"
+  ],
+  "complete_product_goal": false,
+  "identity_basis": "Working-copy runtime overlay bytes and separately recorded Git-index LF bytes",
+  "git_index_file_identities": [
+    {
+      "path": "reno/personal_authority_replica_operation.py",
+      "bytes": 164590,
+      "sha256": "f291da3e253956d6796e30eac1a7458c8ee56c62cc60651f59d34b0606bc194c"
+    },
+    {
+      "path": "reno/personal_authority_replica_selector.py",
+      "bytes": 22190,
+      "sha256": "f44fac1058b253d13b7c03d8f1db9e5c473d448cdcacc4b0b9bd1d17377a9e13"
+    },
+    {
+      "path": "scripts/run_sync_scenario.py",
+      "bytes": 27649,
+      "sha256": "5a9e79c791eb8d7acaf9da5ee7a2d7690a3dacc333229117b5e1c0da9aac2325"
+    },
+    {
+      "path": "scripts/sync_recovery_scenario.py",
+      "bytes": 9036,
+      "sha256": "8f74bd5366f8685bf13f65cff78c98983bd7aa5137faf6b72569538c42d46bd8"
+    },
+    {
+      "path": "scripts/sync_scenario_node.py",
+      "bytes": 16616,
+      "sha256": "b4ce455466b353108ff2a9c2663cee34b142e100febab980fbe168879e39f452"
+    },
+    {
+      "path": "scripts/sync_scenario_source.py",
+      "bytes": 4048,
+      "sha256": "83778a0fec0be0e2ace5d7be913b5c51c53825a07bbfe272922360ebdba5199c"
+    },
+    {
+      "path": "tests/test_existing_lock_first_error.py",
+      "bytes": 10458,
+      "sha256": "4ef7af6f7306a245a2a1f12c85cef60164286e765384d992eb501700499bda92"
+    },
+    {
+      "path": "tests/test_personal_authority_enrollment_store_initial.py",
+      "bytes": 31776,
+      "sha256": "91aa94ac8f34f11844d3baa54a8e41bddc922d7d860a08880050cebd9a2c2350"
+    },
+    {
+      "path": "tests/test_personal_authority_enrollment_store_owning.py",
+      "bytes": 140540,
+      "sha256": "0aa384fb2575d3862858f75952189eaad4fe632336c629185c66d769bb03751b"
+    },
+    {
+      "path": "tests/test_replica_runtime_compatibility.py",
+      "bytes": 1031,
+      "sha256": "e1662a6420453bd6d20e4717697c0b6671bdf2b3733835cede423456eb0af07f"
+    },
+    {
+      "path": "tests/test_sync_scenario.py",
+      "bytes": 2829,
+      "sha256": "64ede3e206eeeb235a48fc1b491eb6c1e0780fb8c8c8c4ae2d957f3a310b62aa"
+    }
+  ],
+  "python_eol_ast_comparison": {
+    "files": 11,
+    "matched": true,
+    "scope": "Static syntax and newline comparison"
+  }
+}

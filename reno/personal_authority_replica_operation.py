@@ -531,6 +531,8 @@ def _verify_source_dispatch_original(pins):
     actual selectable Pattern's immutable key intention. It does not rebuild
     regexes, freeze stdlib caches, parse caller objects or repair bad state.
     """
+    if pins is None:
+        _fail("RECORD_CHANGED")
     regex_pin, codec_pin = pins
     regex, namespace, cache, cache2, maxima, pattern_type, pattern_slot, flags_slot, intentions, flag_pin = regex_pin
     if (_GET(regex, "__dict__") is not namespace or type(namespace) is not dict
@@ -2951,8 +2953,12 @@ _SOURCE_CONSTANT_PINS = _capture_source_constants_original((
     source_rawfact, source_declaration, source_module.replica, source_module.raw2,
     source_module.replica.raw1, source_module.replica.census, source_module.raw2.projection,
     source_module.raw2.policy) + owned_group._content_codec_modules_original())
-_SOURCE_REGEX_TABLE_PINS = _capture_source_regex_tables_original(source_rawfact.re)
-_SOURCE_DISPATCH_PINS = _capture_source_dispatch_original(source_rawfact, source_module.utf8)
+# These private stdlib contracts belong to the selector's supported
+# representation. Ordinary storage imports do not require that capability.
+_SOURCE_REGEX_TABLE_PINS = (_capture_source_regex_tables_original(source_rawfact.re)
+    if selector._SUPPORTED else ())
+_SOURCE_DISPATCH_PINS = (_capture_source_dispatch_original(source_rawfact, source_module.utf8)
+    if selector._SUPPORTED else None)
 _NATIVE_SIGNATURES = _NATIVE_SIGNATURES + native._NATIVE_SIGNATURES + source_native._NATIVE_SIGNATURES
 _NATIVE_MODULE_LINKS = (sys.modules, native._NATIVE_MODULE_LINKS[1] + source_native._NATIVE_MODULE_LINKS[1]
     + tuple((module.__name__, module) for module in

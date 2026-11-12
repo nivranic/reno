@@ -113,7 +113,9 @@ def exercise(root, manifest, identities, client, work, restart_cloud):
     # The receiver commits a fresh full generation, then its reply is lost.
     # Repeating the home process must retry the exact immutable new batch.
     lost = work("recovery-resume-lost", "lost-response")
-    assert lost["result"]["error_code"] == "SYNC_CLIENT_NETWORK" and lost["pending_publication"]
+    assert lost["result"]["error_code"] == "SYNC_CLIENT_NETWORK" and lost["recovery_attempt"]
+    assert lost["publications"][0]["reply_lost"] is True
+    assert lost["recovery_attempt"]["publication_id"] == lost["publications"][0]["publication_id"]
     assert control()["state"] == "running"
     published = lost["publications"][0]["publication_id"]
     assert published not in {row["publication_id"] for row in old_publications}
@@ -124,7 +126,7 @@ def exercise(root, manifest, identities, client, work, restart_cloud):
     assert retry["publications"][0]["publication_id"] == published
     assert retry["publications"][0]["snapshot_claims_sha256"] == lost["publications"][0]["snapshot_claims_sha256"]
     assert retry["publications"][0]["publication_envelope_sha256"] == lost["publications"][0]["publication_envelope_sha256"]
-    assert retry["pending_publication"] is None
+    assert retry["pending_publication"] is None and retry["recovery_attempt"] is None
     assert len(rows(cloud, "SELECT publication_id FROM sync_publication WHERE publication_id=?", (published,))) == 1
     assert len(rows(cloud, "SELECT video_id FROM video_asset")) == len(manifest["videos"])
     work("recovery-queue-resume")

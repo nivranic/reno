@@ -33,6 +33,10 @@ class HostileNotesLookup(RuntimeError):
 
 @pytest.fixture
 def cleanup(monkeypatch):
+    class FakeOverlapped(locks.safe.ctypes.Structure):
+        _fields_ = [("placeholder", locks.safe.ctypes.c_uint32)]
+
+    monkeypatch.setattr(locks, '_LockOverlapped', FakeOverlapped, raising=False)
     events, failures = [], {}
     # No constructor, token, owner, guard, LIVE registration, or source factory.
     # This self only supplies the I/O boundary consumed by the actual methods.
@@ -74,7 +78,7 @@ def cleanup(monkeypatch):
         assert descriptor == 9090909
         step('get-handle')
         return 9999
-    monkeypatch.setattr(locks, '_lock_kernel', SimpleNamespace(UnlockFileEx=unlock))
+    monkeypatch.setattr(locks, '_lock_kernel', SimpleNamespace(UnlockFileEx=unlock), raising=False)
     original_ctypes = locks.safe.ctypes
     def unexpected(*_args, **_options):
         raise AssertionError('Unexpected Fake I/O boundary')

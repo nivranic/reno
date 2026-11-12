@@ -25,6 +25,10 @@ import uuid
 import pytest
 
 
+if os.name != "nt":
+    pytest.skip("r915 Store initialization requires Windows native custody", allow_module_level=True)
+
+
 OPERATION_MODULE = "reno.personal_authority_replica_operation"
 ROOT_NAME = ".reno-personal-authority-namespace-v3"
 STORE_PREFIX = ".reno-personal-authority-sql-store-v1-"

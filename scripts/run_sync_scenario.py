@@ -157,7 +157,7 @@ def run(root, *, keep_server=False, recovery=False):
     evidence = {"fixture_version": "sync-chain-v1", "qa_instance_id": value["qa_instance_id"], "status": "running",
         "synthetic": ["test-pattern H264 videos", "platform URL resolution and metadata", "download source",
             "ASR/OCR/atomize/judge responses", "personal sentinel rows and attachments",
-            "initial cloud lease: 1 second", "home worker lease: 12000 ms (heartbeat remains 10000 ms)"],
+            "initial cloud lease: 1 second", "default home worker lease (heartbeat remains 10000 ms)"],
         "real": ["HTTP cloud process", "independent home worker processes", "persistent tasks", "ingest and SourceMap",
             "media upload SHA validation", "snapshot publication transaction", "review events", "Range responses"],
         "checks": {}, "home_runs": []}
@@ -201,8 +201,10 @@ def run(root, *, keep_server=False, recovery=False):
                 return False
         wait_until(healthy)
 
-    def work(label, fault="normal"):
-        child_run(manifest, "home", "work", "--fault", fault, "--label", label, expected=73 if fault == "restart" else 0)
+    def work(label, fault="normal", *, resume_wait=False):
+        resume_args = ("--resume",) if resume_wait else ()
+        child_run(manifest, "home", "work", "--fault", fault, *resume_args, "--label", label,
+                  expected=73 if fault == "restart" else 0)
         trace = json.loads((root / "home" / f"trace-{label}.json").read_text(encoding="utf-8"))
         evidence["home_runs"].append(trace)
         write_json(evidence_path, evidence)
@@ -241,10 +243,12 @@ def run(root, *, keep_server=False, recovery=False):
             assert browser.get(f"/api/video/{item['video_id']}/file").status_code == 404
             first = work(label, fault)
             if fault == "lost-response":
-                assert first["result"]["error_code"] == "SYNC_CLIENT_NETWORK" and first["pending_publication"]
+                assert first["job_status"] == "pending" and first["wait_mode"] == "blocked"
+                assert first["blocked_reason"] == "indeterminate" and first["pending_publication"]
+                assert first["publications"][0]["reply_lost"] is True
                 verify_visible(item)
                 count = len(rows(root / "cloud/data/reno.db", "SELECT publication_id FROM sync_publication"))
-                replay = work("lost-retry")
+                replay = work("lost-retry", resume_wait=True)
                 assert replay["result"]["state"] == "idle" and replay["pending_publication"] is None
                 assert first["publications"][0]["snapshot_claims_sha256"] == replay["publications"][0]["snapshot_claims_sha256"]
                 assert first["publications"][0]["publication_id"] == replay["publications"][0]["publication_id"]
@@ -266,14 +270,16 @@ def run(root, *, keep_server=False, recovery=False):
                 evidence["checks"]["uploaded_unpublished_queue_remains_claimed"] = True
                 # Let the actual persisted worker lease expire, without edits.
                 expiry = rows(root / "home/data/reno.db", "SELECT lease_until FROM worker_lease")[0]["lease_until"]
-                wait_until(lambda: time.time() * 1000 > expiry + 50, timeout=20)
+                remaining_seconds = max(0, (expiry - time.time() * 1000) / 1000)
+                wait_until(lambda: time.time() * 1000 > expiry + 50, timeout=remaining_seconds + 5)
                 browser.close()
                 stop_child(process)
                 server_log.close()
                 offline = work("offline")
-                assert offline["result"]["state"] == "retry_wait" and offline["pending_publication"]
+                assert offline["job_status"] == "pending" and offline["wait_mode"] == "blocked"
+                assert offline["blocked_reason"] == "indeterminate" and offline["pending_publication"]
                 start_cloud()
-                recovered = work("restart-recovered")
+                recovered = work("restart-recovered", resume_wait=True)
                 assert recovered["result"]["state"] == "idle" and recovered["pending_publication"] is None
                 assert first["publications"][0]["snapshot_claims_sha256"] == recovered["publications"][0]["snapshot_claims_sha256"]
                 assert first["publications"][0]["publication_id"] == recovered["publications"][0]["publication_id"]

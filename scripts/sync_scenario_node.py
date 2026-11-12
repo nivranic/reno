@@ -7,12 +7,10 @@ import hmac
 import json
 import os
 from pathlib import Path
-import shutil
 import socket
 import sqlite3
 import sys
 import tempfile
-from types import SimpleNamespace
 import uuid
 
 REPO = Path(__file__).resolve().parents[1]
@@ -133,7 +131,7 @@ def initialize(value, node):
 
 
 def pair_and_short_lease(value):
-    from reno import db, sync_queue
+    from reno import db, storage_admin, sync_queue, sync_source_continuity_admin, tasks
     root = Path(value["root"])
     source = json.loads((root / "home/identity.json").read_text(encoding="utf-8"))
     con = db.connect()
@@ -144,6 +142,11 @@ def pair_and_short_lease(value):
         write_json(root / "cloud/expired-lease.private.json", lease)
     finally:
         con.close()
+    profile = storage_admin.profile()
+    preview = sync_source_continuity_admin.preview(profile=profile)
+    assert preview["state"] == "absent"
+    sync_source_continuity_admin.activate(profile=profile, continuity_id=str(uuid.uuid4()),
+        activated_at=tasks.utc_now(), expected_basis_sha256=preview["activation_basis_sha256"])
 
 
 def serve(value):
@@ -193,45 +196,21 @@ def serve(value):
         listener.close()
 
 
-def work(value, fault, label):
+def work(value, fault, label, *, resume_wait=False):
     import httpx
-    from reno import config, db, ingest, pipeline, report, review, sync_sources, tasks, worker
+    from reno import config, db, pipeline, report, review, tasks, worker
     from reno.sync_state import StateStore
     root = Path(value["root"])
     trace_path = root / "home" / f"trace-{label}.json"
     trace = {"synthetic": True, "pid": os.getpid(), "steps": [], "publications": [], "fault": fault,
-             "synthetic_worker_lease_ms": 12000}
+             "synthetic_worker_lease_ms": tasks.LEASE_MS}
     def save():
         write_json(trace_path, trace)
     def step(name, vid):
         trace["steps"].append({"step": name, "video_id": vid})
         save()
-    lookup = {item["short_url"]: item for item in value["videos"]}
-    def resolve(url, *, check_cancelled):
-        check_cancelled()
-        item = lookup[url]
-        step("resolve", item["video_id"])
-        final = item["final_url"]
-        return {"resolution_version": 1, "submitted_url": url, "resolved_url": final,
-                "resolved_at": sync_sources._now(), "hops": [
-                    {"url": url, "peer_ip": "8.8.8.8", "status": 302, "next_url": final},
-                    {"url": final, "peer_ip": "8.8.8.8", "status": 200, "next_url": None}]}
-    def ytdlp(*args):
-        if "--skip-download" in args:
-            item = next(item for item in value["videos"] if item["final_url"] == args[-1])
-            assert "--no-playlist" in args
-            step("metadata", item["video_id"])
-            return SimpleNamespace(returncode=0, stdout=json.dumps({"id": item["video_id"],
-                "title": item["title"], "extractor": "BiliBili", "duration": 6,
-                "webpage_url": item["final_url"]}), stderr="")
-        metadata = json.loads(Path(args[args.index("--load-info-json") + 1]).read_text(encoding="utf-8"))
-        assert "webpage_url" not in metadata and "original_url" not in metadata
-        if "ba/bestaudio" in args:
-            return SimpleNamespace(returncode=1, stdout="", stderr="synthetic silent video")
-        item = next(item for item in value["videos"] if item["video_id"] == metadata["id"])
-        step("download", item["video_id"])
-        shutil.copyfile(root / "synthetic-input" / item["filename"], args[args.index("-o") + 1])
-        return SimpleNamespace(returncode=0, stdout="", stderr="")
+    from scripts.sync_scenario_source import install_sources
+    install_sources(value, step)
     def media(con, vid):
         step("media", vid)
         return {"synthetic": True}
@@ -253,8 +232,6 @@ def work(value, fault, label):
         review.record_decision(con, atom_id=atom, action="confirm", event_id=str(uuid.uuid4()),
                                client_id="synthetic-home", note="Synthetic review event")
         return {"n_atoms": 1}
-    sync_sources.resolve_url = resolve
-    ingest._ytdlp = ytdlp
     for name, replacement in (("media", media), ("asr", asr), ("ocr", ocr), ("atomize", atomize)):
         getattr(pipeline, name).run = replacement
     pipeline.judge._judge_llm = lambda candidates, **kwargs: (
@@ -291,19 +268,24 @@ def work(value, fault, label):
             if fault == "lost-response" and response.status_code == 200:
                 response.read()
                 response.close()
+                entry["reply_lost"] = True
+                save()
                 raise httpx.ReadError("synthetic lost publication response", request=request)
         return response
     httpx.Client.send = fault_send
-    # This remains longer than the real worker's ten-second heartbeat cadence.
-    tasks.LEASE_MS = 12000
     job_id = tasks.submit_sync()
     trace["job_id"] = job_id
+    trace["resume_requested"] = resume_wait
+    if resume_wait:
+        tasks.resume_sync(job_id)
     save()
     trace["processed_jobs"] = worker.process_pending(max_jobs=1)
     job = tasks.get(job_id, include_internal=True)
     state = StateStore(config.DATA).read()
     trace.update(job_status=job["status"], result=job["result"],
-                 pending_publication=state["pending_publication"], published_version=state["published_version"])
+                 wait_mode=job["wait_mode"], blocked_reason=job["blocked_reason"],
+                 pending_publication=state["pending_publication"], recovery_attempt=state["recovery_attempt"],
+                 published_version=state["published_version"])
     save()
 
 
@@ -314,6 +296,7 @@ def main():
     parser.add_argument("--action", choices=("initialize", "pair", "serve", "work"), required=True)
     parser.add_argument("--fault", choices=("normal", "lost-response", "restart"), default="normal")
     parser.add_argument("--label", default="normal")
+    parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
     if not args.label.replace("-", "").isalnum():
         raise ValueError("Invalid trace label")
@@ -331,7 +314,7 @@ def main():
     elif args.action == "serve" and args.node == "cloud":
         serve(value)
     elif args.action == "work" and args.node == "home":
-        work(value, args.fault, args.label)
+        work(value, args.fault, args.label, resume_wait=args.resume)
     else:
         raise ValueError("Action does not belong to node")
 
