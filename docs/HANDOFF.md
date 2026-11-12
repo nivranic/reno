@@ -49,3 +49,11 @@ V3的scoped合同跟进已由同一只读代理完成有限复核。现有framel
 V3的r1536已组合scoped custom-slot源码，30源共2,626,125 B，26项文本检查、195项有限Python条件模型及独立复核完成。后继主核发现dynamic observer仍保留旧三参数调用，原文本检查和独立源码复核均漏检。r1537以owner三处修改修正delegated标量传递，30源共2,626,218 B，其余29份保持父字节，完整逆像及独立源码复核通过。
 
 本轮已实际执行MSVC x64 C语法检查，14个不同完整C translation unit的最新结果为12成功、2失败。三批共18次编译器调用，原缺头失败与补齐同版官方依赖后的四项成功分别保留。owner仍因缺少reno_h01_bootstrap_existing定义报C2129，call.c仍因缺少完整可信build metadata报C1189。完整dispatcher也仍缺定义。官方3.12.10归档与44份依赖头身份已保存，209份未被候选覆盖的安装头仅存在CRLF/LF字节差异。外部MSVC/SDK头完整内容身份、M/D/H、完整构建、链接/ABI、COMPAT、物理成本及实际runtime继续推进。源码候选位于General的reno-loader-delegation-call-contract-r1537/working-01，产品runtime源码本批修改为零，候选尚未安装。eb7c23f的六项CI成功，backend131409256006仍执行整库pytest。长期goal保持active。
+
+304e186的后端CI43273760126已终态失败，原日志为12,945通过、5失败、2,351跳过。五项全部位于同步场景的TEMP路径检查。Linux隔离副本对同六例复现1通过／5失败，失败nodeid与远端逐项一致。backend pytest步骤已把TMPDIR对齐runner.temp，同六例完整真实子进程回归为6通过、0跳过，耗时607.33秒。一行修订提交为e83f2c9，修订后的完整远端后端结果继续跟进。
+
+V3的r1538／r1539补齐Proxy clear数据借用和row4完整来源消费，分别159／192项有限Python模型通过。r1540依据原实现前移同一次初始化CREATING claim，删除bootstrap_existing声明和调用依赖，42项有限模型通过。r1541的测试扩展实际编译链接，原class_row／check_view共10个隔离进程场景通过。随后实际caller核对发现，把通用工具协议外推为五个native class快照的回调义务范围过宽，已更正该判断和对应记录。原GuardControlError／_Budget工具协议沿真实caller履行，五个新增native快照按实际物理source-bank合同接线。
+
+r1542为30源／2,624,687 B，owner十九处修改，其余29源及指定精确域／ModuleSpec fallback／owning清理保持，完整正逆像、源码和最终记录独立复审通过。五class来源快照的初捕、计数、捕获与实际source消费者接入dict subclass物理扫描。候选9个实际C helper和2个enum提取后编译进隔离扩展，13项实际C回归通过。实际include为5,656 B，相对5,476 B的LF文本发生180处LF到CRLF转换，原输入和结果保留。
+
+新完整owner的MSVC语法检查仍为exit 2，801 B原日志报告complete_loader_record_selection缺定义。全部三项缺正文为finish_workspace_capture_prepare、loader_exec_dispatch和complete_loader_record_selection。源码入口为General的reno-workspace-raw-class-dict-r1542/working-01，候选安装、完整counter／State／witness／dispatcher及startup验证仍待完成。workspace实际分配和释放provider、M/D/H、完整构建／链接／ABI、COMPAT、物理成本及原完整产品目标继续推进，goal保持active。

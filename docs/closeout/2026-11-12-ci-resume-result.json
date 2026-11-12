@@ -2806,5 +2806,186 @@
     },
     "goal_status": "active",
     "complete_product_goal": false
+  },
+  "ci_temp_directory_alignment": {
+    "fix_commit": "e83f2c94e00d68e99925a78d0746850fbb2882e1",
+    "failed_ci_revision": "304e186c124480d5abddbf7da22e2992fcbe1fbd",
+    "failed_ci_run_id": 43273760126,
+    "failed_backend_job_id": 131376594291,
+    "original_full_ci_summary": {
+      "failed": 5,
+      "passed": 12945,
+      "skipped": 2351,
+      "subtests_passed": 43
+    },
+    "original_remote_log": {
+      "file": "backend-ci-304e186.log",
+      "bytes": 73514,
+      "sha256": "6228642740c689d67e94f4988c07db6e03b826563eb0ea2c042db828e45eee0a"
+    },
+    "root_cause": "Backend pytest basetemp used runner TEMP while Python and child validators used the default system TEMP",
+    "workflow_change": "Set TMPDIR to runner.temp in the backend pytest step",
+    "workflow_source": {
+      "file": "ci-backend-temp-alignment/candidate-ci.yml",
+      "bytes": 8712,
+      "sha256": "98dd6e51738a42928228043984de8b917e66d8bf806ca2cfa0cd4295a3f8c219"
+    },
+    "before": {
+      "exit_code": 1,
+      "tests": 6,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 1,
+      "seconds": 13.732124928000001
+    },
+    "after": {
+      "exit_code": 0,
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 6,
+      "seconds": 607.334131874
+    },
+    "before_failure_nodeids_exactly_match_remote": true,
+    "before_result": {
+      "file": "ci-backend-temp-alignment/before.json",
+      "bytes": 2595,
+      "sha256": "7bfae1c3993ca258ecfc4ae81bf11b445251f3dbb1df2268b908a04d592c8ba5"
+    },
+    "after_result": {
+      "file": "ci-backend-temp-alignment/after.json",
+      "bytes": 2634,
+      "sha256": "ded01c8f3849716d6ab76de0ef2e61438b9dea4c5e0cf59635ed06072825c3e0"
+    },
+    "after_junit": {
+      "file": "ci-backend-temp-alignment/after.xml",
+      "bytes": 1163,
+      "sha256": "b7691ab0da44d2cc6a2cacf2256f3f6dc4a93923b7ab45b1d1bf07ddac789d63"
+    },
+    "after_log": {
+      "file": "ci-backend-temp-alignment/after.log",
+      "bytes": 110,
+      "sha256": "13d6a0281a8c81a5599d198af3bc1a9235bd1af0779b9f42b385dcc99fe76927"
+    },
+    "verified_current_product_sources": {
+      "scripts/run_sync_scenario.py": {
+        "bytes": 27649,
+        "sha256": "5a9e79c791eb8d7acaf9da5ee7a2d7690a3dacc333229117b5e1c0da9aac2325"
+      },
+      "scripts/sync_recovery_scenario.py": {
+        "bytes": 9036,
+        "sha256": "8f74bd5366f8685bf13f65cff78c98983bd7aa5137faf6b72569538c42d46bd8"
+      },
+      "scripts/sync_scenario_node.py": {
+        "bytes": 16616,
+        "sha256": "b4ce455466b353108ff2a9c2663cee34b142e100febab980fbe168879e39f452"
+      },
+      "scripts/sync_scenario_source.py": {
+        "bytes": 4048,
+        "sha256": "83778a0fec0be0e2ace5d7be913b5c51c53825a07bbfe272922360ebdba5199c"
+      },
+      "tests/test_sync_scenario.py": {
+        "bytes": 2829,
+        "sha256": "64ede3e206eeeb235a48fc1b491eb6c1e0780fb8c8c8c4ae2d957f3a310b62aa"
+      },
+      "tests/test_sync_recovery_scenario.py": {
+        "bytes": 1648,
+        "sha256": "1a2e88b8cbbd35b2b9c9b3371864514b3c2da70e1fb9ca50aa356a34d5efbf5e"
+      },
+      "tests/conftest.py": {
+        "bytes": 5772,
+        "sha256": "95fc370b2e16f1e27a3edbf618cfe161f8f92d9db6a85041369cb52b357cf29a"
+      }
+    },
+    "remote_post_fix_full_backend_result": "pending"
+  },
+  "native_class_source_followup": {
+    "preceding_source_batches": [
+      {
+        "package": "reno-loader-proxy-clear-loan-r1538",
+        "source_files": 30,
+        "source_bytes": 2626723,
+        "finite_python_condition_models": 159,
+        "new_owner_syntax_returncode": 2
+      },
+      {
+        "package": "reno-loader-dispatcher-source-domains-r1539",
+        "source_files": 30,
+        "source_bytes": 2626258,
+        "finite_python_condition_models": 192,
+        "new_owner_syntax_returncode": 2
+      },
+      {
+        "package": "reno-owner-bootstrap-claim-r1540",
+        "source_files": 30,
+        "source_bytes": 2625266,
+        "finite_python_condition_models": 42,
+        "new_owner_syntax_returncode": 2,
+        "bootstrap_existing_dependency_removed_by_original_attempt_claim_order": true
+      }
+    ],
+    "original_tool_fixture": {
+      "package": "reno-workspace-class-dict-domain-r1541",
+      "actual_producer_and_consumer_process_cases_passed": 10,
+      "original_tool_results_preserved": true,
+      "scope_correction": "Original catalog protocol tests constrain their actual tool callers; the native five-class source bank has its own physical-storage creation and consumption contract",
+      "scope_correction_review": "passed"
+    },
+    "current_source_package": "reno-workspace-raw-class-dict-r1542",
+    "working_revision": "working-01",
+    "source_files": 30,
+    "source_bytes": 2624687,
+    "changed_source_files": 1,
+    "parent_sources_preserved": 29,
+    "literal_edit_sites": 19,
+    "physical_class_dictionary_subclass_source_route_connected": true,
+    "original_exact_g_b_keywords_module_modulespec_and_instance_domains_preserved": true,
+    "source_identities": {
+      "file": "reno-workspace-raw-class-dict-r1542/SOURCE-IDENTITIES.json",
+      "bytes": 11036,
+      "sha256": "83b735e1689b66844bc25fe179ec4f18006650a96020cfb92baea4cda053e154"
+    },
+    "text_verification": {
+      "file": "reno-workspace-raw-class-dict-r1542/TEXT-VERIFICATION.json",
+      "bytes": 1162,
+      "sha256": "b8f7a825824ef8c726f72af6d7c26b7dbf3dc67576eb40b751c2e6697fa4d342"
+    },
+    "review": {
+      "file": "reno-workspace-raw-class-dict-r1542/REVIEW.json",
+      "bytes": 1641,
+      "sha256": "96bcca1e800f5cb69b6aa40ebd165de2dbf5fe166eec47705f4f12088a212567"
+    },
+    "actual_c_helper_cases_passed": 13,
+    "helper_fixture_compiler_returncode": 0,
+    "helper_fixture_worker_returncode": 0,
+    "helper_result": {
+      "file": "reno-workspace-raw-class-dict-r1542/probe-01/RESULT.json",
+      "bytes": 8725,
+      "sha256": "7581047d2b20e61b95ebda763b516efe4f3487b038448c80c52694f7b297b32f"
+    },
+    "actual_compiled_helper_include_bytes": 5656,
+    "lf_normalized_helper_include_bytes": 5476,
+    "helper_include_lf_to_crlf_conversions": 180,
+    "changed_owner_syntax_returncode": 2,
+    "changed_owner_syntax_failure": "C2129: reno_h01_complete_loader_record_selection lacks its definition",
+    "changed_owner_syntax_result": {
+      "file": "reno-workspace-raw-class-dict-r1542/syntax-01/RESULT.json",
+      "bytes": 1676,
+      "sha256": "866d630230fc32f7c74c7ecc87fa9acad0fc4a2abd670a4a84683c686e732aeb"
+    },
+    "missing_private_definitions": [
+      "reno_h01_finish_workspace_capture_prepare",
+      "reno_h01_loader_exec_dispatch",
+      "reno_h01_complete_loader_record_selection"
+    ],
+    "complete_candidate_counter_state_witness_or_dispatcher_executed": false,
+    "full_candidate_built_linked_or_installed": false,
+    "complete_build_metadata_available": false,
+    "workspace_memory_provider_selected": false,
+    "compat_physical_cost_and_product_runtime_verified": false,
+    "goal_status": "active",
+    "complete_product_goal": false
   }
 }
