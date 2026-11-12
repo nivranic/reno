@@ -449,12 +449,12 @@ def install_import(env, monkeypatch, *, duplicate=False):
 
 
 @pytest.mark.parametrize("duplicate", [False, True])
-def test_queue_processes_with_origin_and_cloud_receipt_without_extra_process_job(env, monkeypatch, duplicate):
-    steps = install_import(env, monkeypatch, duplicate=duplicate)
-    env.fail_publish = True
-    assert cycle(env)["error_code"] == "SYNC_CLIENT_NETWORK"
+def test_queue_processes_with_origin_and_cloud_receipt_without_extra_process_job(released16_env, monkeypatch, duplicate):
+    steps = install_import(released16_env, monkeypatch, duplicate=duplicate)
+    released16_env.fail_publish = True
+    assert cycle(released16_env)["error_code"] == "SYNC_CLIENT_NETWORK"
     assert steps == ["metadata", "download", "process", "judge"]
-    frozen = env.publications[0]
+    frozen = released16_env.publications[0]
     assert frozen["claims"][0]["origin"]["submitted_url"] == "https://b23.tv/fixtureAlias"
     expected_id = "video" if duplicate else "BVfake123"
     assert frozen["claims"][0]["video_id"] == expected_id
@@ -467,8 +467,8 @@ def test_queue_processes_with_origin_and_cloud_receipt_without_extra_process_job
     state = StateStore(config.DATA).read()
     assert state["work"]["source_mapping_id"] == frozen["claims"][0]["origin"]["mapping_id"]
     assert state["published_version"] is None
-    assert cycle(env)["state"] == "idle"
-    assert env.publications[1] == frozen
+    assert cycle(released16_env)["state"] == "idle"
+    assert released16_env.publications[1] == frozen
     assert steps == ["metadata", "download", "process", "judge"]
     assert StateStore(config.DATA).read()["work"] is None
 
@@ -478,56 +478,56 @@ def test_queue_processes_with_origin_and_cloud_receipt_without_extra_process_job
     (SyncError("dns", "SYNC_SOURCE_NETWORK", 503), "network"),
     (SyncError("timeout", "SYNC_SOURCE_TIMEOUT", 503), "network"),
     (SyncError("private", "SYNC_SOURCE_DNS_REJECTED", 409), "invalid_url")])
-def test_download_failures_go_through_queue_retry_contract_without_raw_errors(env, monkeypatch, failure, expected):
-    install_import(env, monkeypatch)
+def test_download_failures_go_through_queue_retry_contract_without_raw_errors(released16_env, monkeypatch, failure, expected):
+    install_import(released16_env, monkeypatch)
     from reno import sync_sources
 
     def resolve(*args, **kwargs):
         raise failure
 
     monkeypatch.setattr(sync_sources, "resolve_url", resolve)
-    result = cycle(env)
-    failed = next(call for call in env.calls if isinstance(call, tuple) and call[0] == "fail")
+    result = cycle(released16_env)
+    failed = next(call for call in released16_env.calls if isinstance(call, tuple) and call[0] == "fail")
     assert failed[2] == expected
     assert "secret" not in json.dumps(result) + (config.DATA / "sync-state.json").read_text()
-    assert not env.publications and not StateStore(config.DATA).read()["claims"]
+    assert not released16_env.publications and not StateStore(config.DATA).read()["claims"]
 
 
-def test_report_failure_retains_mapping_instance_for_original_retry(env, monkeypatch):
-    install_import(env, monkeypatch)
+def test_report_failure_retains_mapping_instance_for_original_retry(released16_env, monkeypatch):
+    install_import(released16_env, monkeypatch)
     original_report = agent.report.run_all
 
     def fail():
         raise OSError("simulated full disk")
 
     monkeypatch.setattr(agent.report, "run_all", fail)
-    assert cycle(env)["error_code"] == "SYNC_PROCESSING_FAILED"
+    assert cycle(released16_env)["error_code"] == "SYNC_PROCESSING_FAILED"
     state = StateStore(config.DATA).read()
     assert state["claims"] and state["work"]["source_mapping_generation"]
     assert state["pending_publication"] is None
-    assert not any(call[0] == "fail" for call in env.calls if isinstance(call, tuple))
+    assert not any(call[0] == "fail" for call in released16_env.calls if isinstance(call, tuple))
     saved = deepcopy(state["work"])
     from reno import sync_sources, ingest
     monkeypatch.setattr(sync_sources, "resolve_url", lambda *a, **k: pytest.fail("report retry cannot choose a new map"))
     monkeypatch.setattr(ingest, "ingest_url", lambda *a, **k: pytest.fail("report retry cannot download another instance"))
     monkeypatch.setattr(agent.report, "run_all", original_report)
-    assert cycle(env)["state"] == "idle"
+    assert cycle(released16_env)["state"] == "idle"
     wrapper = json.loads((config.DATA / "sync-sources/v2" / (saved["source_mapping_generation"] + ".json")).read_bytes())
-    assert env.publications[-1]["claims"][0]["origin"] == wrapper["origin"]
+    assert released16_env.publications[-1]["claims"][0]["origin"] == wrapper["origin"]
     assert wrapper["origin"]["recorded_at"] == saved["source_mapping_inputs"]["recorded_at"]
     assert len(list((config.DATA / "sync-sources/v2").glob("*.json"))) == 1
 
 
-def test_definitive_publication_rejection_fails_claim_and_keeps_immutable_audit(env, monkeypatch):
-    install_import(env, monkeypatch)
-    original_push = env.push_snapshot
+def test_definitive_publication_rejection_fails_claim_and_keeps_immutable_audit(released16_env, monkeypatch):
+    install_import(released16_env, monkeypatch)
+    original_push = released16_env.push_snapshot
 
     def reject(*args, **kwargs):
         raise SyncError("not accepted", "SYNC_CLAIM_SOURCE_MISMATCH", 409)
 
-    monkeypatch.setattr(env, "push_snapshot", reject)
-    assert cycle(env)["error_code"] == "SYNC_CLAIM_SOURCE_MISMATCH"
-    assert any(call[0] == "fail" and call[2] == "content_invalid" for call in env.calls if isinstance(call, tuple))
+    monkeypatch.setattr(released16_env, "push_snapshot", reject)
+    assert cycle(released16_env)["error_code"] == "SYNC_CLAIM_SOURCE_MISMATCH"
+    assert any(call[0] == "fail" and call[2] == "content_invalid" for call in released16_env.calls if isinstance(call, tuple))
     state = StateStore(config.DATA).read()
     assert state["claims"] and state["work"]["source_mapping_generation"]
     assert state["pending_publication"] is None and state["published_version"] is None
@@ -540,12 +540,12 @@ def test_definitive_publication_rejection_fails_claim_and_keeps_immutable_audit(
     monkeypatch.setattr(sync_sources, "resolve_url", lambda *a, **k: pytest.fail("claim renewal cannot resolve a new observation"))
     monkeypatch.setattr(ingest, "ingest_url", lambda *a, **k: pytest.fail("claim renewal cannot download a new instance"))
     monkeypatch.setattr(sync_sources, "_now", lambda: pytest.fail("claim renewal must reuse the original map timestamp"))
-    monkeypatch.setattr(env, "push_snapshot", original_push)
-    env.claims = deepcopy(state["claims"])
-    env.claims[0]["claim"].update(lease_token=str(uuid.uuid4()), lease_generation=2)
-    assert cycle(env)["state"] == "idle"
-    assert env.publications[-1]["claims"][0]["origin"] == wrapper["origin"]
-    assert env.publications[-1]["claims"][0]["claim"]["lease_generation"] == 2
+    monkeypatch.setattr(released16_env, "push_snapshot", original_push)
+    released16_env.claims = deepcopy(state["claims"])
+    released16_env.claims[0]["claim"].update(lease_token=str(uuid.uuid4()), lease_generation=2)
+    assert cycle(released16_env)["state"] == "idle"
+    assert released16_env.publications[-1]["claims"][0]["origin"] == wrapper["origin"]
+    assert released16_env.publications[-1]["claims"][0]["claim"]["lease_generation"] == 2
     assert map_path.read_bytes() == original_map
     assert len(list(map_path.parent.glob("*.json"))) == 1
     assert len(list((config.DATA / "sync-outbox").glob("*.json"))) == 2
@@ -642,9 +642,9 @@ def test_report_only_update_publishes_same_knowledge_version_without_model(env):
     assert "summary" in {item["name"] for item in after["reports"]}
 
 
-def test_definitive_rejection_with_expired_fail_retains_mapping_for_renewed_claim(env, monkeypatch):
-    install_import(env, monkeypatch)
-    original_push, original_fail = env.push_snapshot, env.fail
+def test_definitive_rejection_with_expired_fail_retains_mapping_for_renewed_claim(released16_env, monkeypatch):
+    install_import(released16_env, monkeypatch)
+    original_push, original_fail = released16_env.push_snapshot, released16_env.fail
 
     def reject(*args, **kwargs):
         raise SyncError("rejected", "SYNC_VERSION_CONFLICT", 409)
@@ -652,9 +652,9 @@ def test_definitive_rejection_with_expired_fail_retains_mapping_for_renewed_clai
     def expired(*args, **kwargs):
         raise SyncError("old claim", "SYNC_CLAIM_EXPIRED", 409)
 
-    monkeypatch.setattr(env, "push_snapshot", reject)
-    monkeypatch.setattr(env, "fail", expired)
-    assert cycle(env)["error_code"] == "SYNC_VERSION_CONFLICT"
+    monkeypatch.setattr(released16_env, "push_snapshot", reject)
+    monkeypatch.setattr(released16_env, "fail", expired)
+    assert cycle(released16_env)["error_code"] == "SYNC_VERSION_CONFLICT"
     state = StateStore(config.DATA).read()
     assert state["pending_publication"] is None and state["published_version"] is None
     assert state["claims"] and state["work"]["source_mapping_generation"]
@@ -666,13 +666,13 @@ def test_definitive_rejection_with_expired_fail_retains_mapping_for_renewed_clai
     monkeypatch.setattr(sync_sources, "resolve_url", lambda *a, **k: pytest.fail("expired fail reply cannot choose a new resolution"))
     monkeypatch.setattr(ingest, "ingest_url", lambda *a, **k: pytest.fail("expired fail reply cannot download a new instance"))
     monkeypatch.setattr(sync_sources, "_now", lambda: pytest.fail("expired fail reply must keep the original creation time"))
-    monkeypatch.setattr(env, "push_snapshot", original_push)
-    monkeypatch.setattr(env, "fail", original_fail)
-    env.claims = deepcopy(state["claims"])
-    env.claims[0]["claim"].update(lease_generation=2, lease_token=str(uuid.uuid4()))
-    assert cycle(env)["state"] == "idle"
-    assert env.publications[-1]["claims"][0]["origin"] == json.loads(original_mapping)["origin"]
-    assert env.publications[-1]["claims"][0]["claim"]["lease_generation"] == 2
+    monkeypatch.setattr(released16_env, "push_snapshot", original_push)
+    monkeypatch.setattr(released16_env, "fail", original_fail)
+    released16_env.claims = deepcopy(state["claims"])
+    released16_env.claims[0]["claim"].update(lease_generation=2, lease_token=str(uuid.uuid4()))
+    assert cycle(released16_env)["state"] == "idle"
+    assert released16_env.publications[-1]["claims"][0]["origin"] == json.loads(original_mapping)["origin"]
+    assert released16_env.publications[-1]["claims"][0]["claim"]["lease_generation"] == 2
     assert path.read_bytes() == original_mapping and len(list(path.parent.glob("*.json"))) == 1
     assert audit.read_bytes() == original_outbox
     assert StateStore(config.DATA).read()["work"] is None
@@ -705,8 +705,8 @@ def test_cloud_restore_with_unversioned_local_repair_reserves_new_version(env):
     assert env.publications[-1]["snapshot"]["version"]["kb_revision"] > original_version["kb_revision"]
 
 
-def test_shutdown_during_pipeline_prevents_next_step_and_cloud_publication(env, monkeypatch):
-    install_import(env, monkeypatch)
+def test_shutdown_during_pipeline_prevents_next_step_and_cloud_publication(released16_env, monkeypatch):
+    install_import(released16_env, monkeypatch)
     stop = threading.Event()
 
     def cancelled_pipeline(video_id, *, check_cancelled):
@@ -714,9 +714,9 @@ def test_shutdown_during_pipeline_prevents_next_step_and_cloud_publication(env, 
         return {"media": "ERROR: interrupted"}
 
     monkeypatch.setattr(agent.pipeline, "run_video", cancelled_pipeline)
-    assert cycle(env, stop_event=stop)["error_code"] == "SYNC_CANCELLED"
-    assert not env.publications
-    assert not any(isinstance(call, tuple) and call[0] == "fail" for call in env.calls)
+    assert cycle(released16_env, stop_event=stop)["error_code"] == "SYNC_CANCELLED"
+    assert not released16_env.publications
+    assert not any(isinstance(call, tuple) and call[0] == "fail" for call in released16_env.calls)
 
 
 def test_epoch_reset_and_cursor_reset_are_one_durable_write(env, monkeypatch):

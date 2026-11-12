@@ -6,7 +6,6 @@ are not product callbacks, and never manufacture an owner, binding or token.
 from collections import Counter
 from contextvars import copy_context
 import hashlib
-import importlib
 import json
 import os
 from pathlib import Path
@@ -14,6 +13,8 @@ import sqlite3
 import uuid
 
 import pytest
+
+from tests.historical_sources import import_historical_snapshot
 
 from reno import storage_lifecycle as lifecycle, sync_media as safe
 
@@ -32,7 +33,7 @@ def namespace(monkeypatch):
     assert revision in digests
     graph = Path(__file__).resolve().parents[1] / f"data/t16-runtime-origin-graph-{revision}"
     monkeypatch.syspath_prepend(str(graph))
-    namespace = importlib.import_module(f"authority_runtime_origin_{revision}.personal_authority_namespace")
+    namespace = import_historical_snapshot(f"authority_runtime_origin_{revision}.personal_authority_namespace")
     path = graph / f"authority_runtime_origin_{revision}/personal_authority_namespace.py"
     assert Path(namespace.__file__).resolve() == path
     assert hashlib.sha256(path.read_bytes()).hexdigest() == digests[revision]

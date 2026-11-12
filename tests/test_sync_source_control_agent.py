@@ -13,7 +13,8 @@ from reno import source_terminal, sync_agent as agent, sync_claims, sync_home_st
 from reno.budget_contract import BudgetDeferred
 from reno.sync_protocol import SyncError
 from tests.test_source_terminal import failed_source, genesis
-from tests.test_sync_agent import add_video, env, install_import
+from tests.test_sync_agent import add_video, install_import
+from tests.conftest import released16_env as env
 from tests.test_sync_budget_propagation import home_cycle, raw_job
 from tests.test_sync_source_control_state import control_receipt
 from tests.test_sync_source_execution_binding import bind, executing

@@ -15,7 +15,7 @@ from reno import config, db, source_terminal, sync_access, sync_agent, sync_queu
 from reno.budget_contract import BudgetDeferred
 from reno.sync_client import SyncClient, SyncClientError
 from reno.sync_source_execution import historical_binding
-from tests.test_sync_agent import env  # noqa: F401
+from tests.conftest import released16_env as env
 from tests.test_sync_budget_propagation import home_cycle
 from tests.test_sync_source_execution_binding import bind, executing
 from tests.test_source_terminal import failed_source

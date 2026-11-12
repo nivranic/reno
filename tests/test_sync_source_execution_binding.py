@@ -10,7 +10,8 @@ import pytest
 from reno import budget, config, db, storage_admin, sync_source_execution as authority, tasks, worker
 from reno.budget_contract import BudgetDeferred
 from reno.sync_protocol import SyncError
-from tests.test_sync_agent import env, install_import
+from tests.test_sync_agent import install_import
+from tests.conftest import released16_env as env
 from tests.test_sync_budget_propagation import home_cycle
 
 

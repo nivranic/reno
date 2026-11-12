@@ -10,7 +10,8 @@ from reno import budget, config, source_budget, source_contract, source_resoluti
 from reno import source_resolution_budget as resolver, tasks
 from reno.budget_contract import BudgetDeferred
 from reno.sync_protocol import SyncError
-from tests.test_sync_agent import env, install_import  # noqa: F401
+from tests.test_sync_agent import install_import
+from tests.conftest import released16_env as env
 from tests.test_sync_budget_propagation import home_cycle
 from tests.test_sync_source_execution_binding import bind, executing
 from tests.test_source_budget import success, failure, table

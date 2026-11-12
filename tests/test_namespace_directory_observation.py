@@ -5,12 +5,13 @@ No namespace authority owner is fabricated by these physical-layer tests.
 """
 from collections import Counter
 import hashlib
-import importlib
 import os
 from pathlib import Path
 import stat
 
 import pytest
+
+from tests.historical_sources import import_historical_snapshot
 
 from reno import storage_lifecycle as lifecycle
 
@@ -21,7 +22,7 @@ def namespace(monkeypatch):
     assert revision in {"r384", "r649"}
     graph = Path(__file__).resolve().parents[1] / "data" / f"t16-runtime-origin-graph-{revision}"
     monkeypatch.syspath_prepend(str(graph))
-    module = importlib.import_module(f"authority_runtime_origin_{revision}.personal_authority_namespace")
+    module = import_historical_snapshot(f"authority_runtime_origin_{revision}.personal_authority_namespace")
     assert Path(module.__file__).resolve() == graph / f"authority_runtime_origin_{revision}" / "personal_authority_namespace.py"
     assert module.DEADLINE_SECONDS == 30.0
     return module

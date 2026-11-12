@@ -21,11 +21,14 @@ ROOTS = {"sync_media": "1" * 64, "local_report": "2" * 64,
 
 
 @pytest.fixture
-def env(tmp_path):
+def env(tmp_path, monkeypatch):
     profile = storage_lifecycle.StorageProfile(tmp_path / "data" / "reno.db", tmp_path / "media",
                                                tmp_path / "reports", tmp_path / "checkpoints")
     profile.database.parent.mkdir()
-    db.initialize(profile.database)
+    # These parser cases start from the original16 image. Current
+    # readers run after the historical creation scope has closed.
+    with released16(monkeypatch):
+        db.initialize(profile.database)
     con = sqlite3.connect(profile.database)
     library = con.execute("SELECT value FROM meta WHERE key='library_id'").fetchone()[0]
     yield con, profile, library

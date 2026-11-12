@@ -12,23 +12,7 @@ from reno.sync_state import StateStore
 from tests.test_report_lifecycle import exclusive_available
 from tests.test_sync_agent import add_video, cycle, env, install_import
 from tests.test_sync_state import binding, claim, snapshot, state_profile, store
-
-
-def _exclusive(profile, entered, release, requested=None, attempted=None):
-    if requested is not None:
-        requested.wait(15)
-    if attempted is not None:
-        attempted.set()
-    with lifecycle.exclusive(profile, timeout=15):
-        entered.set()
-        release.wait(15)
-
-
-def _update(profile, attempted, done):
-    value = StateStore(profile.database.parent, profile=profile)
-    attempted.set()
-    value.update({"seeded": True})
-    done.set()
+from tests.storage_processes import _exclusive, _update
 
 
 def _finish(process):
@@ -259,9 +243,9 @@ def test_freeze_has_no_gc_window_between_export_outbox_and_pending(env, monkeypa
     assert value.read()["pending_publication"] is not None
 
 
-def test_agent_proof_map_and_work_install_use_one_guard_without_pipeline_or_network(env, monkeypatch):
+def test_agent_proof_map_and_work_install_use_one_guard_without_pipeline_or_network(released16_env, monkeypatch):
     from reno import sync_sources
-    install_import(env, monkeypatch)
+    install_import(released16_env, monkeypatch)
     stages = []
     original_record, original_update, original_advance = sync_sources.SourceMap.record, StateStore.update, agent._Cycle.advance_work
     original_proof = sync_sources._asset_sha
@@ -320,7 +304,7 @@ def test_agent_proof_map_and_work_install_use_one_guard_without_pipeline_or_netw
     monkeypatch.setattr(sync_sources.SourceMap, "record", record)
     monkeypatch.setattr(StateStore, "update", update)
     monkeypatch.setattr(agent._Cycle, "advance_work", advance)
-    assert cycle(env)["state"] == "idle"
+    assert cycle(released16_env)["state"] == "idle"
     assert stages == ["seed", "proof", "map", "link", "pipeline"]
 
 

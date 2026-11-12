@@ -5,6 +5,7 @@ from pathlib import Path
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -117,20 +118,22 @@ def free_port():
 
 
 @pytest.fixture(scope="module")
-def prepared(tmp_path_factory):
-    root = tmp_path_factory.mktemp("qa-preparer") / "instance"
-    result = subprocess.run([sys.executable, str(REPO / "scripts/prepare_product_fixture.py"),
-                             "--root", str(root), "--port", str(free_port())],
-                            cwd=REPO, capture_output=True, text=True, encoding="utf-8", timeout=60)
-    assert result.returncode == 0, result.stderr
-    manifest = root / "qa-manifest.json"
-    # Backend CI does not build frontend/dist; API isolation is independent of
-    # SPA rendering. Browser fixtures keep prepare's default web_ui=react.
-    local_file = root / "config.test.json"
-    local = json.loads(local_file.read_text(encoding="utf-8"))
-    local["web_ui"] = "classic"
-    local_file.write_text(json.dumps(local), encoding="utf-8")
-    return manifest, json.loads(manifest.read_text(encoding="utf-8"))
+def prepared():
+    # The real preparer requires an external, disposable instance root.
+    with tempfile.TemporaryDirectory(prefix="reno-qa-preparer-") as temporary:
+        root = Path(temporary) / "instance"
+        result = subprocess.run([sys.executable, str(REPO / "scripts/prepare_product_fixture.py"),
+                                 "--root", str(root), "--port", str(free_port())],
+                                cwd=REPO, capture_output=True, text=True, encoding="utf-8", timeout=60)
+        assert result.returncode == 0, result.stderr
+        manifest = root / "qa-manifest.json"
+        # Backend CI does not build frontend/dist; API isolation is independent of
+        # SPA rendering. Browser fixtures keep prepare's default web_ui=react.
+        local_file = root / "config.test.json"
+        local = json.loads(local_file.read_text(encoding="utf-8"))
+        local["web_ui"] = "classic"
+        local_file.write_text(json.dumps(local), encoding="utf-8")
+        yield manifest, json.loads(manifest.read_text(encoding="utf-8"))
 
 
 def test_prepare_creates_synthetic_media_20_questions_and_refuses_overwrite(prepared):

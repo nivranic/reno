@@ -4,6 +4,7 @@ Isolation is installed before test collection (some modules import the app at
 module scope). Real-model probes require a separately authorized harness; this
 suite deliberately disables them and refuses unstubbed model HTTP requests.
 """
+import copyreg
 import json
 import os
 from pathlib import Path
@@ -52,6 +53,10 @@ def pytest_sessionstart(session):
             os.environ.pop(key)
     os.environ.update(RENO_QA_ROOT=str(root), RENO_CONFIG_FILE=str(local),
                       RENO_DATA_DIR=str(root / "data"), RENO_LLM_TESTS="0")
+    # Spawn pickles profiles and copyreg lazily adds a class-level cache.
+    # Establish it before collection captures exact source class dictionaries.
+    from reno.storage_lifecycle import StorageProfile
+    copyreg._slotnames(StorageProfile)
 
 
 def pytest_sessionfinish(session):

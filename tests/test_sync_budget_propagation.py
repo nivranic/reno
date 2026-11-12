@@ -9,7 +9,8 @@ import pytest
 from reno import db, ingest, report, storage_admin, sync_agent as agent, sync_sources, tasks, worker
 from reno.budget_contract import BudgetDeferred
 from reno.sync_state import StateStore
-from tests.test_sync_agent import env, install_import
+from tests.test_sync_agent import install_import
+from tests.conftest import released16_env as env
 
 
 def postponed(reason="daily_limit", *, timed=True):

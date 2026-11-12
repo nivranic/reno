@@ -14,7 +14,8 @@ from reno.budget_contract import BudgetDeferred
 from reno.sync_protocol import SyncError
 from tests.test_sync_source_execution_state import enable, execution, ready, request, receipt, resume
 from tests.test_sync_state import claim, store
-from tests.test_sync_agent import add_video, env, install_import
+from tests.test_sync_agent import add_video, install_import
+from tests.conftest import released16_env as env
 from tests.test_sync_budget_propagation import home_cycle, raw_job
 from tests.test_sync_source_execution_binding import bind, executing
 
@@ -327,7 +328,8 @@ def test_normal_home_strict_entry_binds_before_resolver_and_scopes_only_ingest(e
     config.set_local({"budget_enabled": True})
     steps = []
     legacy_resolve = sync_sources.resolve_url
-    def resolve(binding, *, check_cancelled):
+    def resolve(binding, *, client, check_cancelled):
+        assert client is env
         assert source_budget.current_scope() is None
         assert binding.store.assert_source_execution() == binding.core
         binding.check()

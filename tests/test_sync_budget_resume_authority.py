@@ -7,7 +7,8 @@ import pytest
 
 from reno import db, storage_admin, tasks
 from reno.budget_contract import BudgetDeferred
-from tests.test_sync_agent import env, install_import
+from tests.test_sync_agent import install_import
+from tests.conftest import released16_env as env
 from tests.test_sync_budget_propagation import home_cycle
 from tests.test_sync_source_execution_binding import bind, executing
 

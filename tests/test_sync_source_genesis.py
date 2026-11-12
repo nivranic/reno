@@ -9,7 +9,8 @@ import pytest
 
 from reno import sync_source_authority as permanent, sync_source_execution as execution, sync_state
 from reno.sync_protocol import SyncError
-from tests.test_sync_agent import env, install_import
+from tests.test_sync_agent import install_import
+from tests.conftest import released16_env as env
 from tests.test_sync_budget_propagation import home_cycle
 from tests.test_sync_source_execution_binding import executing, bind
 

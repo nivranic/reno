@@ -13,7 +13,7 @@ from reno import source_terminal
 from reno.budget_contract import BudgetDeferred
 from reno.sync_protocol import SyncError
 from tests.test_source_resolution_budget import bound, network, LEAF, STAMP  # noqa: F401
-from tests.test_sync_agent import env  # noqa: F401
+from tests.conftest import released16_env as env
 
 
 def logical_sha(binding, kind, metadata=None):
