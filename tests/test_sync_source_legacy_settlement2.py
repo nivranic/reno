@@ -297,10 +297,9 @@ def test_same_epoch_wire1_requires_real_readmit_opportunity_and_never_current_pa
     assert value.remote.seen == calls
 
 
-@pytest.mark.parametrize("kind", ("negative", "budget_pair"))
-def test_real_new_intent_and_receipt_first_cas_do_not_resubmit_or_refund_legacy_consumption(actual_history, kind):
+def test_real_new_intent_and_receipt_first_cas_do_not_resubmit_or_refund_legacy_consumption(actual_history):
     value = actual_history
-    _old, previous, controls = _existing(value, kind)
+    _old, previous, controls = _existing(value, "negative")
     before_state, before_files, before_paid = _unchanged(value)
     before_calls = deepcopy(value.remote.seen)
     intent = actual_call(effects.create_current_readmit17_locked,
@@ -338,6 +337,22 @@ def test_real_new_intent_and_receipt_first_cas_do_not_resubmit_or_refund_legacy_
     # The newly published actual receipt2/CAS may now supply a current view;
     # the controlled old baseline itself never did so.
     assert_current_after_readmit(value, answer)
+
+
+def test_new_intent_rejects_synthetic_budget_history_without_actual_manual_authorization(actual_history):
+    value = actual_history
+    _existing(value, "budget_pair")
+    before = _unchanged(value)
+    calls = deepcopy(value.remote.seen)
+    # This controlled pair has shaped hashes and no tasks.resume_sync SQL receipt.
+    # The actual producer and distinct-hash flow have their own regression suite.
+    with pytest.raises(SyncError) as caught:
+        actual_call(effects.create_current_readmit17_locked,
+            profile=value.profile, store=value.store, client=value.client)
+    assert caught.value.code == "SYNC_SOURCE_HISTORY1_MANUAL_RECEIPT_REQUIRED"
+    assert history._CURRENT.get() is None
+    assert _unchanged(value) == before
+    assert value.remote.seen == calls
 
 
 @pytest.mark.parametrize("kind", ("negative", "budget_pair"))

@@ -3,7 +3,10 @@ from copy import deepcopy
 import sqlite3
 import uuid
 
+import httpx
 import pytest
+
+from tests.asgi_transport import as_httpx_response
 
 from reno import config, migrations, storage_admin, sync_queue as queue
 from reno import sync_source_continuity as external
@@ -32,8 +35,17 @@ def http(env, monkeypatch):
     value.close()
 
 
+class _SDKTransport(httpx.BaseTransport):
+    """Borrow the real ASGI peer while adapting its response stream domain."""
+    def __init__(self, http):
+        self.http = http
+
+    def handle_request(self, request):
+        return as_httpx_response(self.http._transport.handle_request(request))
+
+
 def sdk(http):
-    return SyncClient("https://sync.example.test", token_provider=lambda: TOKEN, transport=http._transport)
+    return SyncClient("https://sync.example.test", token_provider=lambda: TOKEN, transport=_SDKTransport(http))
 
 
 def test_three_endpoints_require_independent_sync_token_and_closed_path_kind(env, http):

@@ -148,15 +148,14 @@ def test_public_native_registration_outer1_still_saves_receipt2(live17):
         client=value.client, control_request_id=reference["record_id"])
     body = intent["record"]["request"]
     assert intent["record"]["format_version"] == body.get("format_version", 1) == 1
-    result = sample.registration(body)
-    result.update(core_sha256=body["core_sha256"], item_id=body["item_id"])
-    result["registration_sha256"] = wire.registration_sha256(result)
-    value.remote.payloads["register"] = result
     effects.install_recovery_pending17_locked(profile=value.profile, store=value.store,
         request_id=body["request_id"])
     before_state, before_paid = deepcopy(value.store.read()), _paid_rows(value)
     saved = effects.deliver_recovery17(profile=value.profile, store=value.store,
         client=value.client, request_id=body["request_id"])
+    result = value.remote.payloads["register"]
+    assert result["registration_sha256"] == wire.registration_sha256(result)
+    assert result["core_sha256"] == body["core_sha256"] and result["item_id"] == body["item_id"]
     assert saved["record"]["format_version"] == 2
     assert saved["record"]["result"] == result and saved["record"]["record_id"] == body["request_id"]
     assert value.store.read() == before_state and _paid_rows(value) == before_paid

@@ -12,7 +12,8 @@ from reno.sync_client import SyncClientError
 from reno.sync_client import SyncClient
 from reno.sync_protocol import SyncError
 from reno.sync_state import StateStore
-from tests.test_sync_agent import env, add_video, add_event, cycle, install_import
+from tests.conftest import released16_env as env
+from tests.test_sync_agent import add_video, add_event, cycle, install_import
 
 
 @pytest.fixture

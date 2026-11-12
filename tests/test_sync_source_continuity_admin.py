@@ -198,7 +198,9 @@ def test_actual_sdk_reads_absence_then_current_without_an_activation_http_endpoi
     before = files(env)
     result = client.source_continuity(env.source, env.target)
     assert result["state"] == "current" and result["continuity"]["continuity_id"] == actual["continuity_id"]
-    assert http.post("/api/sync/source/activate", json={}, headers={"X-Sync-Token": TOKEN}).status_code == 405
+    # An absent API returns 404; a GET-only SPA catch-all can return 405 for POST.
+    response = http.post("/api/sync/source/activate", json={}, headers={"X-Sync-Token": TOKEN})
+    assert response.status_code in {404, 405}
     assert files(env) == before
 
 

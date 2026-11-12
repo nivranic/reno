@@ -4,10 +4,11 @@ from contextvars import copy_context
 
 import pytest
 
-from reno import home_recovery_runtime17 as runtime, migrations
+from reno import home_recovery_runtime17 as runtime
 from reno import sync_source_authority as permanent, sync_source_readmit_local2 as local
 from reno import sync_source_lifecycle17 as effects
 from reno.sync_protocol import SyncError
+from tests.schema_fixtures import assert_current17_runtime
 from tests.test_sync_agent import env
 from tests.test_sync_source_genesis17 import home17, live17, permanent_files
 from tests.test_sync_source_readmit_local2 import produce_held_receipt
@@ -36,7 +37,7 @@ def test_actual_control_basis_uses_admission_result_claim_and_has_no_generic_pai
             copy_context().run(captured.verify_source)
         captured.verify_source()
     assert live17.store.read() == before and permanent_files(live17) == files and live17.remote.seen == seen
-    assert migrations.SCHEMA_VERSION == 16
+    assert_current17_runtime()
     with pytest.raises(SyncError):
         captured.verify_source()
 

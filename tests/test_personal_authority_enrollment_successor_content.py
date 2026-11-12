@@ -206,9 +206,10 @@ def independent_successor(originals, prepare_raw, reservation_raw, pre_raw, post
 
 
 @pytest.fixture(scope="module")
-def materials():
-    root = Path.cwd().resolve(); qa = Path(os.environ["RENO_QA_ROOT"]).resolve()
-    assert qa.is_relative_to(root)
+def materials(tmp_path_factory):
+    qa = Path(os.environ["RENO_QA_ROOT"]).resolve()
+    assert qa == tmp_path_factory.getbasetemp().resolve()
+    root = qa
     out = qa / "controlled-successor-content-01"; out.mkdir(exist_ok=False)
     saved = []; authentication = []
 

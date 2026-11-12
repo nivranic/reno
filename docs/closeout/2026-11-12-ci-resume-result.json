@@ -2011,5 +2011,494 @@
       }
     ],
     "full_backend_pass": false
+  },
+  "post_f766c4e_fixture_contract_followup": {
+    "recorded_date": "2026-11-13",
+    "timezone": "Asia/Hong_Kong",
+    "source_base": "f766c4ecdb8e0659958f6bf8e65ee61fb71b587c",
+    "goal_state": "active",
+    "old_completed_backend": {
+      "run_id": 43229352903,
+      "job_id": 131220482228,
+      "head_sha": "849bb438fc2371e9717fe932fbc91a72a0194ee5",
+      "conclusion": "failure",
+      "failed": 136,
+      "passed": 12771,
+      "skipped": 2351,
+      "errors": 27,
+      "subtests_passed": 43,
+      "seconds": 11585.2,
+      "raw_log": {
+        "file": "backend-ci-849bb43.log",
+        "bytes": 614639,
+        "sha256": "92370f1eb4c4e5ff9aeecbd56333123bc63d6e4b71169e814e7e74ffc297236e"
+      }
+    },
+    "original_four_case_reproduction": {
+      "exit_code": 1,
+      "seconds": 46.502420095999994,
+      "selected": [
+        "tests/test_reconciliation.py::test_optional_product_fixture_adds_namespaced_pagination_without_changing_original_atoms",
+        "tests/test_storage_home_recovery_dependency17.py::test_actual_state5_original_home_and_cloud_capsules_use_copies_after_live_origin_removed",
+        "tests/test_sync_source_legacy_intake_public17.py::test_public_native_registration_outer1_still_saves_receipt2",
+        "tests/test_sync_source_legacy_settlement2.py::test_real_new_intent_and_receipt_first_cas_do_not_resubmit_or_refund_legacy_consumption[budget_pair]"
+      ],
+      "tests": 4,
+      "errors": 0,
+      "failures": 3,
+      "skipped": 0,
+      "passed": 1,
+      "log": {
+        "file": "linux-ci-remaining-three-before.log",
+        "bytes": 10512,
+        "sha256": "d15d0a59833a6535e389e681e9d26950a80df1fd7244352ea6937d78d3236e65"
+      },
+      "junit": {
+        "file": "linux-ci-remaining-three-before.xml",
+        "bytes": 6253,
+        "sha256": "8a6a7db82fadf362cff2d4699c40f87139ba1b4135467d73a3c79dc21cc33b1f"
+      }
+    },
+    "fixture_batch": {
+      "exit_code": 0,
+      "seconds": 467.694247779,
+      "selected": [
+        "tests/test_storage_home_recovery_dependency17.py",
+        "tests/test_sync_source_legacy_intake_public17.py",
+        "tests/test_sync_source_legacy_settlement2.py",
+        "tests/test_source_manual_resume_dual_sha17.py",
+        "tests/test_home_recovery17.py::test_actual_double_facilities_four_tables_keep_original_facts_through_restore"
+      ],
+      "tests": 83,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 83,
+      "log": {
+        "file": "linux-ci-remaining-three-after.log",
+        "bytes": 191,
+        "sha256": "07885832e82a89276010dce0929e7e1908f6119730d752ab82e807e7a17fe143"
+      },
+      "junit": {
+        "file": "linux-ci-remaining-three-after.xml",
+        "bytes": 14088,
+        "sha256": "088e2a9be5531f6004e62730c7f9526a54f98630f23b7a745ea0173b7619fa73"
+      }
+    },
+    "explicit_read_connection_close": {
+      "exit_code": 0,
+      "seconds": 11.540285171999926,
+      "selected": [
+        "tests/test_storage_home_recovery_dependency17.py::test_actual_state5_original_home_and_cloud_capsules_use_copies_after_live_origin_removed"
+      ],
+      "tests": 1,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 1,
+      "log": {
+        "file": "linux-ci-dependency-close.log",
+        "bytes": 98,
+        "sha256": "2b887969563b8d5efd0e9e825c93a8d41ce13b359807d97ade5790c10afa2369"
+      },
+      "junit": {
+        "file": "linux-ci-dependency-close.xml",
+        "bytes": 427,
+        "sha256": "53510929c4f9d03b1158c9d33dab374f61f39c52bd11387a37979124db828e7a"
+      }
+    },
+    "sdk_basis_original": {
+      "exit_code": 1,
+      "seconds": 71.45090522699996,
+      "selected": [
+        "tests/test_sync_source_recovery_api.py",
+        "tests/test_sync_source_continuity_admin.py",
+        "tests/test_sync_source_control_basis2.py",
+        "tests/test_sync_source_control_scheduler2.py::test_first_original_core_defer_resume_readmit_keeps_history_and_reopens_current_view"
+      ],
+      "tests": 43,
+      "errors": 0,
+      "failures": 7,
+      "skipped": 0,
+      "passed": 36,
+      "log": {
+        "file": "linux-ci-sdk-basis-before.log",
+        "bytes": 11816,
+        "sha256": "bc15df8f86dec08ca95241417eae0cb5ae90392fb8f4a812e068d4c5c6177330"
+      },
+      "junit": {
+        "file": "linux-ci-sdk-basis-before.xml",
+        "bytes": 20971,
+        "sha256": "2da092f4059011418a1408c2274e88201b0ad99a1bef03db4a8d052dbb873b24"
+      }
+    },
+    "sdk_first_after": {
+      "exit_code": 1,
+      "seconds": 105.18901701999994,
+      "selected": [
+        "tests/test_sync_source_recovery_api.py",
+        "tests/test_sync_source_continuity_admin.py",
+        "tests/test_sync_source_control_basis2.py",
+        "tests/test_sync_source_dispose_sql2.py"
+      ],
+      "tests": 58,
+      "errors": 0,
+      "failures": 1,
+      "skipped": 0,
+      "passed": 57,
+      "log": {
+        "file": "linux-ci-sdk-basis-after.log",
+        "bytes": 1795,
+        "sha256": "cffdd59cd3c36dd5df1880dd70060e3deb5aefb4da4bab91c39b79396cca6a10"
+      },
+      "junit": {
+        "file": "linux-ci-sdk-basis-after.xml",
+        "bytes": 19044,
+        "sha256": "55d6d46eb94876c5469a5868c7e508fb9f9b1665f44aba50368123dd589d3496"
+      }
+    },
+    "sdk_scheduler_final": {
+      "exit_code": 0,
+      "seconds": 344.4150702479999,
+      "selected": [
+        "tests/test_sync_source_recovery_api.py",
+        "tests/test_sync_source_continuity_admin.py",
+        "tests/test_sync_source_control_basis2.py",
+        "tests/test_sync_source_dispose_sql2.py",
+        "tests/test_sync_source_control_scheduler2.py"
+      ],
+      "tests": 61,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 61,
+      "log": {
+        "file": "linux-ci-sdk-scheduler-final.log",
+        "bytes": 111,
+        "sha256": "93fecfc2437f59ac21ce2a94b58010113c0b43a8630e94d236daef6ade3e387b"
+      },
+      "junit": {
+        "file": "linux-ci-sdk-scheduler-final.xml",
+        "bytes": 18596,
+        "sha256": "acd2c297550db955574633890536c410570c5eeb8e0c5793c8f94e43eb431657"
+      }
+    },
+    "shared_helper_cross_regression": {
+      "exit_code": 0,
+      "seconds": 204.94625298200003,
+      "selected": [
+        "tests/test_sync_source_legacy_settlement2.py::test_real_new_intent_and_receipt_first_cas_do_not_resubmit_or_refund_legacy_consumption",
+        "tests/test_source_manual_resume_gc_scope17.py",
+        "tests/test_reconciliation.py",
+        "tests/test_sync_client.py",
+        "tests/test_sync_no_resend_agent.py",
+        "tests/test_sync_published_terminal.py",
+        "tests/test_sync_agent_http.py"
+      ],
+      "tests": 266,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 266,
+      "log": {
+        "file": "linux-ci-helper-cross-regression-final.log",
+        "bytes": 352,
+        "sha256": "9a49be928fa6e4ac205f41ba4e8edb8f14e21fbaa68810e1d0663e10bf016237"
+      },
+      "junit": {
+        "file": "linux-ci-helper-cross-regression-final.xml",
+        "bytes": 42575,
+        "sha256": "ad895099405aee91a34f51c5e55acf86a0b3a4f8df6c0921453a3afa8b5a2283"
+      }
+    },
+    "shared_helper_original_expanded_regression": {
+      "exit_code": 1,
+      "seconds": 145.6375648369999,
+      "selected": [
+        "tests/test_sync_source_legacy_settlement2.py::test_real_new_intent_and_receipt_first_cas_do_not_resubmit_or_refund_legacy_consumption",
+        "tests/test_source_manual_resume_gc_scope17.py",
+        "tests/test_reconciliation.py",
+        "tests/test_sync_client.py",
+        "tests/test_sync_no_resend_agent.py",
+        "tests/test_sync_published_terminal.py",
+        "tests/test_sync_agent_http.py"
+      ],
+      "tests": 266,
+      "errors": 0,
+      "failures": 6,
+      "skipped": 0,
+      "passed": 260,
+      "log": {
+        "file": "linux-ci-helper-cross-regression.log",
+        "bytes": 7458,
+        "sha256": "5b21cd531dc916487d9dfa4db385942ced6c3cc3a70528bdb7bc2c0459d5e980"
+      },
+      "junit": {
+        "file": "linux-ci-helper-cross-regression.xml",
+        "bytes": 46787,
+        "sha256": "982c6f9da930012c9ada38dc68735ab9a654d809655e65306fe45a0eb8a52f7c"
+      }
+    },
+    "qa_materials_and_ordinary_terminal_regression": {
+      "exit_code": 0,
+      "seconds": 42.131898914000004,
+      "selected": [
+        "tests/test_personal_authority_enrollment_successor_content.py",
+        "tests/test_personal_authority_joint_sql_observation.py",
+        "tests/test_sync_published_terminal.py",
+        "tests/test_sync_bootstrap_state.py",
+        "tests/test_sync_no_resend.py"
+      ],
+      "tests": 510,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 510,
+      "log": {
+        "file": "linux-ci-qa-materials-terminal.log",
+        "bytes": 661,
+        "sha256": "1eb0a5b8eb0919c9f681909c239cf2e30f1c0a476203c8fbc6c3cfdfaf398d73"
+      },
+      "junit": {
+        "file": "linux-ci-qa-materials-terminal.xml",
+        "bytes": 85282,
+        "sha256": "de8e976f750774e32d55f77d0779d554a03bda1d787f5d7a4614691a3390ef1e"
+      }
+    },
+    "modern_http_final": {
+      "exit_code": 0,
+      "seconds": 110.362,
+      "selected": [
+        "tests/test_sync_agent_http.py"
+      ],
+      "tests": 2,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 2,
+      "log": {
+        "file": "linux-ci-helper-cross-regression-final.log",
+        "bytes": 352,
+        "sha256": "9a49be928fa6e4ac205f41ba4e8edb8f14e21fbaa68810e1d0663e10bf016237"
+      },
+      "junit": {
+        "file": "linux-ci-helper-cross-regression-final.xml",
+        "bytes": 42575,
+        "sha256": "ad895099405aee91a34f51c5e55acf86a0b3a4f8df6c0921453a3afa8b5a2283"
+      }
+    },
+    "http_storage_prerequisite_failure": {
+      "exit_code": 1,
+      "seconds": 66.357136935,
+      "selected": [
+        "tests/test_sync_no_resend_agent.py",
+        "tests/test_sync_agent_http.py"
+      ],
+      "tests": 33,
+      "errors": 2,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 31,
+      "log": {
+        "file": "linux-ci-no-resend-http-after.log",
+        "bytes": 3867,
+        "sha256": "efb76e5dce06060aca9f88fbf90694e9ee5d974b1fedbda0c664628480bdfd63"
+      },
+      "junit": {
+        "file": "linux-ci-no-resend-http-after.xml",
+        "bytes": 7702,
+        "sha256": "9599f2948245e010e7cf9fb1df224944603571cdc87ee47284da2e7584b41c2c"
+      }
+    },
+    "http_after_storage_initialization": {
+      "exit_code": 1,
+      "seconds": 106.74558910899998,
+      "selected": [
+        "tests/test_sync_agent_http.py"
+      ],
+      "tests": 2,
+      "errors": 0,
+      "failures": 2,
+      "skipped": 0,
+      "passed": 0,
+      "log": {
+        "file": "linux-ci-http-storage-init.log",
+        "bytes": 2448,
+        "sha256": "f316096e338f1d4cfd5966bb179579627bbb913c3d08e611967e3ce181ab6d8b"
+      },
+      "junit": {
+        "file": "linux-ci-http-storage-init.xml",
+        "bytes": 1691,
+        "sha256": "5f54aecef0dc9df4f95b1ecf3c66e63726860ccd1d4580244225f70b8b1f3898"
+      }
+    },
+    "http_after_current_provider": {
+      "exit_code": 1,
+      "seconds": 122.30751836300004,
+      "selected": [
+        "tests/test_sync_agent_http.py"
+      ],
+      "tests": 2,
+      "errors": 0,
+      "failures": 1,
+      "skipped": 0,
+      "passed": 1,
+      "log": {
+        "file": "linux-ci-http-current-provider.log",
+        "bytes": 1369,
+        "sha256": "fb7ae7660c88142c3f96fc11f55f042efef8e65c6f2694c46b454ea4fcc66e46"
+      },
+      "junit": {
+        "file": "linux-ci-http-current-provider.xml",
+        "bytes": 1111,
+        "sha256": "93bbcc21d9f47a83025ab5a4b166e17803d1895ab4302de3c60dea7c4ec62760"
+      }
+    },
+    "http_helper_return_shape_first_run": {
+      "exit_code": 1,
+      "seconds": 129.25666953500001,
+      "selected": [
+        "tests/test_sync_agent_http.py"
+      ],
+      "tests": 2,
+      "errors": 0,
+      "failures": 2,
+      "skipped": 0,
+      "passed": 0,
+      "log": {
+        "file": "linux-ci-http-lost-reply-resume.log",
+        "bytes": 1668,
+        "sha256": "158a8a4270a49290c6393c913dc7238d8cb1881ba576f449c3f2f2f5b99d6ad9"
+      },
+      "junit": {
+        "file": "linux-ci-http-lost-reply-resume.xml",
+        "bytes": 1037,
+        "sha256": "307ecc16e66335c68630babdd4ebd56f1959cab93843ed89d925613b1fd805c0"
+      }
+    },
+    "http_final_counting": "The two HTTP cases are a subset of the final cross regression and have no separate execution count",
+    "lost_reply_original_job_status": {
+      "job_id": 1,
+      "status": "pending",
+      "wait_mode": "blocked",
+      "blocked_reason": "indeterminate",
+      "error": null
+    },
+    "later_completed_backend": {
+      "run_id": 43235347680,
+      "job_id": 131241101630,
+      "head_sha": "6947aba0648dd435f9b541e4a3f0011b0804ab29",
+      "conclusion": "failure",
+      "failed": 49,
+      "passed": 12584,
+      "skipped": 2351,
+      "errors": 301,
+      "subtests_passed": 43,
+      "seconds": 11183.01,
+      "material_setup_error_cause": "Two material fixtures required RENO_QA_ROOT to be inside the source checkout",
+      "raw_log": {
+        "file": "backend-ci-6947aba.log",
+        "bytes": 715377,
+        "sha256": "9b1f28e6368ec52ecece80ab0b22abcd1d504d0d4da507102249f36278e6b104"
+      }
+    },
+    "decisions": [
+      "Read and validate the existing historical17-v1 image without reinstalling it through released16 application globals",
+      "Explicitly close the read-only schema connection before restoring",
+      "Compare the native registration receipt with the actual isolated Cloud result",
+      "A controlled budget pair lacks tasks.resume_sync SQL authorization and must retain MANUAL_RECEIPT_REQUIRED, actual authorization positive cases passed in the distinct-hash suite",
+      "Adapt the real ASGI peer through the existing response ownership helper to the SDK httpx transport domain",
+      "The absent activation API accepts 404 or GET-only catch-all 405 while retaining unchanged-file assertions",
+      "Register original controls before modern first delivery, consume actual delivered results and preserve the caller's schema globals",
+      "Bind material outputs to the actual pytest basetemp with QA-root equality and retain child containment and byte hashes",
+      "Ordinary terminal tests clear the shared fixture's independent bootstrap marker, the complete bootstrap suite retains its repair behavior",
+      "The old synthetic peer lacks source_continuity and keeps its complete released16 lifetime",
+      "The real modern HTTP fixture activates Cloud continuity through the existing CLI before claiming source work",
+      "Initialize isolated Cloud storage through its existing CLI and reuse SyntheticSourceRunner for current resolution and source-budget dispatch",
+      "A lost publication response retains the actual pending/blocked/indeterminate job, the test explicitly resumes that same job and verifies the original publication retry"
+    ],
+    "file_identities": {
+      "tests/test_storage_home_recovery_dependency17.py": {
+        "before_sha256": "49ea9132c8ba548fc2566320f322339c58150eff197ff60e2158192bfbca7b41",
+        "after_sha256": "265bce50dcaefeda0df97c1e817076842a8b15152a513165f76ffe83beb620af"
+      },
+      "tests/test_sync_source_legacy_intake_public17.py": {
+        "before_sha256": "49c8a98a0415e745be454fb124e1e7a22e48e35ebdbc82e8dfb95c6d166e32bf",
+        "after_sha256": "ab6502401c32894a8212ab8e56fc58bc4b14bf3da85d7166c748bc22a1b88ee9"
+      },
+      "tests/test_sync_source_legacy_settlement2.py": {
+        "before_sha256": "230c87213998e5a4aa32a4c74356d6869c820c1a7e09ac427e46bc3a636a82ea",
+        "after_sha256": "eb7de544f0e47210c706a505c33f3e5df78d916a62f892bc781d5efc531a610f"
+      },
+      "tests/test_sync_source_recovery_api.py": {
+        "before_sha256": "91b9e03eb7c790736434ace33b6f85b8c06d64977541d97661ff062313e80c49",
+        "after_sha256": "70ba7014f58495a5af8c98530f866398da514dc0dc22158d3b371503d0afc930"
+      },
+      "tests/test_sync_source_control_basis2.py": {
+        "before_sha256": "669374515b73c0a9adf3c4a8c2d9fd719f7dc6d09da92ac9cc2d1763ac85d120",
+        "after_sha256": "f98d937a3517040557b3baa69c7736235a415e9de35e4cca7dbbacfdb4faf7c9"
+      },
+      "tests/test_sync_source_continuity_admin.py": {
+        "before_sha256": "32f8ec7fb1c263edc9060b0271bb625a80c5ff25d5b0f47b0d99f1d0c76f0307",
+        "after_sha256": "20a0c1ed385f3e20f095b953635a8f14e82ef7cf75a5dd3432271cb50db70056"
+      },
+      "tests/test_sync_source_control_scheduler2.py": {
+        "before_sha256": "ca23295b6f377e163e5901277151aebf3560dab3a549d97bc4d546ca0a6ff0f7",
+        "after_sha256": "dda7cb292c4620efce2b5d82df5e9beb5ca859d38186557b3d15d567de3a07af"
+      },
+      "tests/test_personal_authority_enrollment_successor_content.py": {
+        "before_sha256": "52fcaf1dc771e0d9814f2f1a3c4f300e0d9978bc907bcdcc0b5bf3ad4c5dbeae",
+        "after_sha256": "f6567a2c47354541198b7437cb6644822a96b2a1295ad913cddf4b7d571529e2"
+      },
+      "tests/test_personal_authority_joint_sql_observation.py": {
+        "before_sha256": "f25d293c3c9305345eb5ec6fb7f371b1c215c5f23154bd210e18660b0775522c",
+        "after_sha256": "464efb78d4fbce7ea17f9b4c30a178cb69499e03f4fc956ba208038e71852bed"
+      },
+      "tests/test_sync_published_terminal.py": {
+        "before_sha256": "c79a5dc54c7a8480724ba2d91bb826b061077bcf2ce7079cd7df6b656fbb04cd",
+        "after_sha256": "38c9d06bf9570933d0e290de465677ee2c6274b7025450e4d78ec25e140cf2cd"
+      },
+      "tests/test_sync_no_resend_agent.py": {
+        "before_sha256": "9b70ab8093837e486490b7f0cf1fff2bb539a86f68df09589d7f801b286bfc18",
+        "after_sha256": "3e4dfdb1f8c2b55aed2185938e1df99dbeca9695f840605f1a0cbb5a343c00f3"
+      },
+      "tests/test_sync_agent_http.py": {
+        "before_sha256": "b69f5c5baa93b65236df5c086a11ea6d70259ad8c9c7c8f27d183ed049c49dab",
+        "after_sha256": "e6646cf57e7e4535e80097515fc7d03997adffb3f10a31ff2dbf2d09a9899622"
+      }
+    },
+    "pytest_counting": "Batches overlap and remain separate",
+    "candidate_chain_and_ast_audit": {
+      "test_files": 12,
+      "original_function_asts_preserved": 193,
+      "product_runtime_files_changed": 0,
+      "complete_candidate_chain_verified": true
+    },
+    "product_runtime_files_changed": 0,
+    "full_remote_backend_pass": false,
+    "complete_product_goal": false
+  },
+  "v3_original_null_slot_consumer": {
+    "package": "reno-loader-null-slot-consumer-r1535",
+    "working_revision": "working-01",
+    "source_files": 29,
+    "source_bytes": 2572313,
+    "changed_files": 3,
+    "unchanged_parent_files": 26,
+    "root_and_same_independent_review": "passed",
+    "selection_model_cases_passed": 128,
+    "path_model_cases_passed": 68,
+    "cache_producer_review": "CACHE-ENTRY-REVIEW.json",
+    "delegation_binder_dependency_review": "DELEGATION-BINDER-REVIEW.json",
+    "official_ref": "CPython v3.12.10",
+    "cache_review_assumptions": [
+      "Normal setter version invalidation",
+      "Valid cache invariants",
+      "Actual guard still observes a nonstandard slot"
+    ],
+    "c_parsed_built_or_executed": false,
+    "complete_dispatcher_defined": false,
+    "installed_in_product": false,
+    "complete_product_goal": false
   }
 }

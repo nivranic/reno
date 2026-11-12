@@ -4,6 +4,7 @@ Both libraries, identities, credentials and media live under tmp_path. The only
 server terminated by these tests is the exact Popen child created by the fixture.
 """
 from copy import deepcopy
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -13,7 +14,6 @@ import sqlite3
 import subprocess
 import sys
 import time
-from types import SimpleNamespace
 import uuid
 
 import httpx
@@ -86,11 +86,19 @@ def two_nodes(tmp_path, monkeypatch):
 
     child_env = _child_env(cloud_config, tmp_path, cloud / "data")
     _cli(child_env, "init-db")
+    _cli(child_env, "storage-init")
     target = _cli(child_env, "sync-identity")
     assert target["library_id"] != source["library_id"] and target["node_id"] != source["node_id"]
     source_file = cloud / "source-identity.json"
     source_file.write_text(json.dumps(source), encoding="utf-8")
     _cli(child_env, "sync-pair", "--source", str(source_file))
+    preview = _cli(child_env, "sync-source-continuity")
+    assert preview["state"] == "absent"
+    activated_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    _cli(child_env, "sync-source-continuity", "--apply",
+         "--continuity-id", str(uuid.uuid4()), "--activated-at", activated_at,
+         "--expected-digest", preview["activation_basis_sha256"])
+    assert _cli(child_env, "sync-source-continuity")["state"] == "current"
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
@@ -134,31 +142,23 @@ def two_nodes(tmp_path, monkeypatch):
 
 def _install_synthetic_processing(monkeypatch):
     steps, home_events = [], []
-    stamp = sync_sources._now()
-    resolution = {"resolution_version": 1, "submitted_url": SHORT_URL, "resolved_url": FINAL_URL,
-        "resolved_at": stamp, "hops": [
-            {"url": SHORT_URL, "peer_ip": "8.8.8.8", "status": 302, "next_url": FINAL_URL},
-            {"url": FINAL_URL, "peer_ip": "8.8.8.8", "status": 200, "next_url": None}]}
+    from scripts.sync_scenario_source import SyntheticSourceRunner
+    from reno import source_budget, source_contract, source_resolution
 
-    def resolve(url, *, check_cancelled):
-        check_cancelled()
-        assert url == SHORT_URL
-        steps.append("resolve")
-        return deepcopy(resolution)
+    fixture_root = config.DATA.parent
+    inputs = fixture_root / "synthetic-input"
+    inputs.mkdir()
+    (inputs / "http-source.mp4").write_bytes(CONTENT)
+    value = {"root": str(fixture_root), "videos": [{
+        "video_id": VIDEO, "title": "隔离 HTTP 同步样本", "filename": "http-source.mp4",
+        "short_url": SHORT_URL, "final_url": FINAL_URL,
+    }]}
+    runner = SyntheticSourceRunner(value, lambda name, video_id: steps.append(name))
+    monkeypatch.setattr(source_budget, "_components", lambda: (source_contract, runner))
+    monkeypatch.setattr(source_resolution, "run", runner.resolve)
 
-    def ytdlp(*args):
-        if "--skip-download" in args:
-            assert args[-1] == FINAL_URL and "--no-playlist" in args
-            steps.append("metadata")
-            return SimpleNamespace(returncode=0, stdout=json.dumps({"id": VIDEO, "title": "隔离 HTTP 同步样本",
-                "extractor": "BiliBili", "webpage_url": FINAL_URL, "duration": 1}), stderr="")
-        metadata = json.loads(Path(args[args.index("--load-info-json") + 1]).read_text(encoding="utf-8"))
-        assert metadata["id"] == VIDEO and "webpage_url" not in metadata and FINAL_URL not in args
-        if "ba/bestaudio" in args:
-            return SimpleNamespace(returncode=1, stdout="", stderr="synthetic media has no separate audio")
-        steps.append("download")
-        Path(args[args.index("-o") + 1]).write_bytes(CONTENT)
-        return SimpleNamespace(returncode=0, stdout="", stderr="")
+    def unexpected_legacy(*args, **kwargs):
+        pytest.fail("The current Home17 HTTP fixture requires its synthetic source runner")
 
     def media(con, video_id):
         steps.append("media")
@@ -194,8 +194,8 @@ def _install_synthetic_processing(monkeypatch):
         # and its transaction without ever asking a model.
         return original_judge()
 
-    monkeypatch.setattr(sync_sources, "resolve_url", resolve)
-    monkeypatch.setattr(ingest, "_ytdlp", ytdlp)
+    monkeypatch.setattr(sync_sources, "resolve_url", unexpected_legacy)
+    monkeypatch.setattr(ingest, "_ytdlp", unexpected_legacy)
     for name, replacement in (("media", media), ("asr", asr), ("ocr", ocr), ("atomize", atomize)):
         monkeypatch.setattr(getattr(pipeline, name), "run", replacement)
     monkeypatch.setattr(pipeline, "judge_all", judge)
@@ -204,12 +204,12 @@ def _install_synthetic_processing(monkeypatch):
     return steps, home_events
 
 
-def _work_once():
+def _work_once(*, resume=False):
     job_id = tasks.submit_sync()
+    if resume:
+        tasks.resume_sync(job_id)
     assert worker.process_pending(max_jobs=1) == 1
-    job = tasks.get(job_id, include_internal=True)
-    assert job["status"] == "done", job
-    return job["result"]
+    return tasks.get(job_id, include_internal=True)
 
 
 @pytest.mark.parametrize("drop_publication_reply", [False, True])
@@ -243,15 +243,18 @@ def test_real_cloud_http_roundtrip_and_original_publication_retry(two_nodes, mon
     first = _work_once()
     store = StateStore(node["home_data"])
     if drop_publication_reply:
-        assert first["error_code"] == "SYNC_CLIENT_NETWORK"
+        assert first["status"] == "pending"
+        assert first["wait_mode"] == "blocked" and first["blocked_reason"] == "indeterminate"
         assert store.read()["published_version"] is None and store.read()["pending_publication"] is not None
         # Local processing and the remote commit are separate facts.
         assert _rows(cloud_db, "SELECT status FROM sync_queue") == [{"status": "done"}]
-        assert _work_once()["state"] == "idle"
+        recovered = _work_once(resume=True)
+        assert recovered["job_id"] == first["job_id"] and recovered["status"] == "done"
+        assert recovered["result"]["state"] == "idle"
         assert sent_publications[0] == sent_publications[1]
         assert len(_rows(cloud_db, "SELECT publication_id FROM sync_publication")) == 1
     else:
-        assert first["state"] == "idle"
+        assert first["status"] == "done" and first["result"]["state"] == "idle"
     assert steps == ["resolve", "metadata", "download", "media", "asr", "ocr", "atomize", "judge"]
     assert store.read()["pending_publication"] is None and store.read()["published_version"] is not None
     assert _rows(node["home_data"] / "reno.db", "SELECT kind FROM job WHERE kind='process'") == []
@@ -284,7 +287,8 @@ def test_real_cloud_http_roundtrip_and_original_publication_retry(two_nodes, mon
         "event_id": cloud_event, "client_id": "cloud-http-fixture", "target_fingerprint": atom["target_fingerprint"],
         "note": "来自云端的人工测试复核"})
     assert reviewed.status_code == 200
-    assert _work_once()["state"] == "idle"
+    idle_job = _work_once()
+    assert idle_job["status"] == "done" and idle_job["result"]["state"] == "idle"
     expected_events = {home_events[0], cloud_event}
     assert {r["event_id"] for r in _rows(cloud_db, "SELECT event_id FROM user_decision")} == expected_events
     assert {r["event_id"] for r in _rows(node["home_data"] / "reno.db", "SELECT event_id FROM user_decision")} == expected_events

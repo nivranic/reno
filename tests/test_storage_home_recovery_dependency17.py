@@ -1,5 +1,5 @@
 """Actual original file/image closure; public SQL never grants a producer."""
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 import hashlib
 import json
 import os
@@ -287,10 +287,11 @@ def test_source17_original_sql_companion_stays_pinned_to_final_cas(env):
 
 def test_actual_state5_original_home_and_cloud_capsules_use_copies_after_live_origin_removed(dual_env, monkeypatch):
     value = dual_env
-    with storage_admin.connection(value.profile) as con:
-        readmit.install(con)
-        con.execute("UPDATE meta SET value='17' WHERE key='migration_version'")
-        con.commit()
+    # The closed Cloud producer already installed the historical17-v1 image.
+    # Its surrounding Home scope still has released16 application globals.
+    with closing(sqlite3.connect(value.profile.database.as_uri() + "?mode=ro", uri=True)) as con:
+        assert con.execute("SELECT value FROM meta WHERE key='migration_version'").fetchone() == ("17",)
+        readmit.validate(con)
     value.node = value.store.read()["binding"]["home_node_id"]
     row, result = restored(value)
     origin_path = value.profile.database.parent / reader.authority.DIRECTORY / reader.authority.VERSION_DIRECTORY / "origins" / (value.origin["record_id"] + ".json")

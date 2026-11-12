@@ -187,10 +187,10 @@ def test_current_pair_and_future_successor_budget_arithmetic_is_kept_separate():
 
 
 @pytest.fixture(scope="module")
-def materials():
-    root = Path.cwd().resolve()
+def materials(tmp_path_factory):
     qa = Path(os.environ["RENO_QA_ROOT"]).resolve()
-    assert qa.is_relative_to(root)
+    assert qa == tmp_path_factory.getbasetemp().resolve()
+    root = qa
     out = qa / "controlled-observation-materials-01"
     out.mkdir(exist_ok=False)
     authentication = []

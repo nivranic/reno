@@ -11,6 +11,7 @@ from reno import sync_source_authority as permanent, sync_source_lifecycle17 as 
 from reno import sync_source_opportunity17 as opportunity, sync_source_readmit_contract as wire
 from reno import sync_source_readmit_local2 as local
 from reno.sync_protocol import SyncError
+from tests.schema_fixtures import assert_current17_runtime
 from tests.test_sync_agent import env
 from tests.test_sync_source_genesis17 import home17, live17, permanent_files
 from tests.test_sync_source_admission17 import admitted
@@ -36,8 +37,10 @@ def accept_readmit(value, intent, *, attempts):
     value.remote.payloads["readmit"] = answer
     actual_call(effects.install_recovery_pending17_locked, profile=value.profile,
         store=value.store, request_id=body["request_id"])
-    actual_call(effects.deliver_recovery17, profile=value.profile, store=value.store,
+    delivered = actual_call(effects.deliver_recovery17, profile=value.profile, store=value.store,
         client=value.client, request_id=body["request_id"])
+    answer = delivered["record"]["result"]
+    assert answer["attempts"] == attempts
     after = actual_call(effects.reconcile_recovery17_locked, profile=value.profile,
         store=value.store, request_id=body["request_id"])
     assert after["source_execution"] == value.core
@@ -50,9 +53,10 @@ def finish_resume_and_readmit(value, *, registered=False):
     resumed = sample.old_receipt(value.control["request"], attempts=0,
         parent=value.defer["request"]["claim"])
     value.remote.payloads["push"] = resumed
-    actual_call(effects.deliver_registered_control17 if registered else effects.deliver_control17,
+    delivered = actual_call(effects.deliver_registered_control17 if registered else effects.deliver_control17,
         profile=value.profile, store=value.store, client=value.client,
         request_id=value.control["record_id"])
+    resumed = delivered["record"]["result"]
     actual_call(effects.record_control_receipt17_locked, profile=value.profile,
         store=value.store, request_id=value.control["record_id"])
     assert tasks.renew_worker(value.owner, profile=value.profile)
@@ -69,6 +73,7 @@ def finish_resume_and_readmit(value, *, registered=False):
 
 def assert_current_after_readmit(value, answer):
     """A fully settled ledger is readable without another observation or write."""
+    original_schema_version = migrations.SCHEMA_VERSION
     assert tasks.renew_worker(value.owner, profile=value.profile)
     binding = bindings.capture_home_binding_locked(profile=value.profile, store=value.store,
         item_id=value.core["item_id"])
@@ -86,7 +91,7 @@ def assert_current_after_readmit(value, answer):
         captured.verify_source()
     assert value.store.read() == before and permanent_files(value) == files
     assert value.remote.seen == calls
-    assert migrations.SCHEMA_VERSION == 16
+    assert migrations.SCHEMA_VERSION == original_schema_version
 
 
 def test_first_original_core_defer_resume_readmit_keeps_history_and_reopens_current_view(live17):
@@ -98,8 +103,9 @@ def test_first_original_core_defer_resume_readmit_keeps_history_and_reopens_curr
         store=value.store, request_id=value.defer_ref["record_id"])
     value.defer_receipt = sample.old_receipt(value.defer["request"], attempts=0)
     value.remote.payloads["push"] = value.defer_receipt
-    actual_call(effects.deliver_control17, profile=value.profile, store=value.store,
+    delivered = actual_call(effects.deliver_registered_control17, profile=value.profile, store=value.store,
         client=value.client, request_id=value.defer_ref["record_id"])
+    value.defer_receipt = delivered["record"]["result"]
     actual_call(effects.record_control_receipt17_locked, profile=value.profile,
         store=value.store, request_id=value.defer_ref["record_id"])
     assert tasks.renew_worker(value.owner, profile=value.profile)
@@ -109,7 +115,7 @@ def test_first_original_core_defer_resume_readmit_keeps_history_and_reopens_curr
     assert value.control["creation_basis"]["admission_ref"] is None
     actual_call(effects.install_control17_locked, profile=value.profile,
         store=value.store, request_id=value.control_ref["record_id"])
-    intent, answer = finish_resume_and_readmit(value)
+    intent, answer = finish_resume_and_readmit(value, registered=True)
     assert intent["record"]["request"]["previous_admission_id"] is None
     assert_current_after_readmit(value, answer)
     assert read_control(value, value.defer_ref) == value.defer
@@ -204,4 +210,4 @@ def test_actual_control_frozen_after_original_readmit_intent_stays_unconsumed_an
             for table in ("budget_operation", "budget_attempt")) == counts
     assert value.store.read() == before and permanent_files(value) == files and value.remote.seen == calls
     assert read_control(value, reference) == unconsumed
-    assert migrations.SCHEMA_VERSION == 16
+    assert_current17_runtime()

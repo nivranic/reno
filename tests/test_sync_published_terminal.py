@@ -5,7 +5,16 @@ import pytest
 
 from reno import sync_no_resend as ledger, sync_state
 from reno.sync_protocol import SyncError
-from tests.test_sync_no_resend import bundle, files
+from tests.test_sync_no_resend import bundle as publication_bundle, files
+
+
+@pytest.fixture
+def bundle(publication_bundle):
+    # These cases exercise an ordinary pending publication. Bootstrap ack
+    # retains its independent recovery marker in test_sync_bootstrap_state.
+    _, store, *_ = publication_bundle
+    store.update({"recovery_attempt": None})
+    return publication_bundle
 
 
 def receipt(metadata, snapshot, stream):
