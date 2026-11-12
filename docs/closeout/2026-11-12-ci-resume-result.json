@@ -2500,5 +2500,105 @@
     "complete_dispatcher_defined": false,
     "installed_in_product": false,
     "complete_product_goal": false
+  },
+  "backend_react_build_prerequisite": {
+    "implementation": "Add setup-node 22 and npm ci/npm run build before backend pytest",
+    "workflow_audit": {
+      "path": ".github/workflows/ci.yml",
+      "before_sha256": "b8e5d17be2a214b48a9cca94fa39695a2046b6254fd15b8150a1af8f83ec818d",
+      "after_sha256": "57770a78a912042ee7ec8caf6b28cf4075e0aae0ece628c7f4823862edcd317c",
+      "added_steps": 2,
+      "other_workflow_fields_preserved": true,
+      "inverse_verified": true,
+      "reason": "React-configured isolated subprocess servers require frontend/dist/assets"
+    },
+    "fixture_comment_ast_preserved": true,
+    "product_runtime_files_changed": 0,
+    "build": {
+      "exit_code": 0,
+      "started_at": "2026-11-12T17:59:55.9020527+00:00",
+      "completed_at": "2026-11-12T18:00:05.0097423+00:00",
+      "command": "npm run build",
+      "log": "ci-backend-frontend-local-build.log",
+      "log_identity": {
+        "file": "ci-backend-frontend-local-build.log",
+        "bytes": 4059,
+        "sha256": "1a3412829896c3fe49e1314e6dbe0922d96dae370731f1c2944fdc06662ccad9"
+      }
+    },
+    "local_snapshot": {
+      "python_sources_preserved": 859,
+      "built_resources": 49
+    },
+    "initial_regression_interruption": {
+      "server_startup_failures": [
+        {
+          "scenario": "normal",
+          "retained": false,
+          "reason": "The original system TEMP file is absent after the WSL restart"
+        },
+        {
+          "scenario": "recovery",
+          "retained": false,
+          "reason": "The original system TEMP file is absent after the WSL restart"
+        }
+      ],
+      "earlier_tool_observation": {
+        "kind": "Read of both original server logs before the executor restart",
+        "exception": "RuntimeError from starlette.staticfiles.StaticFiles.__init__",
+        "message_fragment": "frontend/dist/assets does not exist",
+        "raw_bytes_retained": false
+      },
+      "initial_runs_interrupted": [
+        "linux-ci-current-scenarios-restore",
+        "linux-ci-current-scenarios-built"
+      ],
+      "complete_initial_results_available": false,
+      "original_processes_observed_absent_before_retry": true,
+      "retry_process_receipts": [
+        "linux-ci-current-scenarios-built-retry-process.json",
+        "linux-ci-current-restore-cycle-retry-process.json"
+      ]
+    },
+    "local_followups": {
+      "linux-ci-current-scenarios-built-retry": {
+        "state": "running",
+        "process_receipt": "linux-ci-current-scenarios-built-retry-process.json"
+      },
+      "linux-ci-current-restore-cycle-retry": {
+        "state": "running",
+        "process_receipt": "linux-ci-current-restore-cycle-retry-process.json"
+      }
+    },
+    "prior_completed_ci": {
+      "head_sha": "47f26b8d1c1c3287ea53fac5a0e138422ced4b07",
+      "run_id": 43246769775,
+      "backend_job_id": 131281418190,
+      "failed": 23,
+      "passed": 12626,
+      "errors": 301,
+      "skipped": 2351,
+      "subtests_passed": 43,
+      "seconds": 9123.39,
+      "log": {
+        "file": "backend-ci-47f26b8.log",
+        "bytes": 564603,
+        "sha256": "6e1d7a71e0379162771cbd6eb8261bb73fd8e87bd3b45748ebee3b8f20fa360d"
+      },
+      "grouped": {
+        "file": "backend-ci-47f26b8-grouped02.json",
+        "bytes": 364753,
+        "sha256": "a3266ed57b0020db3c95799687023cb1b3986d51e491356965b8e5ea3eeee4eb"
+      },
+      "relevance": "The prior source predates the 12 fixture updates already delivered in 304e186"
+    },
+    "observed_ci": {
+      "head_sha": "304e186c124480d5abddbf7da22e2992fcbe1fbd",
+      "run_id": 43273760126,
+      "successful_jobs": 6,
+      "backend_conclusion": null
+    },
+    "full_remote_backend_pass": false,
+    "complete_product_goal": false
   }
 }

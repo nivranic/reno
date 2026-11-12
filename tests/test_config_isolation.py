@@ -127,8 +127,8 @@ def prepared():
                                 cwd=REPO, capture_output=True, text=True, encoding="utf-8", timeout=60)
         assert result.returncode == 0, result.stderr
         manifest = root / "qa-manifest.json"
-        # Backend CI does not build frontend/dist; API isolation is independent of
-        # SPA rendering. Browser fixtures keep prepare's default web_ui=react.
+        # API isolation selects classic rendering. Browser fixtures keep
+        # prepare's default web_ui=react.
         local_file = root / "config.test.json"
         local = json.loads(local_file.read_text(encoding="utf-8"))
         local["web_ui"] = "classic"
