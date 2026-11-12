@@ -4,6 +4,6 @@
 
 前次暂停时点的记录保存在[2026-11-12 阶段记录](AGENT-HANDOFF-2026-11-12.md)。
 
-恢复开发的起始提交为 `60074e2`。本轮已修正普通存储的 Python 3.11 导入兼容、Linux 锁清理夹具、Windows 专属模块收集门以及预算化同步场景。Linux／Python 3.12.10 的完整同步恢复链已通过。后端 CI 固定为既有 selector 合同支持的 Python 3.12.10，最低版本 checkpoint CI 保持 Python 3.11。本轮各批结果、历史失败和待验证范围见[继续开发记录](closeout/2026-11-12-ci-resume-result.json)。
+恢复开发的起始提交为 `60074e2`。本轮已修正普通存储的 Python 3.11 导入兼容、Linux 锁清理夹具、Windows 专属模块收集门以及预算化同步场景。Linux／Python 3.12.10 的完整同步恢复链已通过。后端 CI 固定为 Ubuntu 24.04／Python 3.12.10，以匹配既有 selector 合同和官方解释器构建，最低版本 checkpoint CI 保持 Python 3.11。本轮各批结果、历史失败和待验证范围见[继续开发记录](closeout/2026-11-12-ci-resume-result.json)。
 
 [2026-11-07 阶段交接](AGENT-HANDOFF-2026-11-07.md) 保留累计产品范围、r1528 静态候选身份、历史运行限制和剩余设计／开发事项。完整产品目标仍未完成。

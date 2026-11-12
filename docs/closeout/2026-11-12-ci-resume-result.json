@@ -313,11 +313,28 @@
   "backend_ci_python": "3.12.10",
   "backend_ci_python_reason": "Matches the existing selector representation contract while checkpoint-runtime retains Python 3.11",
   "remote_ci": {
-    "state": "awaiting_current_changes",
+    "state": "runner_correction_prepared",
     "previous_source": "bbc5c6bd4bba63f874ad9beff13c046d9992b601",
     "previous_run_id": 42362145344,
     "previous_passed_jobs": 3,
-    "previous_failed_jobs": 4
+    "previous_failed_jobs": 4,
+    "first_repair_run": {
+      "run_id": 43172136312,
+      "source_commit": "a9071f65ecbbbd61f934b6c759ff5e3dc585df42",
+      "success": [
+        "checkpoint-runtime",
+        "sync-chain",
+        "frontend",
+        "reconciliation",
+        "derivation"
+      ],
+      "failure": {
+        "backend": "Python 3.12.10 unavailable on Ubuntu 26.04"
+      },
+      "in_progress": [
+        "sync-recovery"
+      ]
+    }
   },
   "remaining": [
     "Current remote CI and recovery Chromium verification",
@@ -389,5 +406,49 @@
     "files": 11,
     "matched": true,
     "scope": "Static syntax and newline comparison"
+  },
+  "implementation_commit": "a9071f65ecbbbd61f934b6c759ff5e3dc585df42",
+  "backend_ci_runner": "ubuntu-24.04",
+  "backend_runner_correction": {
+    "failed_source": "a9071f65ecbbbd61f934b6c759ff5e3dc585df42",
+    "run_id": 43172136312,
+    "failed_step": "actions/setup-python@v5",
+    "actual_image": "Ubuntu 26.04",
+    "failure_message": "The version '3.12.10' with architecture 'x64' was not found for Ubuntu 26.04.\nThe list of all available versions can be found here: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json",
+    "selected_image": "Ubuntu 24.04",
+    "official_python_downloads": [
+      {
+        "platform": "linux",
+        "platform_version": "20.04",
+        "arch": "x64",
+        "filename": "python-3.12.10-linux-20.04-x64.tar.gz"
+      },
+      {
+        "platform": "linux",
+        "platform_version": "22.04",
+        "arch": "arm64",
+        "filename": "python-3.12.10-linux-22.04-arm64.tar.gz"
+      },
+      {
+        "platform": "linux",
+        "platform_version": "22.04",
+        "arch": "x64",
+        "filename": "python-3.12.10-linux-22.04-x64.tar.gz"
+      },
+      {
+        "platform": "linux",
+        "platform_version": "24.04",
+        "arch": "arm64",
+        "filename": "python-3.12.10-linux-24.04-arm64.tar.gz"
+      },
+      {
+        "platform": "linux",
+        "platform_version": "24.04",
+        "arch": "x64",
+        "filename": "python-3.12.10-linux-24.04-x64.tar.gz"
+      }
+    ],
+    "manifest_url": "https://github.com/actions/python-versions/blob/main/versions-manifest.json",
+    "runner_reference": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners"
   }
 }

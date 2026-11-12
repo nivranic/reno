@@ -7,7 +7,8 @@ on:
 
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    # Python 3.12.10 has an official Ubuntu 24.04 build.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
