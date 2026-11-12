@@ -31,7 +31,8 @@ from reno import sync_source_lifecycle17 as effects, sync_source_readmit_contrac
 from reno import sync_source_readmit_schema, sync_state, tasks
 from reno.budget_contract import BudgetDeferred
 from reno.sync_protocol import SyncError
-from tests.test_sync_agent import env, install_import, add_video
+from tests.conftest import released16_env as env
+from tests.test_sync_agent import install_import, add_video
 from tests.test_sync_budget_propagation import home_cycle
 from tests.test_sync_source_execution_binding import executing, bind
 from tests.test_sync_source_genesis17 import future17_gate, permanent_files

@@ -19,6 +19,15 @@ from tests.test_sync_recovery import generations, apply as restore_knowledge  # 
 from tests.test_sync_checkpoints import receiver  # noqa: F401
 
 
+@pytest.fixture(autouse=True)
+def historical_schema16_contract(monkeypatch):
+    """Keep original controls and all their owners in the released16 lifetime."""
+    from tests.schema_fixtures import released16
+
+    with released16(monkeypatch):
+        yield
+
+
 def failure(**changes):
     value = {"format_version": 1, "operation_id": str(uuid.uuid4()), "attempt_id": str(uuid.uuid4()),
         "ordinal": 4, "input_sha256": "1" * 64, "request_sha256": "2" * 64,

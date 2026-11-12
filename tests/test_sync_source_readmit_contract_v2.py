@@ -251,11 +251,13 @@ def test_implicit_v1_same_epoch_still_preserves_original_certificate_bytes():
 
 @pytest.mark.parametrize("migration", [15, 16, True])
 def test_v2_representation_requires_prospective17_without_changing_global_version(migration):
+    from reno import migrations
+
+    original_version = migrations.SCHEMA_VERSION
     body = request(basis="timer")
     body["source"]["handshake"]["migration_version"] = migration
     invalid(contract.normalize_readmit_request, body)
-    from reno import migrations
-    assert migrations.SCHEMA_VERSION == 16
+    assert migrations.SCHEMA_VERSION == original_version
 
 
 @pytest.mark.parametrize("change", ["size", "depth", "cycle", "surrogate"])

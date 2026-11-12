@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
 from copy import copy, deepcopy
 from dataclasses import replace
+import sqlite3
 import uuid
 
 import pytest
@@ -48,14 +49,18 @@ def consume(value, binding, required, **changes):
 
 
 def empty_pull(value):
-    value.remote.payloads["pull"]["claims"] = []
-    value.client.pull(value.source, value.store.read()["lease"], claim_limit=0)
+    result = value.client.pull(value.source, value.store.read()["lease"], claim_limit=0)
+    assert result["claims"] == []
 
 
 def expired_initial(value):
+    state = value.store.read()
+    renewed = value.client.heartbeat(value.source, state["session_id"], lease=state["lease"])
+    assert renewed["renewed_claims"] == 1
+    value.store.update({"lease": renewed["lease"]})
     changed = deepcopy(value.store.read()["claims"])
     changed[0]["lease_until"] = "2020-01-01T00:00:00.000Z"
-    value.remote.payloads["pull"]["claims"] = changed
+    value.remote.corrupt_next("pull", lambda response: response.update(claims=changed))
     value.client.pull(value.source, value.store.read()["lease"], claim_limit=1)
     value.store.update({"claims": changed})
 
@@ -82,7 +87,7 @@ def test_real_zero_claim_pull_requires_targeted_readmit_without_fresh_grant(live
     assert live17.store.read()["source_admission"] is None
 
 
-def test_genuinely_expired_complete_original_entry_requests_readmit(live17):
+def test_expired_complete_original_entry_observation_requests_readmit(live17):
     binding = facts(live17)
     expired_initial(live17)
     assert live17.remote.payloads["heartbeat"]["renewed_claims"] == 1
@@ -104,7 +109,7 @@ def test_actual_wrong_pull_item_cannot_be_reclassified_as_expiry(live17, change)
     else:
         changed[0]["attempts"] += 1
     value = changed if change == "claim" else live17.store.read()["claims"]
-    live17.remote.payloads["pull"]["claims"] = changed
+    live17.remote.corrupt_next("pull", lambda response: response.update(claims=changed))
     live17.client.pull(live17.source, live17.store.read()["lease"], claim_limit=1)
     if change == "claim":
         live17.store.update({"claims": value})
@@ -189,7 +194,8 @@ def test_consume_reopens_and_strictly_rechecks_the_original_actual_binding(live1
     if change == "state":
         live17.store.update({"seeded": not live17.store.read()["seeded"]})
     elif change == "observation":
-        live17.client.heartbeat(live17.source, live17.remote.lease["session_id"])
+        state = live17.store.read()
+        live17.client.heartbeat(live17.source, state["session_id"], lease=state["lease"])
     else:
         sql_change(live17, "UPDATE worker_lease SET lease_until=0")
     with pytest.raises((SyncError, tasks.TaskError)):
@@ -215,19 +221,21 @@ def test_missing_observations_do_not_hide_invalid_worker_or_pause(live17, change
 @pytest.mark.parametrize("change", ["session", "fence"])
 def test_old_admission_session_or_fence_needs_new_actual_readmit(live17, change):
     binding, _, _, prior = admitted(live17)
+    state = live17.store.read()
     if change == "session":
-        lease = deepcopy(live17.remote.lease)
-        lease.update(session_id=str(uuid.uuid4()), lease_token=str(uuid.uuid4()), generation=lease["generation"] + 1)
-        live17.remote.payloads["heartbeat"]["lease"] = lease
-        live17.client.heartbeat(live17.source, lease["session_id"])
-        live17.store.update({"session_id": lease["session_id"], "lease": lease})
+        with sqlite3.connect(live17.cloud.database) as con:
+            con.execute("UPDATE sync_session SET lease_until='2020-01-01T00:00:00.000Z' WHERE slot=1")
+        response = live17.client.heartbeat(live17.source, str(uuid.uuid4()))
+        assert response["lease"]["generation"] > state["lease"]["generation"]
     else:
-        recovery = deepcopy(live17.remote.recovery)
-        recovery["revision"] += 1
-        live17.remote.payloads["heartbeat"]["recovery"] = recovery
-        live17.remote.payloads["pull"]["recovery"] = recovery
-        live17.client.heartbeat(live17.source, live17.store.read()["session_id"])
-        live17.store.update({"recovery": recovery})
+        with sqlite3.connect(live17.cloud.database) as con:
+            con.execute("INSERT INTO sync_recovery_control(slot,state,generation,revision,source_floor_json,updated_at) "
+                "VALUES(1,'running',0,1,NULL,'2026-01-01T00:00:00.000Z') "
+                "ON CONFLICT(slot) DO UPDATE SET revision=revision+1")
+        response = live17.client.heartbeat(live17.source, state["session_id"], lease=state["lease"])
+        assert response["recovery"]["revision"] > state["recovery"]["revision"]
+    live17.store.update({"session_id": response["lease"]["session_id"], "lease": response["lease"],
+                         "recovery": response["recovery"]})
     empty_pull(live17)
     required = signal(live17, binding, "readmit")
     assert consume(live17, binding, required) == "readmit"

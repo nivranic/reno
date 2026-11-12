@@ -7,9 +7,21 @@ import pytest
 from reno import storage_roots as roots, storage_lifecycle as lifecycle, sync_state
 from reno import sync_source_authority as authority, sync_source_continuity as continuity
 from reno import sync_source_readmit_schema as schema
-from tests.test_storage_roots_group import libraries, enroll, registered, scan, captured, statuses  # noqa: F401
+from tests.test_storage_roots_group import libraries as original_libraries, enroll, registered, scan, captured, statuses  # noqa: F401
 from tests.test_sync_source_readmit_contract import SOURCE, TARGET, COMMITTED
 from tests.test_storage_source_authority_roots import activate, seed, control
+
+
+@pytest.fixture
+def libraries(original_libraries, monkeypatch):
+    """Finish original16 creation before the explicit historical17 reader phase."""
+    from tests.schema_fixtures import released16
+
+    def make(*args, **kwargs):
+        with released16(monkeypatch):
+            return original_libraries(*args, **kwargs)
+
+    return make
 
 
 def prospective(libraries, side, *, version=17):

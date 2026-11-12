@@ -7,7 +7,8 @@ import pytest
 from reno import config, db, storage_admin, sync_agent as agent, sync_state, tasks
 from reno.sync_protocol import SyncError
 from reno.sync_state import StateStore
-from tests.test_sync_agent import env, add_video, cycle, install_import
+from tests.conftest import released16_env as env
+from tests.test_sync_agent import add_video, cycle, install_import
 
 
 def local_cycle(remote, store):

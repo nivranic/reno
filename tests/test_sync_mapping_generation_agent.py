@@ -10,7 +10,8 @@ import pytest
 from reno import config, db, ingest, storage_admin, storage_lifecycle, sync_agent as agent, sync_sources, tasks
 from reno.sync_protocol import SyncError
 from reno.sync_state import StateStore
-from tests.test_sync_agent import env, cycle, install_import
+from tests.conftest import released16_env as env
+from tests.test_sync_agent import cycle, install_import
 from tests.test_sync_sources import STAMP
 
 
@@ -110,7 +111,7 @@ def test_pipeline_failure_keeps_generation_for_ordinary_retry(env, monkeypatch):
     assert (config.DATA / "sync-sources/v2" / (work["source_mapping_generation"] + ".json")).read_bytes() == raw
 
 
-def test_receiver_recovery_finishes_saved_generation_before_map_link(env, monkeypatch):
+def test_receiver_bootstrap_preserves_saved_generation_until_current_claim_resumes(env, monkeypatch):
     install_import(env, monkeypatch)
     record = sync_sources.SourceMap.record
     interrupted = False
@@ -125,14 +126,24 @@ def test_receiver_recovery_finishes_saved_generation_before_map_link(env, monkey
     monkeypatch.setattr(sync_sources.SourceMap, "record", fail_before_map)
     assert cycle(env)["state"] == "retry_wait"
     store = StateStore(config.DATA, profile=storage_admin.profile())
-    generation = store.read()["work"]["source_mapping_generation"]
-    assert store.read()["work"].get("source_mapping_id") is None
+    saved_work = deepcopy(store.read()["work"])
+    generation = saved_work["source_mapping_generation"]
+    assert saved_work.get("source_mapping_id") is None
     env.recovery.update(state="resume_pending", generation=1, revision=1)
     monkeypatch.setattr(sync_sources, "resolve_url", lambda *a, **k: pytest.fail("recovery cannot choose another observation"))
     monkeypatch.setattr(ingest, "ingest_url", lambda *a, **k: pytest.fail("recovery cannot choose another instance"))
+    result = cycle(env)
+    assert result["state"] == "idle" and result["recovery_bootstrapped"] is True
+    assert store.read()["work"] == saved_work
+    assert env.publications[-1]["claims"] == []
+    assert not (config.DATA / "sync-sources/v2" / (generation + ".json")).exists()
     assert cycle(env)["state"] == "idle"
-    assert store.read()["work"]["source_mapping_generation"] == generation
-    assert store.read()["work"]["source_mapping_id"]
+    mapping = json.loads((config.DATA / "sync-sources/v2" / (generation + ".json")).read_bytes())
+    assert mapping["mapping_generation"] == generation
+    assert mapping["resolution"] == saved_work["source_mapping_inputs"]["resolution"]
+    assert mapping["origin"]["recorded_at"] == saved_work["source_mapping_inputs"]["recorded_at"]
+    assert env.publications[-1]["claims"][0]["origin"] == mapping["origin"]
+    assert store.read()["work"] is None
     assert len(list((config.DATA / "sync-sources/v2").glob("*.json"))) == 1
 
 

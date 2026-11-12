@@ -932,5 +932,453 @@
       "before_sha256": "c773d52cc61adf1693da945a3d3e3a0f6010881043d04a58e4050a1dc64c0ae7",
       "after_sha256": "351578883766d3f98275fabb9e8660a3091679d11a400b20b08ea505a1f250a5"
     }
+  },
+  "post_849bb43_followup": {
+    "pushed_base": "849bb438fc2371e9717fe932fbc91a72a0194ee5",
+    "remote_base_sha_verified": true,
+    "base_ci_run": 43229352903,
+    "base_ci_status_at_recording": "in_progress",
+    "historical_control_lifetimes": {
+      "installed_tests": {
+        "tests/test_sync_budget_wait.py": {
+          "before_sha256": "e37675735c0bd629ed2d04c6f3610fb91cac644a5159e3721742d65273818dae",
+          "after_sha256": "a894582efe959b240a1de6de8733e6585ac768cf894a5b77026cde819557aad5",
+          "original_ast_preserved": true
+        },
+        "tests/test_sync_source_control.py": {
+          "before_sha256": "ac6528d08e69d1fe33066d093a9ffc8aa797945362afbf99f9b63d3338af40c6",
+          "after_sha256": "0a51f70d2c15a3761682cb70f8b5951299803533fa9b4f5852d1a1d2d9749e1c",
+          "original_ast_preserved": true
+        }
+      },
+      "before": {
+        "exit_code": 1,
+        "seconds": 52.43294666600001,
+        "selected": [
+          "tests/test_sync_budget_wait.py",
+          "tests/test_sync_source_control.py"
+        ],
+        "log": "linux-ci-budget-source-control-before.log",
+        "junit": "linux-ci-budget-source-control-before.xml",
+        "bytecode_cache_enabled": true,
+        "tests": 51,
+        "errors": 0,
+        "failures": 32,
+        "skipped": 0,
+        "passed": 19
+      },
+      "after": {
+        "exit_code": 0,
+        "seconds": 27.92905227,
+        "selected": [
+          "tests/test_sync_budget_wait.py",
+          "tests/test_sync_source_control.py",
+          "tests/test_sync_source_control_migrations.py"
+        ],
+        "log": "linux-ci-budget-source-control-after.log",
+        "junit": "linux-ci-budget-source-control-after.xml",
+        "bytecode_cache_enabled": true,
+        "tests": 62,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 62
+      },
+      "original_test_bodies_preserved": true,
+      "product_source_changes": 0,
+      "scope": "Original schema16 controls, SQL/HTTP receipt replay and existing migration consumers",
+      "evidence_identities": {
+        "linux-ci-budget-source-control-before.log": {
+          "bytes": 68521,
+          "sha256": "6846bb8155218c2fe831f080a9cdbceacea991fbffb775b0b94901c8e3b1802b"
+        },
+        "linux-ci-budget-source-control-before.xml": {
+          "bytes": 41389,
+          "sha256": "9cbf56b56b34682d135d77f79839a4e56baf61719f7e150286343999edd865c3"
+        },
+        "linux-ci-budget-source-control-after.log": {
+          "bytes": 100,
+          "sha256": "3ec88fd04b452085adcf59cccf24b2a003bc4527279d22f5a82cf86faf9b381e"
+        },
+        "linux-ci-budget-source-control-after.xml": {
+          "bytes": 10133,
+          "sha256": "a177216b4f725250ae547b217bdfbfbe96ce7dfac91b22548c989c719ef693ab"
+        }
+      }
+    },
+    "complete_product_goal": false,
+    "next_prerequisites": {
+      "installed_tests": {
+        "tests/test_sync_mapping_generation_agent.py": {
+          "before_sha256": "1b81bed0cf9825f092d3800e0e2503932c495d6e489e56c703f08069e4bb5cfd",
+          "after_sha256": "f35649e2e049e1aa402835e86758583f1216eca64248ec0dcd3097053c65cee8",
+          "revision01_sha256": "82862e1ec24b65be27839d374a88272c9fc6a4c8ffa2e0824cd4f55dd5151966"
+        },
+        "tests/test_sync_recovery_home.py": {
+          "before_sha256": "48a3aade81878f52d04772abc03b2564728b1ab77e9432a563b5aeff434b2920",
+          "after_sha256": "86dc6a6c4d06deb2d16d2279d133aee3dc7d86e4994518952c73b2e88b894130"
+        },
+        "tests/test_sync_source_readmit_contract_v2.py": {
+          "before_sha256": "e0f4bcf2319b190b279faf3c81df48248c668c8c41eb5a62c2d2cc07d405cc7b",
+          "after_sha256": "21ae78b883e7e261774ed9090659c4d1b805e8a042c65c0aa04400f1e66e1f36"
+        },
+        "tests/test_sync_source_opportunity17.py": {
+          "before_sha256": "b161e3efc13c74b423caa02df050560da4fab21ffaeb562fcafb8e036e656dcf",
+          "after_sha256": "cdaee70ec36d55b8d02e3a18b35312cf06ada004bb5c67fd50a7a477ad2685f3",
+          "unrelated_function_bodies_preserved": true,
+          "negative_observations": "Existing corrupt_next pull hook",
+          "positive_session_and_recovery_observations": "Actual isolated Cloud SQL and ASGI"
+        },
+        "tests/test_sync_source_claim.py": {
+          "before_sha256": "c9777960667fef76bdd98d93f011ce80596a5cdccea77cdad11daed239ba5e64",
+          "after_sha256": "01eb41b9eae1944c54d5d52d41c22646d4f86b40a2b615e262ccefd80f80c1ed"
+        }
+      },
+      "regressions": [
+        {
+          "exit_code": 1,
+          "seconds": 171.69120150799998,
+          "selected": [
+            "tests/test_sync_mapping_generation_agent.py",
+            "tests/test_sync_recovery_home.py",
+            "tests/test_sync_source_readmit_contract_v2.py",
+            "tests/test_sync_source_opportunity17.py",
+            "tests/test_storage_source_readmit_roots.py"
+          ],
+          "log": "linux-ci-next-prerequisites-before.log",
+          "junit": "linux-ci-next-prerequisites-before.xml",
+          "bytecode_cache_enabled": true,
+          "tests": 198,
+          "errors": 0,
+          "failures": 33,
+          "skipped": 0,
+          "passed": 165
+        },
+        {
+          "exit_code": 1,
+          "seconds": 209.08787049600002,
+          "selected": [
+            "tests/test_sync_mapping_generation_agent.py",
+            "tests/test_sync_recovery_home.py",
+            "tests/test_sync_source_readmit_contract_v2.py",
+            "tests/test_sync_source_opportunity17.py",
+            "tests/test_storage_source_readmit_roots.py",
+            "tests/test_budget_home_api17.py"
+          ],
+          "log": "linux-ci-next-prerequisites-after.log",
+          "junit": "linux-ci-next-prerequisites-after.xml",
+          "bytecode_cache_enabled": true,
+          "tests": 202,
+          "errors": 0,
+          "failures": 2,
+          "skipped": 0,
+          "passed": 200
+        },
+        {
+          "exit_code": 0,
+          "seconds": 253.925612792,
+          "selected": [
+            "tests/test_sync_mapping_generation_agent.py",
+            "tests/test_sync_recovery_home.py",
+            "tests/test_sync_source_readmit_contract_v2.py",
+            "tests/test_sync_source_opportunity17.py",
+            "tests/test_storage_source_readmit_roots.py",
+            "tests/test_budget_home_api17.py",
+            "tests/test_sync_source_claim.py"
+          ],
+          "log": "linux-ci-next-prerequisites-final02.log",
+          "junit": "linux-ci-next-prerequisites-final02.xml",
+          "bytecode_cache_enabled": true,
+          "tests": 233,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "passed": 233
+        }
+      ],
+      "product_source_changes": 0,
+      "tested_overlay_verified": true,
+      "batches_counted_separately": true,
+      "evidence_identities": {
+        "linux-ci-next-prerequisites-before.log": {
+          "bytes": 31799,
+          "sha256": "6bc1776744cbcf58f3b687fb936e465a545725a8f90af77d89d726a78ac2ac3d"
+        },
+        "linux-ci-next-prerequisites-before.xml": {
+          "bytes": 48459,
+          "sha256": "d065ed4ee787d3e83e27695633fb68004f36d24d45261a14f24e8b71cde24fea"
+        },
+        "linux-ci-next-prerequisites-after.log": {
+          "bytes": 3422,
+          "sha256": "18abd902b67ed32547f97d3c7372d09d19fe7dd98a7b6f9c2264def7cbebe843"
+        },
+        "linux-ci-next-prerequisites-after.xml": {
+          "bytes": 36207,
+          "sha256": "385d89d6fde82dffe1c9a8a855ce4a1449361ef60140cfe6372bb192a8be3cba"
+        },
+        "linux-ci-next-prerequisites-final02.log": {
+          "bytes": 352,
+          "sha256": "be3b6d6f9723ca12619084568706b5a41b9e8125540e21f4a8ce96c83eabb6af"
+        },
+        "linux-ci-next-prerequisites-final02.xml": {
+          "bytes": 39122,
+          "sha256": "5711405c373eab154e3aa6b237c84af810bede4d899f25e6f0c7176ab49f3570"
+        }
+      }
+    },
+    "historical_readers": {
+      "installed_tests": {
+        "tests/test_source_manual_resume_dual_sha17.py": {
+          "before_sha256": "86378ca40fa304dd95d83752db9ee22117b7183216f5b0d1409afcccacaf07d3",
+          "after_sha256": "3adbce9af9107ca970ee8997fdcde07503c4c99469fb43c582a5fb915796e829",
+          "original_function_bodies_preserved": true
+        },
+        "tests/test_storage_permanent_roots_group17.py": {
+          "before_sha256": "360883a4d69d6a85eddb3f2c838eca015448cf207368c8cbc4ed5238e2bf7ce7",
+          "after_sha256": "6e6efa4c274114114b09d5d7f36777acd5a7da34cd0d0e914c706c65e59fa481",
+          "original_function_bodies_preserved": true
+        },
+        "tests/test_sync_published_terminal_agent.py": {
+          "before_sha256": "f64350c632ecd27a86ffbb16eb066cce9182a9323af0ade2c3f77963e5f995fe",
+          "after_sha256": "1c37a57164889ae23702f7643365f538f93cbef91efe232da2b8118b41c0eb50",
+          "original_function_bodies_preserved": true
+        }
+      },
+      "regressions": [
+        {
+          "exit_code": 1,
+          "seconds": 71.92372083100003,
+          "selected": [
+            "tests/test_source_manual_resume_dual_sha17.py",
+            "tests/test_storage_permanent_roots_group17.py",
+            "tests/test_sync_published_terminal_agent.py"
+          ],
+          "log": "linux-ci-historical-readers-before.log",
+          "junit": "linux-ci-historical-readers-before.xml",
+          "bytecode_cache_enabled": true,
+          "tests": 31,
+          "errors": 15,
+          "failures": 10,
+          "skipped": 0,
+          "passed": 6
+        },
+        {
+          "exit_code": 0,
+          "seconds": 235.62483244999999,
+          "selected": [
+            "tests/test_source_manual_resume_dual_sha17.py",
+            "tests/test_storage_permanent_roots_group17.py",
+            "tests/test_sync_published_terminal_agent.py",
+            "tests/test_storage_roots_group.py"
+          ],
+          "log": "linux-ci-historical-readers-after.log",
+          "junit": "linux-ci-historical-readers-after.xml",
+          "bytecode_cache_enabled": true,
+          "tests": 86,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 1,
+          "passed": 85
+        }
+      ],
+      "product_source_changes": 0,
+      "tested_overlay_verified": true,
+      "batches_counted_separately": true,
+      "evidence_identities": {
+        "linux-ci-historical-readers-before.log": {
+          "bytes": 46128,
+          "sha256": "4126a689aca21a041cd760304258e210c6dc792f22913f3eab1180a5486e013e"
+        },
+        "linux-ci-historical-readers-before.xml": {
+          "bytes": 27608,
+          "sha256": "fd8579ad35febf4631069f66a792027bed68c4e7ad15e834ece7beafd31c7d83"
+        },
+        "linux-ci-historical-readers-after.log": {
+          "bytes": 202,
+          "sha256": "6b0a42e3e4c78bddc4f436310e3f92d8910af13d5a2e0c6cdfbe1805b3cee54c"
+        },
+        "linux-ci-historical-readers-after.xml": {
+          "bytes": 13431,
+          "sha256": "482616303ffee70091b91710879d0f6536a0bf4791675270f9556f50a346eb1b"
+        }
+      },
+      "skipped_boundary": "Windows case-equivalent physical-path test on Linux"
+    },
+    "backend_external_temporary_directory": {
+      "workflow": ".github/workflows/ci.yml",
+      "identities": {
+        "before_sha256": "afd7dd3860f8833983590aa5f61bf1bf6edab7580af669d9b323597ba330846b",
+        "after_sha256": "b8e5d17be2a214b48a9cca94fa39695a2046b6254fd15b8150a1af8f83ec818d",
+        "yaml_parsed": true,
+        "only_backend_pytest_run_changed": true,
+        "pytest_command": "python -m pytest -q --basetemp=\"$RUNNER_TEMP/reno-backend-pytest\""
+      },
+      "before": {
+        "exit_code": 1,
+        "seconds": 36.78045492000001,
+        "selected": [
+          "tests/test_sync_access.py",
+          "tests/test_sync_client_transport.py",
+          "tests/test_sync_client.py::test_http_flag_is_rechecked_each_request_and_needs_path_isolation"
+        ],
+        "log": "linux-ci-qa-temp-before.log",
+        "junit": "linux-ci-qa-temp-before.xml",
+        "bytecode_cache_enabled": true,
+        "basetemp_location": "source_checkout",
+        "tests": 93,
+        "errors": 0,
+        "failures": 11,
+        "skipped": 0,
+        "passed": 82
+      },
+      "first_external_run": {
+        "exit_code": 1,
+        "seconds": 42.46347743800004,
+        "selected": [
+          "tests/test_sync_access.py",
+          "tests/test_sync_client_transport.py",
+          "tests/test_sync_client.py::test_http_flag_is_rechecked_each_request_and_needs_path_isolation"
+        ],
+        "log": "linux-ci-qa-temp-after.log",
+        "junit": "linux-ci-qa-temp-after.xml",
+        "bytecode_cache_enabled": true,
+        "basetemp_location": "system_temporary_directory",
+        "tests": 93,
+        "errors": 0,
+        "failures": 1,
+        "skipped": 0,
+        "passed": 92
+      },
+      "after": {
+        "exit_code": 0,
+        "seconds": 29.364782952000013,
+        "selected": [
+          "tests/test_sync_access.py",
+          "tests/test_sync_client_transport.py",
+          "tests/test_sync_client.py::test_http_flag_is_rechecked_each_request_and_needs_path_isolation"
+        ],
+        "log": "linux-ci-qa-temp-final02.log",
+        "junit": "linux-ci-qa-temp-final02.xml",
+        "bytecode_cache_enabled": true,
+        "basetemp_location": "system_temporary_directory",
+        "tests": 93,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 93
+      },
+      "close_observation": {
+        "exit_code": 0,
+        "seconds": 7.891191149000008,
+        "selected": [
+          "tests/test_sync_client_transport.py::test_real_header_and_body_reads_observe_constructor_cancellation[body]",
+          "tests/test_sync_client_transport.py::test_real_header_and_body_reads_observe_constructor_cancellation[body]",
+          "tests/test_sync_client_transport.py::test_real_header_and_body_reads_observe_constructor_cancellation[body]"
+        ],
+        "log": "linux-ci-qa-close-observation.log",
+        "junit": "linux-ci-qa-close-observation.xml",
+        "bytecode_cache_enabled": true,
+        "basetemp_location": "system_temporary_directory",
+        "tests": 1,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "passed": 1
+      },
+      "close_observation_details": {
+        "observations": [
+          {
+            "stream_close": [
+              {
+                "at": 72.638086423,
+                "socket_closed": true
+              }
+            ],
+            "peer": {
+              "accepted": true,
+              "finished": true
+            }
+          }
+        ],
+        "unique_cases": 1
+      },
+      "first_external_wait_failure_cause": "unconfirmed; retained original failure and subsequent passing single case",
+      "local_scope": "Complete sync_access and sync_client_transport modules plus the existing HTTP-flag recheck case",
+      "nginx_integration": "Existing remote CI job; no local nginx execution in this follow-up",
+      "product_source_changes": 0,
+      "evidence_identities": {
+        "linux-ci-qa-temp-before.log": {
+          "bytes": 15756,
+          "sha256": "920531cdf2813f52ed0acf2af21eaf29a9e54074833d7d199d08e1a7abf9705b"
+        },
+        "linux-ci-qa-temp-before.xml": {
+          "bytes": 34056,
+          "sha256": "336ac456b746bcb8ce5d28f01815d6c1aaf296e75948781262f8aa5d6e300625"
+        },
+        "linux-ci-qa-temp-after.log": {
+          "bytes": 2089,
+          "sha256": "ccd31fb0592a08531c2c025005e1f6c61a52dcdb20ee9456a32053cd27382765"
+        },
+        "linux-ci-qa-temp-after.xml": {
+          "bytes": 27777,
+          "sha256": "327f9fd55556179d3667585948cce9983cab2a34d715183195eba6261131b62c"
+        },
+        "linux-ci-qa-close-observation.log": {
+          "bytes": 98,
+          "sha256": "86660781813aecb6bb0cb58224d3c98deae5a4528394d81e29457edbe17db5e3"
+        },
+        "linux-ci-qa-close-observation.xml": {
+          "bytes": 396,
+          "sha256": "2bc6b147d591c4b38eb7e8145839ef35e578ad4242afb072dcb03149cfd30569"
+        },
+        "linux-ci-qa-temp-final02.log": {
+          "bytes": 180,
+          "sha256": "2bb95b0d57762cacd62b9d2a6f8171cdbdfec5fd7a24527af17c7ba1bc29dc95"
+        },
+        "linux-ci-qa-temp-final02.xml": {
+          "bytes": 26399,
+          "sha256": "9441cb55a54d6741ab31c2cd233426dda4f1821874c13090fbcf36258f28666a"
+        }
+      }
+    },
+    "base_ci_jobs_at_local_commit": [
+      {
+        "name": "backend",
+        "status": "in_progress",
+        "conclusion": null
+      },
+      {
+        "name": "checkpoint-runtime",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "derivation",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "sync-recovery",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "frontend",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "sync-chain",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "reconciliation",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "frontend_validation": "Containing base commit's frontend CI passed; frontend sources unchanged in this follow-up",
+    "latest_full_backend_ci_pass": false
   }
 }

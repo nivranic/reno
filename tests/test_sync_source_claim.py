@@ -41,7 +41,12 @@ def environment(handler=None):
         endpoint = request.url.path.rsplit("/", 1)[1]
         body = json.loads(request.content)
         value.seen.append((endpoint, body))
-        return handler(value, endpoint, body) if handler is not None else httpx.Response(200, json=value.payloads[endpoint])
+        if handler is not None:
+            return handler(value, endpoint, body)
+        payload = deepcopy(value.payloads[endpoint])
+        if endpoint == "pull" and body["claim_limit"] == 0:
+            payload["claims"] = []
+        return httpx.Response(200, json=payload)
     value.client = SyncClient("https://sync.example.test/reno", token_provider=lambda: TOKEN,
                               transport=httpx.MockTransport(transport))
     return value

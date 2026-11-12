@@ -16,6 +16,15 @@ from tests.test_sync_recovery import generations, apply as restore_knowledge
 from tests.test_sync_checkpoints import receiver
 
 
+@pytest.fixture(autouse=True)
+def historical_schema16_contract(monkeypatch):
+    """Keep original controls and all their owners in the released16 lifetime."""
+    from tests.schema_fixtures import released16
+
+    with released16(monkeypatch):
+        yield
+
+
 def request(env, lease, item, **changes):
     version = db.knowledge_version(env["con"])
     target_library, target_node = queue._local_identity(env["con"])

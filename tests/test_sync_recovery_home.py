@@ -12,7 +12,8 @@ from reno import budget, config, storage_admin, storage_lifecycle, sync_agent as
 from reno.sync_client import SyncClientError
 from reno.sync_protocol import SyncError
 from reno.sync_state import StateStore
-from tests.test_sync_agent import env, cycle, add_video, add_event, install_import
+from tests.conftest import released16_env as env
+from tests.test_sync_agent import cycle, add_video, add_event, install_import
 from tests.test_sync_state import store, snapshot, claim
 
 
