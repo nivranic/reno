@@ -169,8 +169,9 @@ def projection(con, *, public=False) -> dict:
 
 
 def _projection(con, *, public=False):
-    from . import db, derivation, sync_visibility
-    atoms = {a["id"]: a for a in db.all_atoms(con, public=public)}
+    from . import derivation, sync_visibility
+    atom_where = " WHERE " + sync_visibility.atom_sql() if public else ""
+    atom_ids = [row["id"] for row in con.execute("SELECT id FROM knowledge_atom" + atom_where + " ORDER BY id")]
     conflict_where = " WHERE " + sync_visibility.conflict_sql() if public else ""
     conflicts = {c["conflict_id"]: dict(c) for c in con.execute("SELECT * FROM conflict_case" + conflict_where)}
     validities = derivation.evaluate_relations(con, public=public)
@@ -189,7 +190,7 @@ def _projection(con, *, public=False):
             if isinstance(side, dict) and isinstance(side.get("atoms"), list):
                 target.update(member for member in side["atoms"] if isinstance(member, str))
     atom_states = {aid: {"review_status": "unreviewed", "has_conflict": aid in conflicting,
-                         "has_outdated_conflict": aid in outdated, "review_stale": False} for aid in atoms}
+                         "has_outdated_conflict": aid in outdated, "review_stale": False} for aid in atom_ids}
     conflict_states = {}
     for cid, c in conflicts.items():
         analysis = identity.decoded(c.get("analysis_json"), {})

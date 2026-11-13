@@ -2899,7 +2899,12 @@
         "sha256": "95fc370b2e16f1e27a3edbf618cfe161f8f92d9db6a85041369cb52b357cf29a"
       }
     },
-    "remote_post_fix_full_backend_result": "pending"
+    "remote_post_fix_full_backend_result": {
+      "state": "failed",
+      "run_id": 43303560308,
+      "remaining_failures": 3,
+      "remaining_failure_details": "remaining_three_ci_and_real_binder_callbacks"
+    }
   },
   "native_class_source_followup": {
     "preceding_source_batches": [
@@ -2985,6 +2990,171 @@
     "complete_build_metadata_available": false,
     "workspace_memory_provider_selected": false,
     "compat_physical_cost_and_product_runtime_verified": false,
+    "goal_status": "active",
+    "complete_product_goal": false
+  },
+  "remaining_three_ci_and_real_binder_callbacks": {
+    "failed_revision": "1db76573d787f606814abf3f8879143a4cb84118",
+    "failed_run_id": 43303560308,
+    "failed_backend_job_id": 131480770155,
+    "full_remote_summary": {
+      "failed": 3,
+      "passed": 12947,
+      "skipped": 2351,
+      "warnings": 5,
+      "subtests_passed": 43
+    },
+    "six_other_jobs_succeeded": true,
+    "raw_log": {
+      "file": "backend-ci-1db7657.log",
+      "bytes": 91309,
+      "sha256": "4828ee963a86b630b83074abc7c1d436795ff4834d9b084d2a93498fb68064dc"
+    },
+    "original_failures": [
+      {
+        "kind": "FAILED",
+        "nodeid": "tests/test_perf_scale.py::TestScale::test_ask_retrieval_at_scale",
+        "reason": "AssertionError: [804.0551799999776, 818.7550719999308, 572.8998319996208]"
+      },
+      {
+        "kind": "FAILED",
+        "nodeid": "tests/test_sync_source_control_scheduler2.py::test_three_actual_negative_predecessors_then_readmit_reopens_current_view[admitted_resume_double]",
+        "reason": "reno.sync_protocol.SyncError: Home source authority records could not be verified"
+      },
+      {
+        "kind": "FAILED",
+        "nodeid": "tests/test_sync_source_restore_cycle17.py::test_actual_prior_admission_three_negative_scopes_then_refund_readmit_preserves_all_ancestors[admitted_resume_double]",
+        "reason": "reno.sync_protocol.SyncError: Home source authority records could not be verified"
+      }
+    ],
+    "same_revision_linux_reproduction": {
+      "passed": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 462.02317433800005
+    },
+    "same_revision_result": {
+      "file": "ci-backend-remaining-three/before.json",
+      "bytes": 1024,
+      "sha256": "a7bb0f97271643855a7e272580c624fa871ccb6b190eca515b26b3e169374dfd"
+    },
+    "deadline_failures_reproduced_locally": false,
+    "deadline_failure_trigger_or_product_fix_verified": false,
+    "review_projection_optimization": {
+      "change": "Read only atom IDs with the same public visibility predicate, ordering and transaction",
+      "related_linux_cases_passed": 129,
+      "junit": {
+        "file": "ci-backend-remaining-three/expanded.xml",
+        "bytes": 18462,
+        "sha256": "537ce200310252497b25da47e2a1f9afb19ff8ab68771070afce3d5ee326293d"
+      },
+      "result": {
+        "file": "ci-backend-remaining-three/expanded.json",
+        "bytes": 1110,
+        "sha256": "04e351a174a7cd19dac4eccb056e723fcdc1e2af15a70b415108960089be268a"
+      },
+      "same_machine_before_retrieval_ms": [
+        499,
+        509,
+        526
+      ],
+      "same_machine_candidate_retrieval_ms": [
+        327,
+        283,
+        343
+      ],
+      "installed_source": {
+        "file": "reno/review.py",
+        "before": {
+          "bytes": 12594,
+          "sha256": "6c5d26cf5e327d4993154fbf7208f6be7d6c8b4f92c4911dbbf1f8a0ab850b58"
+        },
+        "after": {
+          "bytes": 12713,
+          "sha256": "f69d8ddc62b8e4a82dbd06e7342d605a1568bf1c9f1a4d2261c3319c84db3c7d"
+        },
+        "reason": "Projection uses only atom IDs to construct states. Keep the same visibility predicate and transaction, and read only IDs."
+      },
+      "remote_full_backend_after_change": "pending"
+    },
+    "native_binder_real_callbacks": {
+      "source_package": "reno-loader-direct-v2-source-r1549",
+      "source_files": 32,
+      "source_files_modified": 0,
+      "V2": {
+        "cases_passed": 30,
+        "compiler_returncode": 0,
+        "worker_returncode": 0,
+        "result": {
+          "file": "v2-01/RESULT.json",
+          "bytes": 68690,
+          "sha256": "aee53a5ce3600401880ddf8542c6cfc34d98e0e787418a971c87f60ff01bd8b1"
+        },
+        "raw_log": {
+          "file": "v2-01/direct-worker.log",
+          "bytes": 24283,
+          "sha256": "c4851489fbe444bac639e756335eff556f8876dacb7e74c5e642e1d81d2309a6"
+        },
+        "extension": {
+          "bytes": 74752,
+          "sha256": "f199da971ca3727e48674523511497e41fbbc0f4ded152628522f69fe7705589"
+        },
+        "source_checks": 40,
+        "captured_roots": 1080,
+        "released_roots": 1080,
+        "errors": {
+          "TypeError": 20,
+          "NoneType": 6,
+          "SystemError": 4
+        }
+      },
+      "V3": {
+        "cases_passed": 12,
+        "compiler_returncode": 0,
+        "worker_returncode": 0,
+        "result": {
+          "file": "v3-01/RESULT.json",
+          "bytes": 64132,
+          "sha256": "c576eede4b924a3bc9d31a5f5b1ec059d3a5da139018624944f1d4325e7844d8"
+        },
+        "raw_log": {
+          "file": "v3-01/direct-worker.log",
+          "bytes": 9726,
+          "sha256": "d9c4b9992fd6616ca3104a6f25475f7a977a49a0fab998a563942c4709e1450e"
+        },
+        "extension": {
+          "bytes": 98816,
+          "sha256": "f399f5bb378a231015ec3a78f4769ca7b09aa931a69a08d22f08cdadbcc73989"
+        },
+        "native_invocations": 12,
+        "ordinary_python_invocations": 12,
+        "native_source_checks": 46,
+        "native_stored_key_callbacks": 10,
+        "normal_stored_key_callbacks": 10,
+        "fixture_retirement_cases_reached_eval": 2
+      },
+      "independent_source_and_actual_result_review": "passed",
+      "controlled_endpoints": [
+        "independent frame and stack",
+        "reduced State/Record/binding",
+        "independent T0 producer",
+        "fixture arena allocation and clear/eval",
+        "tuple allocator and statistics",
+        "metadata retirement flags with roots retained until outer cleanup"
+      ],
+      "formal_producer_full_F3_State_GC_ABI_COMPAT_product_verified": false,
+      "status": {
+        "file": "reno-loader-binder-real-callbacks-r1551/STATUS.json",
+        "bytes": 2628,
+        "sha256": "c78e01a774697605a805ae5a702b1afc39c848aae2b50ef300eb7563eb77ec18"
+      },
+      "review": {
+        "file": "reno-loader-binder-real-callbacks-r1551/REVIEW.json",
+        "bytes": 767,
+        "sha256": "ab56a829b46668f256494f2427d72841eef85a219daea8271fd9e781a5192eb6"
+      }
+    },
     "goal_status": "active",
     "complete_product_goal": false
   }

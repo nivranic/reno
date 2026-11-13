@@ -2,6 +2,10 @@
 
 用户已撤销暂停，恢复原方案开发，长期 goal 为 `active`。当前继续修复后端整库 CI 的剩余失败，并推进 V3 owner 与 selector 接线。
 
+最新 `1db7657` 的 CI 43303560308 已结束，六项作业成功，backend 为 12,947 通过、3 失败、2,351 跳过。三个失败 ID 在同版 Linux 隔离环境全部通过，两项 DEADLINE_LIMIT 的触发条件仍待核定。审核投影已复用相同可见性条件、ID 顺序及读取事务，只取构造状态所需的 ID。审核、派生、同步可见性及规模回归共 129 项通过，本机检索三次耗时从约 499–526ms 降至 283–343ms。完整远端后端结论继续跟进。
+
+General 的 r1551 已完成两个隔离 C 扩展的编译、链接和真实回调验证。V2 为 30 项，V3 为 12 项并各有新建的普通 Python 对照。实际参数 DECREF 析构会改变原参数过多错误所读取的 defaults，实际 kwdefaults 存储键比较会改变后续绑定值。源码和实际记录均已独立复审。完整 native 候选仍为 r1549 的 32 份源码，完整 F3 producer、State 生命周期、selector/RESTORE、ABI、COMPAT、物理成本及产品运行继续待办。
+
 前次暂停时点的记录保存在[2026-11-12 阶段记录](AGENT-HANDOFF-2026-11-12.md)。
 
 恢复开发的起始提交为 `60074e2`。本轮已修正普通存储的 Python 3.11 导入兼容、Linux 锁清理夹具、Windows 专属模块收集门以及预算化同步场景。Linux／Python 3.12.10 的完整同步恢复链已通过。后端 CI 固定为 Ubuntu 24.04／Python 3.12.10，以匹配既有 selector 合同和官方解释器构建，最低版本 checkpoint CI 保持 Python 3.11。本轮各批结果、历史失败和待验证范围见[继续开发记录](closeout/2026-11-12-ci-resume-result.json)。
